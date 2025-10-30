@@ -1,0 +1,12 @@
+{
+  "expense_details": "Expense Details",
+  "type": "Expense Type",
+  "amount": "Amount",
+  "description": "Description",
+  "date": "Date",
+  "new_expense": "New Expense",
+  "edit_expense": "Edit Expense",
+  "payment_date": "Payment Date"
+}
+
+

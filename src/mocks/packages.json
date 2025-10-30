@@ -1,0 +1,16 @@
+[
+  {
+    "id": "free",
+    "allowedModules": ["sales", "customers"]
+  },
+  {
+    "id": "premium",
+    "allowedModules": ["sales", "customers", "expenses"]
+  },
+  {
+    "id": "gold",
+    "allowedModules": ["sales", "customers", "expenses", "reports"]
+  }
+]
+
+

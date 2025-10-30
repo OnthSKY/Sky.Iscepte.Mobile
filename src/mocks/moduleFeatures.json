@@ -1,0 +1,28 @@
+[
+  {
+    "module": "sales",
+    "features": {
+      "actions": ["create", "edit", "delete"],
+      "fields": ["category", "price", "discount"],
+      "notifications": ["dailyReport", "lowStock"]
+    }
+  },
+  {
+    "module": "expenses",
+    "features": {
+      "actions": ["create", "delete"],
+      "fields": ["expenseType", "amount"],
+      "notifications": ["monthlySummary"]
+    }
+  },
+  {
+    "module": "reports",
+    "features": {
+      "actions": ["view"],
+      "fields": ["dateRange", "categoryFilter"],
+      "notifications": []
+    }
+  }
+]
+
+

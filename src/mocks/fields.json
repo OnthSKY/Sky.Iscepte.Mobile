@@ -1,0 +1,16 @@
+{
+  "categories": [
+    { "id": 1, "name": "Kırılmaz Cam" },
+    { "id": 2, "name": "Şarj Kablosu" }
+  ],
+  "expenses": [
+    { "id": 1, "name": "Kira" },
+    { "id": 2, "name": "Elektrik" }
+  ],
+  "customers": [
+    { "id": 1, "group": "Perakende" },
+    { "id": 2, "group": "Toptan" }
+  ]
+}
+
+

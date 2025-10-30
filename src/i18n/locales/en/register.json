@@ -1,0 +1,21 @@
+{
+  "title": "Sign up",
+  "subtitle": "Create your account",
+  "name": "Full name",
+  "email": "Email",
+  "phone": "Phone",
+  "password": "Password",
+  "confirm_password": "Confirm password",
+  "register": "Sign up",
+  "have_account": "Already have an account?",
+  "login": "Login",
+  "errors": {
+    "name_required": "Name is required",
+    "email_required": "Email is required",
+    "email_invalid": "Invalid email address",
+    "phone_required": "Phone is required",
+    "password_min": "Password must be at least {{min}} characters",
+    "passwords_mismatch": "Passwords do not match"
+  }
+}
+

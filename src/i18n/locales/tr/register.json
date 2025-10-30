@@ -1,0 +1,21 @@
+{
+  "title": "Kayıt Ol",
+  "subtitle": "Hesabınızı oluşturun",
+  "name": "Ad Soyad",
+  "email": "E-posta",
+  "phone": "Telefon",
+  "password": "Şifre",
+  "confirm_password": "Şifre Tekrar",
+  "register": "Kayıt ol",
+  "have_account": "Zaten hesabınız var mı?",
+  "login": "Giriş Yap",
+  "errors": {
+    "name_required": "Ad soyad zorunlu",
+    "email_required": "E-posta zorunlu",
+    "email_invalid": "Geçersiz e-posta",
+    "phone_required": "Telefon zorunlu",
+    "password_min": "Şifre en az {{min}} karakter olmalı",
+    "passwords_mismatch": "Şifreler eşleşmiyor"
+  }
+}
+

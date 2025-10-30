@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Ahmet Usta",
+    "role": "employee",
+    "package": "free",
+    "customPermissions": {
+      "sales": { "actions": ["edit"], "notifications": ["lowStock"] }
+    }
+  },
+  {
+    "id": 2,
+    "name": "Mehmet Yılmaz",
+    "role": "admin",
+    "package": "gold",
+    "customPermissions": {}
+  }
+]
+
+

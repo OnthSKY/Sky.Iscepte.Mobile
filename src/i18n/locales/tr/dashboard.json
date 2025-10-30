@@ -1,0 +1,14 @@
+{
+  "title": "Anasayfa",
+  "welcome": "Hoş geldiniz!",
+  "description": "Burası anasayfanız. Aktivitelerinizin bir özetini burada görebilirsiniz.",
+  "total_sales": "Toplam Satışlar",
+  "total_customers": "Toplam Müşteriler",
+  "total_expenses": "Toplam Giderler",
+  "net_profit": "Net Kar",
+  "quick_actions": "Hızlı İşlemler",
+  "recent_activity": "Son Aktiviteler",
+  "no_recent_activity": "Henüz bir aktivite bulunmuyor."
+}
+
+

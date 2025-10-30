@@ -1,0 +1,21 @@
+{
+  "settings": "Ayarlar",
+  "dark_mode": "Koyu Tema",
+  "language": "Dil",
+  "theme": "Tema",
+  "change": "Değiştir",
+  "employees": "Çalışanlar",
+  "employee_details": "Çalışan Detayları",
+  "role": "Rol",
+  "permissions": "İzinler",
+  "performance": "Performans",
+  "new_employee": "Yeni Çalışan",
+  "edit_employee": "Çalışan Düzenle",
+  "turkish": "Türkçe",
+  "english": "İngilizce",
+  "light": "Açık",
+  "dark": "Koyu",
+  "system": "Sistem"
+}
+
+

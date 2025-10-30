@@ -1,0 +1,14 @@
+{
+  "title": "İşÇepte",
+  "login": "Login",
+  "username": "Username",
+  "password": "Password",
+  "invalid_credentials": "Invalid username or password",
+  "language": "Language",
+  "select_language": "Select language",
+  "sign_up": "Sign up",
+  "remember_me": "Remember me",
+  "welcome_back": "Welcome back"
+}
+
+

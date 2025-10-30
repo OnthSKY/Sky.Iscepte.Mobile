@@ -1,0 +1,21 @@
+{
+  "settings": "Settings",
+  "dark_mode": "Dark Mode",
+  "language": "Language",
+  "theme": "Theme",
+  "change": "Change",
+  "employees": "Employees",
+  "employee_details": "Employee Details",
+  "role": "Role",
+  "permissions": "Permissions",
+  "performance": "Performance",
+  "new_employee": "New Employee",
+  "edit_employee": "Edit Employee",
+  "turkish": "Turkish",
+  "english": "English",
+  "light": "Light",
+  "dark": "Dark",
+  "system": "System"
+}
+
+

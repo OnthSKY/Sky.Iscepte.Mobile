@@ -1,0 +1,15 @@
+{
+  "customer_details": "Customer Details",
+  "phone": "Phone",
+  "email": "Email",
+  "debt": "Debt",
+  "credit": "Credit",
+  "debt_limit": "Debt Limit",
+  "group": "Group",
+  "transactions": "Transaction History",
+  "new_customer": "New Customer",
+  "edit_customer": "Edit Customer",
+  "name": "Name"
+}
+
+

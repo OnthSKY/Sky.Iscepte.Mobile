@@ -1,0 +1,20 @@
+[
+  {
+    "id": "admin",
+    "permissions": {
+      "sales": { "actions": ["create", "edit", "delete"], "fields": ["category", "price"], "notifications": ["dailyReport"] },
+      "expenses": { "actions": ["create"], "fields": ["expenseType", "amount"], "notifications": [] },
+      "reports": { "actions": ["view"], "fields": ["dateRange"], "notifications": [] }
+    }
+  },
+  {
+    "id": "employee",
+    "permissions": {
+      "sales": { "actions": ["create"], "fields": ["category", "price"], "notifications": [] },
+      "expenses": { "actions": [], "fields": [], "notifications": [] },
+      "reports": { "actions": ["view"], "fields": [], "notifications": [] }
+    }
+  }
+]
+
+

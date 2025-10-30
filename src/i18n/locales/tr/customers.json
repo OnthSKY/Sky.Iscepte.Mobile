@@ -1,0 +1,15 @@
+{
+  "customer_details": "Müşteri Detayları",
+  "phone": "Telefon",
+  "email": "E-posta",
+  "debt": "Borç",
+  "credit": "Alacak",
+  "debt_limit": "Borç Limiti",
+  "group": "Grup",
+  "transactions": "İşlem Geçmişi",
+  "new_customer": "Yeni Müşteri",
+  "edit_customer": "Müşteri Düzenle",
+  "name": "Ad"
+}
+
+

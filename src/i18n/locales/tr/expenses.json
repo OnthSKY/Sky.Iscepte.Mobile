@@ -1,0 +1,12 @@
+{
+  "expense_details": "Gider Detayları",
+  "type": "Gider Türü",
+  "amount": "Tutar",
+  "description": "Açıklama",
+  "date": "Tarih",
+  "new_expense": "Yeni Gider",
+  "edit_expense": "Gider Düzenle",
+  "payment_date": "Ödeme Tarihi"
+}
+
+

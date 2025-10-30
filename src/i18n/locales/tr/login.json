@@ -1,0 +1,14 @@
+{
+  "title": "İşÇepte",
+  "login": "Giriş Yap",
+  "username": "Kullanıcı",
+  "password": "Şifre",
+  "invalid_credentials": "Geçersiz kullanıcı veya şifre",
+  "language": "Dil",
+  "select_language": "Dil seçin",
+  "sign_up": "Kayıt ol",
+  "remember_me": "Beni hatırla",
+  "welcome_back": "Hoş geldiniz"
+}
+
+

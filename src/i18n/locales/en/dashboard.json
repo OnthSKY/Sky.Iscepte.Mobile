@@ -1,0 +1,14 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome!",
+  "description": "This is your dashboard. You can see a summary of your activities here.",
+  "total_sales": "Total Sales",
+  "total_customers": "Total Customers",
+  "total_expenses": "Total Expenses",
+  "net_profit": "Net Profit",
+  "quick_actions": "Quick Actions",
+  "recent_activity": "Recent Activity",
+  "no_recent_activity": "No recent activity yet."
+}
+
+
