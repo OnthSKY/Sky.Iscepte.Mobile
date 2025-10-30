@@ -1,28 +1,37 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform, Image, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
+import { useAppStore } from '../store/useAppStore';
+import SummaryCard from '../shared/components/SummaryCard';
 
 const DashboardScreen = () => {
-  const { t } = useTranslation(['dashboard', 'sales', 'customers', 'expenses', 'reports', 'common']);
+  const { t, i18n } = useTranslation(['dashboard', 'sales', 'customers', 'expenses', 'reports', 'common']);
   const navigation = useNavigation<any>();
   const { colors, activeTheme } = useTheme();
   const { width } = useWindowDimensions();
+  const user = useAppStore((state: any) => state.user);
+  const role = useAppStore((state: any) => state.role);
+  const logout = useAppStore(state => state.logout);
+  const insets = useSafeAreaInsets();
 
   const isDark = activeTheme === 'dark';
-  const numColumns = width > 1280 ? 6 : width > 1024 ? 5 : width > 820 ? 4 : width > 560 ? 3 : 2;
-  const cardWidth = (width - spacing.lg * 2 - spacing.md * (numColumns - 1)) / numColumns;
-
-  const [section, setSection] = useState<'overview' | 'actions' | 'activity'>('overview');
-  const sections = [
-    { key: 'overview' as const, label: t('dashboard:overview', { defaultValue: 'Overview' }), icon: 'grid-outline' },
-    { key: 'actions' as const, label: t('dashboard:quick_actions', { defaultValue: 'Quick Actions' }), icon: 'flash-outline' },
-    { key: 'activity' as const, label: t('dashboard:recent_activity', { defaultValue: 'Recent Activity' }), icon: 'time-outline' },
-  ];
+  const headerGradientColors = isDark
+    ? ['#0F172A', '#1E3A8A']
+    : ['#1D4ED8', '#3B82F6'];
+  const titleColor = isDark ? '#F8FAFC' : '#0B1220';
+  const subtitleColor = isDark ? '#CBD5E1' : '#334155';
+  // Removed date display as per requirements
+  const numColumns = width > 650 ? 2 : 1;
+  const cardMargin = spacing.md;
+  const statCardWidth = (width - spacing.lg * 2 - cardMargin * (numColumns - 1)) / numColumns;
 
   const stats = [
     { 
@@ -30,7 +39,7 @@ const DashboardScreen = () => {
       label: t('dashboard:total_sales'), 
       value: '₺125,430', 
       icon: 'trending-up-outline', 
-      color: '#10B981',
+      color: colors.success,
       route: 'Sales'
     },
     { 
@@ -38,7 +47,7 @@ const DashboardScreen = () => {
       label: t('dashboard:total_customers'), 
       value: '1,247', 
       icon: 'people-outline', 
-      color: '#3B82F6',
+      color: colors.info,
       route: 'Customers'
     },
     { 
@@ -46,7 +55,7 @@ const DashboardScreen = () => {
       label: t('dashboard:total_expenses'), 
       value: '₺45,230', 
       icon: 'wallet-outline', 
-      color: '#EF4444',
+      color: colors.error,
       route: 'Expenses'
     },
     { 
@@ -54,38 +63,41 @@ const DashboardScreen = () => {
       label: t('dashboard:net_profit'), 
       value: '₺80,200', 
       icon: 'cash-outline', 
-      color: '#8B5CF6',
+      color: (colors as any).profit || colors.primary,
       route: 'Reports'
     },
   ];
+
+  const mainStat = stats[0];
+  const secondaryStats = stats.slice(1);
 
   const quickActions = [
     { 
       key: 'new-sale', 
       label: t('sales:new_sale'), 
       icon: 'add-circle-outline', 
-      color: '#10B981',
+      color: colors.success,
       route: 'SalesCreate'
     },
     { 
       key: 'new-customer', 
       label: t('customers:new_customer'), 
       icon: 'person-add-outline', 
-      color: '#3B82F6',
+      color: colors.info,
       route: 'CustomerCreate'
     },
     { 
       key: 'new-expense', 
       label: t('expenses:new_expense'), 
       icon: 'add-circle-outline', 
-      color: '#EF4444',
+      color: colors.error,
       route: 'ExpenseCreate'
     },
     { 
       key: 'reports', 
       label: t('reports:reports'), 
       icon: 'stats-chart-outline', 
-      color: '#8B5CF6',
+      color: (colors as any).profit || colors.primary,
       route: 'Reports'
     },
   ];
@@ -112,206 +124,265 @@ const DashboardScreen = () => {
     }
   };
 
-  const renderOverview = () => (
-    <View>
-      <View style={styles.statsGrid}>
-        {stats.map((stat) => (
-          <TouchableOpacity
-            key={stat.key}
-            style={[
-              styles.statCard,
-              Platform.OS === 'web' ? { boxShadow: '0px 2px 8px rgba(0,0,0,0.05)' } : Platform.OS === 'android' ? { elevation: 2 } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
-              { backgroundColor: colors.surface, width: cardWidth },
-            ]}
-            onPress={() => handleNavigation(stat.route)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.statIconWrap, { backgroundColor: `${stat.color}20` }]}> 
-              <Ionicons name={stat.icon as any} size={24} color={stat.color} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
-            <Text style={[styles.statLabel, { color: colors.muted }]}>{stat.label}</Text>
-          </TouchableOpacity>
-        ))}
+  const handleLogout = () => {
+    Alert.alert(
+      t('common:logout_confirm_title'),
+      t('common:logout_confirm_message'),
+      [
+        { text: t('common:cancel'), style: 'cancel' },
+        { text: t('common:logout'), style: 'destructive', onPress: logout },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const renderStatCard = (stat: typeof stats[0], index: number) => (
+    <TouchableOpacity
+      key={stat.key}
+      style={[
+        styles.statCard,
+        { 
+          backgroundColor: colors.surface, 
+          width: statCardWidth,
+          marginRight: numColumns > 1 && index % 2 === 0 ? cardMargin : 0,
+        },
+        isDark ? styles.cardDarkShadow : styles.cardLightShadow
+      ]}
+      onPress={() => handleNavigation(stat.route)}
+      activeOpacity={0.8}
+    >
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <View style={[styles.statIconWrap, { backgroundColor: `${stat.color}20` }]}>
+          <Ionicons name={stat.icon as any} size={22} color={stat.color} />
+        </View>
+        <View>
+          <Text style={[styles.statLabel, { color: colors.muted }]}>{stat.label}</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
-  const renderActions = () => (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('dashboard:quick_actions')}</Text>
-      <View style={styles.actionsGrid}>
-        {quickActions.map((action) => (
-          <TouchableOpacity
-            key={action.key}
-            style={[
-              styles.actionCard,
-              Platform.OS === 'web' ? { boxShadow: '0px 2px 8px rgba(0,0,0,0.05)' } : Platform.OS === 'android' ? { elevation: 2 } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
-              { backgroundColor: colors.surface, width: cardWidth },
-            ]}
-            onPress={() => handleNavigation(action.route)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconWrap, { backgroundColor: `${action.color}20` }]}> 
-              <Ionicons name={action.icon as any} size={28} color={action.color} />
-            </View>
-            <Text style={[styles.actionLabel, { color: colors.text }]}>{action.label}</Text>
-          </TouchableOpacity>
-        ))}
+  const renderActionCard = (action: typeof quickActions[0]) => (
+    <TouchableOpacity
+      key={action.key}
+      style={[
+        styles.actionCard,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        isDark ? styles.cardDarkShadow : styles.cardLightShadow
+      ]}
+      onPress={() => handleNavigation(action.route)}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.actionIconWrap, { backgroundColor: `${action.color}20` }]}>
+        <Ionicons name={action.icon as any} size={22} color={action.color} />
       </View>
-    </View>
-  );
-
-  const renderActivity = () => (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('dashboard:recent_activity')}</Text>
-      <View style={[
-        styles.activityCard,
-        Platform.OS === 'web' ? { boxShadow: '0px 2px 8px rgba(0,0,0,0.05)' } : Platform.OS === 'android' ? { elevation: 2 } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
-        { backgroundColor: colors.surface }
-      ]}>
-        <Text style={[styles.emptyText, { color: colors.muted }]}>{t('dashboard:no_recent_activity')}</Text>
-      </View>
-    </View>
+      <Text style={[styles.actionLabel, { color: colors.text }]}>{action.label}</Text>
+      <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+    </TouchableOpacity>
   );
 
   return (
-    <ScreenLayout>
-      <View style={[styles.header]}>
-        <Text style={[styles.title, { color: colors.text }]}>{t('dashboard:welcome')}</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>{t('dashboard:description')}</Text>
-      </View>
+    <ScreenLayout noPadding>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer} 
+        style={{ backgroundColor: colors.page }} 
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
+        scrollEventThrottle={16}
+      >
+        <LinearGradient colors={headerGradientColors as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.headerGradient, { paddingTop: insets.top + spacing.sm, paddingBottom: spacing.lg }] }>
+          {/* overlay: dark theme slight black, light theme slight white */}
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: activeTheme === 'dark' ? '#00000010' : '#FFFFFF10' }]} />
+          <View style={[styles.header, { flexDirection: 'column' }] }>
+            <View style={{ flex: 1, width: '100%', paddingRight: spacing.xl }}>
+              <Text style={[styles.title, { color: titleColor }]}>{t('dashboard:welcome_back')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <Text
+                  style={[styles.subtitle, { color: subtitleColor, flexShrink: 1 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {user?.name || 'User'}
+                </Text>
+                <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: `${colors.primary}20` }}>
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>{role?.toUpperCase() || 'GUEST'}</Text>
+                </View>
+              </View>
+            </View>
+            {!!user?.avatar && (
+              <View style={[styles.avatarWrap, { top: insets.top + spacing.sm, right: spacing.lg }]}>
+                <Image 
+                  source={{ uri: user.avatar }}
+                  style={styles.avatar}
+                />
+              </View>
+            )}
+          </View>
+          <View style={styles.pillsRow}>
+            <View style={[styles.headerPill, { backgroundColor: colors.card || colors.surface, borderColor: colors.border, flex: 1 }]}>
+              <Ionicons name="trending-up-outline" size={16} color={colors.muted} />
+              <Text style={[styles.pillText, { color: colors.muted }]}>{t('dashboard:today_sales', { defaultValue: 'Bugünkü Satış' })}</Text>
+              <Text style={[styles.pillValue, { color: colors.success }]}>₺3,240</Text>
+            </View>
+            <View style={[styles.headerPill, { backgroundColor: colors.card || colors.surface, borderColor: colors.border, flex: 1 }]}>
+              <Ionicons name="wallet-outline" size={16} color={colors.muted} />
+              <Text style={[styles.pillText, { color: colors.muted }]}>{t('dashboard:today_expenses', { defaultValue: 'Bugünkü Gider' })}</Text>
+              <Text style={[styles.pillValue, { color: colors.error }]}>₺820</Text>
+            </View>
+          </View>
+          <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
+        </LinearGradient>
 
-      <View style={[styles.segmentControl, { backgroundColor: colors.page }]}> 
-        {sections.map((s) => {
-          const active = section === s.key;
-          return (
-            <TouchableOpacity
-              key={s.key}
-              style={[styles.segmentButton, active && [{ backgroundColor: colors.surface }, Platform.OS === 'web' ? { boxShadow: '0px 1px 4px rgba(0,0,0,0.08)' } : { elevation: 2 }]]}
-              onPress={() => setSection(s.key)}
-              accessibilityRole="button"
-              accessibilityLabel={s.label}
-            >
-              <Ionicons name={s.icon as any} size={16} color={active ? colors.primary : colors.muted} />
-              <Text style={[styles.segmentButtonText, { color: active ? colors.primary : colors.muted }]}>{s.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+        <SummaryCard 
+          {...mainStat}
+          onPress={() => handleNavigation(mainStat.route)}
+        />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }} style={[styles.container, { backgroundColor: colors.page }]} showsVerticalScrollIndicator={false}>
-        {section === 'overview' && renderOverview()}
-        {section === 'actions' && renderActions()}
-        {section === 'activity' && renderActivity()}
-        <View style={{ height: 20 }} />
+        <View style={styles.statsGrid}>
+          {secondaryStats.map(renderStatCard)}
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('dashboard:quick_actions')}</Text>
+          <View style={styles.actionsList}>
+            {quickActions.map(renderActionCard)}
+          </View>
+        </View>
+
       </ScrollView>
     </ScreenLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  scrollContainer: {
+    paddingBottom: 40,
   },
   header: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'android' ? spacing.lg : spacing.lg,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: spacing.xs,
+  headerGradient: {
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    overflow: 'hidden',
   },
-  subtitle: {
-    fontSize: 15,
-  },
-  segmentControl: {
+  pillsRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
-  segmentButton: {
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: 2,
+  },
+  headerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    gap: 8,
     borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
   },
-  segmentButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+  glassPill: {
+    backgroundColor: 'rgba(255,255,255,0.66)',
+    ...(Platform.OS === 'web'
+      ? { backdropFilter: 'blur(8px)' } as any
+      : {}),
+  },
+  pillText: { fontSize: 12 },
+  pillValue: { fontSize: 12, fontWeight: '700' },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  avatarWrap: {
+    position: 'absolute',
+    alignSelf: 'flex-end',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 28,
+    padding: 2,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: spacing.lg,
-    justifyContent: 'flex-start',
+    marginTop: spacing.lg,
   },
   statCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     padding: spacing.md,
     marginBottom: spacing.md,
-    marginRight: spacing.md,
+  },
+  cardLightShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 2,
+  },
+  cardDarkShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   statIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginRight: spacing.md,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 14,
+    marginBottom: 2,
   },
   section: {
+    marginTop: spacing.lg,
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     marginBottom: spacing.md,
   },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  actionsList: {
+    gap: spacing.sm,
   },
   actionCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     padding: spacing.md,
-    marginBottom: spacing.md,
-    marginRight: spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
   },
   actionIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginRight: spacing.md,
   },
   actionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  activityCard: {
-    borderRadius: 12,
-    padding: spacing.lg,
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
   },
 });
 

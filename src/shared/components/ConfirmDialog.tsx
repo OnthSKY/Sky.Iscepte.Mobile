@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import Modal from './Modal';
 import Button from './Button';
 import spacing from '../../core/constants/spacing';
-import colors from '../../core/constants/colors';
+import { useTheme } from '../../core/contexts/ThemeContext';
 
 type Props = {
   visible: boolean;
@@ -24,6 +24,7 @@ export default function ConfirmDialog({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
 }: Props) {
+  const { colors } = useTheme();
   return (
     <Modal visible={visible} onRequestClose={onCancel}>
       <View style={{ gap: spacing.md }}>

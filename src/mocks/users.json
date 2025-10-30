@@ -1,18 +1,33 @@
 [
   {
     "id": 1,
-    "name": "Ahmet Usta",
-    "role": "employee",
-    "package": "free",
+    "name": "System Admin",
+    "role": "admin",
+    "package": "gold",
+    "customPermissions": {}
+  },
+  {
+    "id": 2,
+    "name": "Dükkan Sahibi - Premium",
+    "role": "owner",
+    "package": "gold",
     "customPermissions": {
+      "employees": { "actions": ["create", "edit"], "notifications": [] },
       "sales": { "actions": ["edit"], "notifications": ["lowStock"] }
     }
   },
   {
-    "id": 2,
-    "name": "Mehmet Yılmaz",
-    "role": "admin",
-    "package": "gold",
+    "id": 3,
+    "name": "Dükkan Çalışanı",
+    "role": "staff",
+    "package": "premium",
+    "customPermissions": {}
+  },
+  {
+    "id": 4,
+    "name": "Dükkan Sahibi - Free",
+    "role": "owner",
+    "package": "free",
     "customPermissions": {}
   }
 ]

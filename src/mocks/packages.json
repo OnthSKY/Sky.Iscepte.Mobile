@@ -5,11 +5,11 @@
   },
   {
     "id": "premium",
-    "allowedModules": ["sales", "customers", "expenses"]
+    "allowedModules": ["sales", "customers", "expenses", "employees"]
   },
   {
     "id": "gold",
-    "allowedModules": ["sales", "customers", "expenses", "reports"]
+    "allowedModules": ["sales", "customers", "expenses", "reports", "employees"]
   }
 ]
 

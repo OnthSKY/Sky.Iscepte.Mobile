@@ -6,7 +6,8 @@ import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Input from '../../../shared/components/Input';
 import Select from '../../../shared/components/Select';
-import colors from '../../../core/constants/colors';
+import DynamicForm, { DynamicField } from '../../../shared/components/DynamicForm';
+import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
 export default function SalesCreateScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const { t: tSales } = useTranslation('sales');
+  const { colors } = useTheme();
 
   const [formData, setFormData] = useState({
     productName: '',
@@ -35,98 +37,37 @@ export default function SalesCreateScreen({ navigation }: Props) {
     navigation.goBack();
   };
 
+  const renderFooter = () => (
+    <View style={{ flexDirection: 'row', gap: spacing.md }}>
+      <Button
+        title={t('cancel')}
+        onPress={handleCancel}
+        style={{ flex: 1, backgroundColor: colors.muted }}
+      />
+      <Button title={t('save')} onPress={handleSave} style={{ flex: 1 }} />
+    </View>
+  );
+
   return (
-    <ScreenLayout>
+    <ScreenLayout title={tSales('new_sale')} showBackButton footer={renderFooter()}>
       <ScrollView>
-        <View style={{ gap: spacing.md }}>
-          <Text style={{ fontSize: 24, fontWeight: '600' }}>{tSales('new_sale')}</Text>
-
+        <View style={{ paddingBottom: spacing.lg }}>
           <Card>
-            <View style={{ gap: spacing.md }}>
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tSales('product_name')}
-                </Text>
-                <Input
-                  value={formData.productName}
-                  onChangeText={(text) => setFormData({ ...formData, productName: text })}
-                  placeholder={tSales('product_name')}
-                />
-              </View>
-
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tSales('category')}
-                </Text>
-                <Input
-                  value={formData.category}
-                  onChangeText={(text) => setFormData({ ...formData, category: text })}
-                  placeholder={tSales('category')}
-                />
-              </View>
-
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tSales('customer')}
-                </Text>
-                <Input
-                  value={formData.customer}
-                  onChangeText={(text) => setFormData({ ...formData, customer: text })}
-                  placeholder={tSales('customer')}
-                />
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: spacing.md }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                    {tSales('price')}
-                  </Text>
-                  <Input
-                    value={formData.price}
-                    onChangeText={(text) => setFormData({ ...formData, price: text })}
-                    placeholder={tSales('price')}
-                    keyboardType="numeric"
-                  />
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                    {tSales('quantity')}
-                  </Text>
-                  <Input
-                    value={formData.quantity}
-                    onChangeText={(text) => setFormData({ ...formData, quantity: text })}
-                    placeholder={tSales('quantity')}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tSales('payment_method')}
-                </Text>
-                <Input
-                  value={formData.paymentMethod}
-                  onChangeText={(text) => setFormData({ ...formData, paymentMethod: text })}
-                  placeholder={tSales('payment_method')}
-                />
-              </View>
-            </View>
+            <DynamicForm
+              namespace="sales"
+              columns={2}
+              fields={[
+                { name: 'productName', labelKey: 'product_name', type: 'text', required: true },
+                { name: 'category', labelKey: 'category', type: 'text' },
+                { name: 'customer', labelKey: 'customer', type: 'text' },
+                { name: 'price', labelKey: 'price', type: 'number' },
+                { name: 'quantity', labelKey: 'quantity', type: 'number' },
+                { name: 'paymentMethod', labelKey: 'payment_method', type: 'text' },
+              ] as DynamicField[]}
+              values={formData}
+              onChange={(v) => setFormData(v)}
+            />
           </Card>
-
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <Button
-              title={t('cancel')}
-              onPress={handleCancel}
-              style={{ flex: 1, backgroundColor: colors.muted }}
-            />
-            <Button
-              title={t('save')}
-              onPress={handleSave}
-              style={{ flex: 1 }}
-            />
-          </View>
         </View>
       </ScrollView>
     </ScreenLayout>

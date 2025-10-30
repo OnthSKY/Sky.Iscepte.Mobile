@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ScreenLayout from '../shared/layouts/ScreenLayout';
 import Card from '../shared/components/Card';
 import EmptyState from '../shared/components/EmptyState';
-import colors from '../core/constants/colors';
+import { useTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
 
 type Props = {
@@ -13,6 +13,7 @@ type Props = {
 
 export default function NotificationsScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
 
   return (
     <ScreenLayout>

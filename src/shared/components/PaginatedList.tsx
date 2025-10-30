@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, ListRenderItem, RefreshControl, View } from 'react-native';
-import colors from '../../core/constants/colors';
+import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 
 export interface PaginationResult<T> {
@@ -22,6 +22,7 @@ type Props<T, Q = void> = {
 };
 
 export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetchPage, renderItem, keyExtractor, ListHeaderComponent, ListEmptyComponent, initialSkeletonCount = 6 }: Props<T, Q>) {
+  const { colors } = useTheme();
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -68,7 +69,7 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
           ? (
             <View style={{ padding: spacing.lg, gap: spacing.md }}>
               {Array.from({ length: initialSkeletonCount }).map((_, i) => (
-                <View key={i} style={{ height: 60, borderRadius: 12, backgroundColor: '#F3F4F6' }} />
+                <View key={i} style={{ height: 60, borderRadius: 12, backgroundColor: colors.page }} />
               ))}
             </View>
           )

@@ -2,16 +2,30 @@
   {
     "id": "admin",
     "permissions": {
-      "sales": { "actions": ["create", "edit", "delete"], "fields": ["category", "price"], "notifications": ["dailyReport"] },
-      "expenses": { "actions": ["create"], "fields": ["expenseType", "amount"], "notifications": [] },
+      "sales": { "actions": ["view", "create", "edit", "delete"], "fields": ["category", "price"], "notifications": ["dailyReport"] },
+      "customers": { "actions": ["view", "create", "edit", "delete"], "fields": ["group", "phone"], "notifications": [] },
+      "expenses": { "actions": ["view", "create", "edit", "delete"], "fields": ["expenseType", "amount"], "notifications": [] },
+      "employees": { "actions": ["view", "create", "edit", "delete"], "fields": ["role"], "notifications": [] },
       "reports": { "actions": ["view"], "fields": ["dateRange"], "notifications": [] }
     }
   },
   {
-    "id": "employee",
+    "id": "owner",
     "permissions": {
-      "sales": { "actions": ["create"], "fields": ["category", "price"], "notifications": [] },
+      "sales": { "actions": ["view", "create", "edit"], "fields": ["category", "price"], "notifications": ["dailyReport"] },
+      "customers": { "actions": ["view", "create", "edit"], "fields": ["group", "phone"], "notifications": [] },
+      "expenses": { "actions": ["view", "create", "edit"], "fields": ["expenseType", "amount"], "notifications": [] },
+      "employees": { "actions": ["view", "create", "edit"], "fields": ["role"], "notifications": [] },
+      "reports": { "actions": ["view"], "fields": ["dateRange"], "notifications": [] }
+    }
+  },
+  {
+    "id": "staff",
+    "permissions": {
+      "sales": { "actions": ["view", "create"], "fields": ["category", "price"], "notifications": [] },
+      "customers": { "actions": ["view"], "fields": ["group"], "notifications": [] },
       "expenses": { "actions": [], "fields": [], "notifications": [] },
+      "employees": { "actions": [], "fields": [], "notifications": [] },
       "reports": { "actions": ["view"], "fields": [], "notifications": [] }
     }
   }

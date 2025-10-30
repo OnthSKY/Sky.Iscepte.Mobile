@@ -6,7 +6,13 @@
   "date": "Tarih",
   "new_expense": "Yeni Gider",
   "edit_expense": "Gider Düzenle",
-  "payment_date": "Ödeme Tarihi"
+  "payment_date": "Ödeme Tarihi",
+  "new_expense_type": "Yeni Gider Türü",
+  "edit_expense_type": "Gider Türü Düzenle",
+  "expense_type_name": "Gider Türü Adı",
+  "expense_type_name_placeholder": "Gider türü adını girin",
+  "expense_types": "Gider Türleri",
+  "manage_expense_types": "Türleri Yönet"
 }
 
 

@@ -1,13 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { useAppStore } from '../../store/useAppStore';
+import { useTheme } from '../../core/contexts/ThemeContext';
 
 export default function ThemeGradientToggle() {
-  const themePreference = useAppStore((s) => s.themePreference);
-  const setTheme = useAppStore((s) => s.setTheme);
-
-  const isDark = useMemo(() => themePreference === 'dark', [themePreference]);
+  const { activeTheme, theme, setTheme } = useTheme();
+  const isDark = useMemo(() => (theme === 'system' ? activeTheme === 'dark' : theme === 'dark'), [theme, activeTheme]);
 
   return (
     <TouchableOpacity

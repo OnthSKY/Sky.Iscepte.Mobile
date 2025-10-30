@@ -17,6 +17,7 @@ const CustomersListScreen = React.lazy(() => import('../../modules/customers/scr
 const ExpensesListScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseListScreen'));
 const ReportsScreen = React.lazy(() => import('../../modules/reports/screens/ReportsScreen'));
 const EmployeesScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeListScreen'));
+const ProductsListScreen = React.lazy(() => import('../../modules/products/screens/ProductListScreen'));
 
 // Detail screens
 const SalesDetailScreen = React.lazy(() => import('../../modules/sales/screens/SalesDetailScreen'));
@@ -24,6 +25,7 @@ const CustomerDetailScreen = React.lazy(() => import('../../modules/customers/sc
 const ExpenseDetailScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseDetailScreen'));
 const EmployeeDetailScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeDetailScreen'));
 const ReportDetailScreen = React.lazy(() => import('../../modules/reports/screens/ReportDetailScreen'));
+const ProductDetailScreen = React.lazy(() => import('../../modules/products/screens/ProductDetailScreen'));
 
 // Create/Edit screens
 const SalesCreateScreen = React.lazy(() => import('../../modules/sales/screens/SalesCreateScreen'));
@@ -34,6 +36,11 @@ const ExpenseCreateScreen = React.lazy(() => import('../../modules/expenses/scre
 const ExpenseEditScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseEditScreen'));
 const EmployeeCreateScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeCreateScreen'));
 const EmployeeEditScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeEditScreen'));
+const ExpenseTypeListScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseTypeListScreen'));
+const ExpenseTypeCreateScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseTypeCreateScreen'));
+const ExpenseTypeEditScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseTypeEditScreen'));
+const ProductCreateScreen = React.lazy(() => import('../../modules/products/screens/ProductCreateScreen'));
+const ProductEditScreen = React.lazy(() => import('../../modules/products/screens/ProductEditScreen'));
 
 // Other screens
 const ProfileScreen = React.lazy(() => import('../../screens/ProfileScreen'));
@@ -48,6 +55,8 @@ export const allRoutes: RouteConfig[] = [
   { name: 'Expenses', module: 'expenses', component: ExpensesListScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expenses') } },
   { name: 'Reports', module: 'reports', component: ReportsScreen, requiredPermission: 'reports:view', options: { title: i18n.t('reports:reports') } },
   { name: 'Employees', module: 'employees', component: EmployeesScreen, requiredPermission: 'employees:view', options: { title: i18n.t('settings:employees', { defaultValue: 'Employees' }) } },
+  { name: 'ExpenseTypes', module: 'expenses', component: ExpenseTypeListScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expense_types') } },
+  { name: 'Products', module: 'products', component: ProductsListScreen, requiredPermission: 'products:view', options: { title: i18n.t('products:products', { defaultValue: 'Products' }) } },
   
   // Detail screens
   { name: 'SalesDetail', module: 'sales', component: SalesDetailScreen, requiredPermission: 'sales:view', options: { title: i18n.t('sales:sale_details') } },
@@ -55,22 +64,27 @@ export const allRoutes: RouteConfig[] = [
   { name: 'ExpenseDetail', module: 'expenses', component: ExpenseDetailScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expense_details') } },
   { name: 'EmployeeDetail', module: 'employees', component: EmployeeDetailScreen, requiredPermission: 'employees:view', options: { title: i18n.t('settings:employee_details') } },
   { name: 'ReportDetail', module: 'reports', component: ReportDetailScreen, requiredPermission: 'reports:view', options: { title: i18n.t('reports:report_details') } },
+  { name: 'ProductDetail', module: 'products', component: ProductDetailScreen, requiredPermission: 'products:view', options: { title: i18n.t('products:product_details', { defaultValue: 'Product details' }) } },
   
   // Create screens
   { name: 'SalesCreate', module: 'sales', component: SalesCreateScreen, requiredPermission: 'sales:create', options: { title: i18n.t('sales:new_sale') } },
   { name: 'CustomerCreate', module: 'customers', component: CustomerCreateScreen, requiredPermission: 'customers:create', options: { title: i18n.t('customers:new_customer') } },
   { name: 'ExpenseCreate', module: 'expenses', component: ExpenseCreateScreen, requiredPermission: 'expenses:create', options: { title: i18n.t('expenses:new_expense') } },
   { name: 'EmployeeCreate', module: 'employees', component: EmployeeCreateScreen, requiredPermission: 'employees:create', options: { title: i18n.t('settings:new_employee') } },
+  { name: 'ExpenseTypeCreate', module: 'expenses', component: ExpenseTypeCreateScreen, requiredPermission: 'expenses:create', options: { title: i18n.t('expenses:new_expense_type') } },
+  { name: 'ProductCreate', module: 'products', component: ProductCreateScreen, requiredPermission: 'products:create', options: { title: i18n.t('products:new_product', { defaultValue: 'New product' }) } },
   
   // Edit screens
   { name: 'SalesEdit', module: 'sales', component: SalesEditScreen, requiredPermission: 'sales:edit', options: { title: i18n.t('sales:edit_sale') } },
   { name: 'CustomerEdit', module: 'customers', component: CustomerEditScreen, requiredPermission: 'customers:edit', options: { title: i18n.t('customers:edit_customer') } },
   { name: 'ExpenseEdit', module: 'expenses', component: ExpenseEditScreen, requiredPermission: 'expenses:edit', options: { title: i18n.t('expenses:edit_expense') } },
   { name: 'EmployeeEdit', module: 'employees', component: EmployeeEditScreen, requiredPermission: 'employees:edit', options: { title: i18n.t('settings:edit_employee') } },
+  { name: 'ExpenseTypeEdit', module: 'expenses', component: ExpenseTypeEditScreen, requiredPermission: 'expenses:edit', options: { title: i18n.t('expenses:edit_expense_type') } },
+  { name: 'ProductEdit', module: 'products', component: ProductEditScreen, requiredPermission: 'products:edit', options: { title: i18n.t('products:edit_product', { defaultValue: 'Edit product' }) } },
   
   // Other screens
   { name: 'Profile', module: 'profile', component: ProfileScreen, options: { title: i18n.t('profile') } },
-  { name: 'Settings', module: 'settings', component: SettingsScreen, options: { title: i18n.t('settings') } },
+  { name: 'Settings', module: 'settings', component: SettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings') } },
   { name: 'Notifications', module: 'notifications', component: NotificationsScreen, options: { title: i18n.t('notifications') } },
 ];
 

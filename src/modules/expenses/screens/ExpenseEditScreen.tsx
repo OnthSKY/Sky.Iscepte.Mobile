@@ -5,23 +5,20 @@ import ScreenLayout from '../../../shared/layouts/ScreenLayout';
 import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import Input from '../../../shared/components/Input';
-import colors from '../../../core/constants/colors';
+import DynamicForm, { DynamicField } from '../../../shared/components/DynamicForm';
+import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 
 type Props = {
-  route: {
-    params: {
-      id: string;
-    };
-  };
   navigation: any;
+  route: any;
 };
 
-export default function ExpenseEditScreen({ route, navigation }: Props) {
+export default function ExpenseEditScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const { t: tExpenses } = useTranslation('expenses');
-
-  const { id } = route.params;
+  const { colors } = useTheme();
+  const { expense } = route.params;
 
   const [formData, setFormData] = useState({
     type: '',
@@ -40,89 +37,36 @@ export default function ExpenseEditScreen({ route, navigation }: Props) {
     navigation.goBack();
   };
 
+  const renderFooter = () => (
+    <View style={{ flexDirection: 'row', gap: spacing.md }}>
+      <Button
+        title={t('cancel')}
+        onPress={handleCancel}
+        style={{ flex: 1, backgroundColor: colors.muted }}
+      />
+      <Button title={t('save')} onPress={handleSave} style={{ flex: 1 }} />
+    </View>
+  );
+
   return (
-    <ScreenLayout>
+    <ScreenLayout title={tExpenses('edit_expense')} showBackButton footer={renderFooter()}>
       <ScrollView>
-        <View style={{ gap: spacing.md }}>
-          <Text style={{ fontSize: 24, fontWeight: '600' }}>
-            {tExpenses('edit_expense')}
-          </Text>
-
+        <View style={{ gap: spacing.md, paddingBottom: spacing.lg }}>
           <Card>
-            <View style={{ gap: spacing.md }}>
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tExpenses('type')}
-                </Text>
-                <Input
-                  value={formData.type}
-                  onChangeText={(text) => setFormData({ ...formData, type: text })}
-                  placeholder={tExpenses('type')}
-                />
-              </View>
-
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tExpenses('amount')}
-                </Text>
-                <Input
-                  value={formData.amount}
-                  onChangeText={(text) => setFormData({ ...formData, amount: text })}
-                  placeholder={tExpenses('amount')}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tExpenses('date')}
-                </Text>
-                <Input
-                  value={formData.date}
-                  onChangeText={(text) => setFormData({ ...formData, date: text })}
-                  placeholder={tExpenses('date')}
-                />
-              </View>
-
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tExpenses('payment_date')}
-                </Text>
-                <Input
-                  value={formData.paymentDate}
-                  onChangeText={(text) => setFormData({ ...formData, paymentDate: text })}
-                  placeholder={tExpenses('payment_date')}
-                />
-              </View>
-
-              <View>
-                <Text style={{ marginBottom: spacing.sm, fontWeight: '500' }}>
-                  {tExpenses('description')}
-                </Text>
-                <Input
-                  value={formData.description}
-                  onChangeText={(text) => setFormData({ ...formData, description: text })}
-                  placeholder={tExpenses('description')}
-                  multiline
-                  numberOfLines={4}
-                  style={{ textAlignVertical: 'top' }}
-                />
-              </View>
-            </View>
+            <DynamicForm
+              namespace="expenses"
+              columns={2}
+              fields={[
+                { name: 'type', labelKey: 'type', type: 'text', required: true },
+                { name: 'amount', labelKey: 'amount', type: 'number', required: true },
+                { name: 'date', labelKey: 'date', type: 'date', required: true },
+                { name: 'paymentDate', labelKey: 'payment_date', type: 'date' },
+                { name: 'description', labelKey: 'description', type: 'textarea' },
+              ] as DynamicField[]}
+              values={formData}
+              onChange={(v) => setFormData(v)}
+            />
           </Card>
-
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <Button
-              title={t('cancel')}
-              onPress={handleCancel}
-              style={{ flex: 1, backgroundColor: colors.muted }}
-            />
-            <Button
-              title={t('save')}
-              onPress={handleSave}
-              style={{ flex: 1 }}
-            />
-          </View>
         </View>
       </ScrollView>
     </ScreenLayout>

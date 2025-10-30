@@ -43,7 +43,20 @@
     "required": "Zorunlu alan",
     "min_length": "En az {{min}} karakter olmalı",
     "email": "Geçersiz e-posta"
-  }
+  },
+  "are_you_sure": "Emin misiniz?",
+  "this_action_cannot_be_undone": "Bu işlem geri alınamaz.",
+  "all_changes_will_be_lost": "Kaydedilmemiş tüm değişiklikler kaybolacak.",
+  "yes_delete": "Evet, sil",
+  "no_cancel": "Hayır, iptal et",
+  "logout_confirm_title": "Çıkış Yap",
+  "logout_confirm_message": "Çıkış yapmak istediğinizden emin misiniz?",
+  "buy_now": "Satın al",
+  "upgrade_needed": "Yükseltme gerekli",
+  "upgrade_message": "{{feature}} özelliğini kullanmak için bir paket yükseltmesi yapmanız gerekiyor.",
+  "add_quick_action": "Hızlı işlem ekle",
+  "quick_actions": "Hızlı İşlemler",
+  "open": "Aç"
 }
 
 

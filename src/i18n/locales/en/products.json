@@ -1,0 +1,19 @@
+{
+  "products": "Products",
+  "new_product": "New product",
+  "edit_product": "Edit product",
+  "product_details": "Product details",
+  "total_products": "Total products",
+  "total_categories": "Total categories",
+  "active_products": "Active products",
+  "uncategorized": "No category",
+  "price": "Price",
+  "stock": "Stock",
+  "cannot_delete_title": "Cannot delete",
+  "cannot_delete_message": "You cannot delete a product with sales.",
+  "create_form_placeholder": "Product creation form will be here.",
+  "edit_form_placeholder": "Product edit form will be here.",
+  "details_placeholder": "Product details content will be here."
+}
+
+

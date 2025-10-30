@@ -6,7 +6,7 @@ import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import { usePermissions } from '../../../core/hooks/usePermissions';
 import { useAppStore } from '../../../store/useAppStore';
-import colors from '../../../core/constants/colors';
+import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 
 type Props = {
@@ -24,6 +24,7 @@ export default function CustomerDetailScreen({ route, navigation }: Props) {
   const { t: tCustomers } = useTranslation('customers');
   const role = useAppStore((s) => s.role);
   const { can } = usePermissions(role);
+  const { colors } = useTheme();
 
   const { id, name } = route.params;
 
@@ -38,12 +39,37 @@ export default function CustomerDetailScreen({ route, navigation }: Props) {
     // Delete logic will be added
   };
 
-  return (
-    <ScreenLayout>
-      <ScrollView>
-        <View style={{ gap: spacing.md }}>
-          <Text style={{ fontSize: 24, fontWeight: '600' }}>{tCustomers('customer_details')}</Text>
+  const renderFooter = () => {
+    if (!canEdit && !canDelete) return null;
 
+    return (
+      <View style={{ flexDirection: 'row', gap: spacing.md }}>
+        {canEdit && (
+          <Button
+            title={t('edit')}
+            onPress={handleEdit}
+            style={{ flex: 1 }}
+          />
+        )}
+        {canDelete && (
+          <Button
+            title={t('delete')}
+            onPress={handleDelete}
+            style={{ flex: 1, backgroundColor: colors.error }}
+          />
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <ScreenLayout
+      title={name || tCustomers('customer_details')}
+      showBackButton
+      footer={renderFooter()}
+    >
+      <ScrollView>
+        <View style={{ gap: spacing.md, paddingBottom: spacing.lg }}>
           <Card>
             <View style={{ gap: spacing.sm }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -94,12 +120,12 @@ export default function CustomerDetailScreen({ route, navigation }: Props) {
           <Card>
             <View style={{ gap: spacing.sm }}>
               <Text style={{ fontSize: 18, fontWeight: '500' }}>{tCustomers('debt')}</Text>
-              <Text style={{ fontSize: 20, fontWeight: '600', color: '#ef4444' }}>0.00 ₺</Text>
+              <Text style={{ fontSize: 20, fontWeight: '600', color: colors.error }}>0.00 ₺</Text>
 
               <View style={{ height: 1, backgroundColor: colors.border }} />
 
               <Text style={{ fontSize: 18, fontWeight: '500' }}>{tCustomers('credit')}</Text>
-              <Text style={{ fontSize: 20, fontWeight: '600', color: '#10b981' }}>0.00 ₺</Text>
+              <Text style={{ fontSize: 20, fontWeight: '600', color: colors.success }}>0.00 ₺</Text>
             </View>
           </Card>
 
@@ -112,25 +138,6 @@ export default function CustomerDetailScreen({ route, navigation }: Props) {
               <Text style={{ color: colors.muted }}>{t('no_results')}</Text>
             </View>
           </Card>
-
-          {(canEdit || canDelete) && (
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              {canEdit && (
-                <Button
-                  title={t('edit')}
-                  onPress={handleEdit}
-                  style={{ flex: 1 }}
-                />
-              )}
-              {canDelete && (
-                <Button
-                  title={t('delete')}
-                  onPress={handleDelete}
-                  style={{ flex: 1, backgroundColor: '#ef4444' }}
-                />
-              )}
-            </View>
-          )}
         </View>
       </ScrollView>
     </ScreenLayout>

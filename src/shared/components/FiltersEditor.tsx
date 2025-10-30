@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TextInput, Text, TouchableOpacity } from 'react-native';
 import spacing from '../../core/constants/spacing';
-import colors from '../../core/constants/colors';
+import { useTheme } from '../../core/contexts/ThemeContext';
 
 type Props = {
   value?: Record<string, string>;
@@ -11,6 +11,7 @@ type Props = {
 };
 
 export default function FiltersEditor({ value, onChange, placeholderKey = 'Alan', placeholderValue = 'Değer' }: Props) {
+  const { colors } = useTheme();
   const [keyText, setKeyText] = React.useState('');
   const [valText, setValText] = React.useState('');
   const filters = React.useMemo(() => ({ ...(value || {}) }), [value]);

@@ -71,7 +71,7 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <LinearGradient
-      colors={isDark ? ['#0f2027', '#203a43', '#2c5364'] : ['#f6f9ff', '#e9efff', '#dde7ff']}
+      colors={colors.gradient as [string, string]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}

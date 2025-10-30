@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
-import colors from '../../core/constants/colors';
+import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 
 type Props = {
@@ -11,6 +11,8 @@ type Props = {
 
 export default function SearchBar({ value, onChangeText, placeholder = 'Ara...' }: Props) {
   const [focused, setFocused] = React.useState(false);
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
   return (
     <View style={styles.container}>
       <TextInput
@@ -29,7 +31,7 @@ export default function SearchBar({ value, onChangeText, placeholder = 'Ara...' 
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: { },
   input: {
     borderWidth: 1,

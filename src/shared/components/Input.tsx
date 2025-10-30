@@ -10,7 +10,7 @@ export default function Input(props: TextInputProps) {
   return (
     <TextInput
       placeholderTextColor={colors.muted}
-      style={[styles.input, focused && styles.inputFocused]}
+      style={[styles.input, focused && styles.inputFocused, props.multiline ? styles.multiline : null, props.style]}
       onFocus={(e) => {
         setFocused(true);
         props.onFocus?.(e);
@@ -28,13 +28,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    minHeight: 44,
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.text,
     backgroundColor: colors.surface,
   },
-  inputFocused: { borderColor: colors.primary },
+  inputFocused: { borderColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.08, shadowRadius: 6 },
+  multiline: { minHeight: 100 },
 });
 
 

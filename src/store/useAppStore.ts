@@ -9,7 +9,7 @@ type AppState = {
   isAuthenticated: boolean;
   themePreference: ThemePreference;
   language: 'tr' | 'en';
-  role: 'admin' | 'manager' | 'user' | 'guest';
+  role: 'admin' | 'owner' | 'staff' | 'guest';
   token: string | null;
   refreshToken: string | null;
   isLoading: boolean;
@@ -17,7 +17,7 @@ type AppState = {
   logout: () => void;
   setTheme: (pref: ThemePreference) => Promise<void>;
   setLanguage: (lng: 'tr' | 'en') => Promise<void>;
-  setRole: (role: 'admin' | 'manager' | 'user' | 'guest') => void;
+  setRole: (role: 'admin' | 'owner' | 'staff' | 'guest') => void;
   hydrate: () => Promise<void>;
   silentLogin: () => Promise<boolean>;
 };
@@ -31,19 +31,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   refreshToken: null,
   isLoading: true,
   async login(u: string, p: string) {
-    const ok = u === 'admin' && p === '1234';
+    const allowed = ['admin', 'owner', 'staff'];
+    const ok = allowed.includes(u) && p === '1234';
     if (ok) {
+      const role = u as any;
       const accessToken = 'mock-access-token';
       const refreshToken = 'mock-refresh-token';
       
-      // Store tokens in AsyncStorage
       await AsyncStorage.setItem('access_token', accessToken);
       await AsyncStorage.setItem('refresh_token', refreshToken);
-      await AsyncStorage.setItem('user_role', 'admin');
+      await AsyncStorage.setItem('user_role', role);
       
       set({ 
         isAuthenticated: true, 
-        role: 'admin', 
+        role, 
         token: accessToken,
         refreshToken: refreshToken 
       });
@@ -92,7 +93,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   async silentLogin() {
     const refreshToken = await AsyncStorage.getItem('refresh_token');
-    const storedRole = await AsyncStorage.getItem('user_role') as 'admin' | 'manager' | 'user' | 'guest';
+    const storedRole = await AsyncStorage.getItem('user_role') as 'admin' | 'owner' | 'staff' | 'guest';
     
     if (refreshToken) {
       try {

@@ -8,6 +8,7 @@ import { required, isEmail, minLength } from '../core/utils/validators';
 import ThemeGradientToggle from '../shared/components/ThemeGradientToggle';
 import { useAppStore } from '../store/useAppStore';
 import LanguagePicker from '../shared/components/LanguagePicker';
+import { useTheme } from '../core/contexts/ThemeContext';
 
 type Props = {
   navigation: any;
@@ -15,8 +16,8 @@ type Props = {
 
 export default function RegisterScreen({ navigation }: Props) {
   const { t } = useTranslation('register');
-  const themePreference = useAppStore(s => s.themePreference);
-  const isDark = themePreference === 'dark';
+  const { colors, activeTheme } = useTheme();
+  const isDark = activeTheme === 'dark';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -56,16 +57,16 @@ export default function RegisterScreen({ navigation }: Props) {
 
   return (
     <LinearGradient
-      colors={isDark ? ['#0f2027', '#203a43', '#2c5364'] : ['#f6f9ff', '#e9efff', '#dde7ff']}
+      colors={colors.gradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
       <ScrollView contentContainerStyle={{ padding: spacing.xl, flexGrow: 1, justifyContent: 'center' }}>
-        <Surface style={{ padding: spacing.xl, borderRadius: 16, elevation: 4, backgroundColor: 'rgba(255,255,255,0.95)' }}>
+        <Surface style={{ padding: spacing.xl, borderRadius: 16, elevation: 4, backgroundColor: colors.surface }}>
         <View style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-          <Text variant="headlineSmall" style={{ fontWeight: '700' }}>{t('title')}</Text>
-          <Text variant="bodyMedium" style={{ opacity: 0.7, marginTop: 4 }}>{t('subtitle')}</Text>
+          <Text variant="headlineSmall" style={{ fontWeight: '700', color: colors.text }}>{t('title')}</Text>
+          <Text variant="bodyMedium" style={{ color: colors.muted, marginTop: 4 }}>{t('subtitle')}</Text>
         </View>
 
         <View style={{ gap: spacing.md }}>
@@ -76,7 +77,7 @@ export default function RegisterScreen({ navigation }: Props) {
             mode="outlined"
             error={!!errors.name}
           />
-          {errors.name ? <Text style={{ color: '#b00020' }}>{errors.name}</Text> : null}
+          {errors.name ? <Text style={{ color: colors.error }}>{errors.name}</Text> : null}
 
           <TextInput
             label={t('email')}
@@ -87,7 +88,7 @@ export default function RegisterScreen({ navigation }: Props) {
             autoCapitalize="none"
             error={!!errors.email}
           />
-          {errors.email ? <Text style={{ color: '#b00020' }}>{errors.email}</Text> : null}
+          {errors.email ? <Text style={{ color: colors.error }}>{errors.email}</Text> : null}
 
           <TextInput
             label={t('phone')}
@@ -97,7 +98,7 @@ export default function RegisterScreen({ navigation }: Props) {
             keyboardType="phone-pad"
             error={!!errors.phone}
           />
-          {errors.phone ? <Text style={{ color: '#b00020' }}>{errors.phone}</Text> : null}
+          {errors.phone ? <Text style={{ color: colors.error }}>{errors.phone}</Text> : null}
 
           <TextInput
             label={t('password')}
@@ -118,7 +119,7 @@ export default function RegisterScreen({ navigation }: Props) {
             secureTextEntry
             error={!!errors.password}
           />
-          {errors.password ? <Text style={{ color: '#b00020' }}>{errors.password}</Text> : null}
+          {errors.password ? <Text style={{ color: colors.error }}>{errors.password}</Text> : null}
 
           <TextInput
             label={t('confirm_password')}
@@ -137,7 +138,7 @@ export default function RegisterScreen({ navigation }: Props) {
             secureTextEntry
             error={!!errors.confirmPassword}
           />
-          {errors.confirmPassword ? <Text style={{ color: '#b00020' }}>{errors.confirmPassword}</Text> : null}
+          {errors.confirmPassword ? <Text style={{ color: colors.error }}>{errors.confirmPassword}</Text> : null}
         </View>
 
         <Button mode="contained" onPress={handleRegister} loading={submitting} disabled={submitting} style={{ marginTop: spacing.lg }}>
@@ -145,8 +146,8 @@ export default function RegisterScreen({ navigation }: Props) {
         </Button>
 
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md }}>
-          <Text style={{ opacity: 0.7, color: isDark ? '#cfd8dc' : undefined }}>{t('have_account')}</Text>
-          <Text style={{ color: '#2F6FED', fontWeight: '600' }} onPress={handleLogin}>
+          <Text style={{ color: colors.muted }}>{t('have_account')}</Text>
+          <Text style={{ color: colors.primary, fontWeight: '600' }} onPress={handleLogin}>
             {t('login')}
           </Text>
         </View>

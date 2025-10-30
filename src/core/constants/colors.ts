@@ -1,31 +1,43 @@
 export const lightColors = {
+  // Updated per latest spec
   primary: '#2563EB',
   primaryDark: '#1E40AF',
-  secondary: '#10B981',
-  background: '#FAFAFA',
+  secondary: '#00A868',
+  accent: '#00A868',
+  info: '#2563EB',
+  profit: '#8B5CF6',
+  background: '#F8FAFC',
   surface: '#FFFFFF',
-  page: '#F3F4F6',
-  text: '#111827',
-  muted: '#6B7280',
-  border: '#E5E7EB',
-  success: '#16A34A',
+  page: '#F8FAFC',
+  card: '#F1F5F9',
+  text: '#0F172A',
+  muted: '#475569', // textSecondary
+  border: '#E2E8F0',
+  success: '#00A868',
   error: '#DC2626',
-  warning: '#D97706',
+  warning: '#F59E0B',
+  gradient: ['#2563EB', '#1E40AF'], // header gradient mapping
 };
 
 export const darkColors = {
-  primary: '#3B82F6',
-  primaryDark: '#2563EB',
-  secondary: '#10B981',
-  background: '#111827',
-  surface: '#1F2937',
-  page: '#111827',
-  text: '#F9FAFB',
-  muted: '#9CA3AF',
-  border: '#374151',
-  success: '#22C55E',
-  error: '#EF4444',
-  warning: '#F59E0B',
+  // Updated per latest spec
+  primary: '#2D81FF',
+  primaryDark: '#1E3A8A',
+  secondary: '#00C47A',
+  accent: '#00C47A',
+  info: '#3D8BFF',
+  profit: '#8B5CF6',
+  background: '#0D1117',
+  surface: '#161B22',
+  page: '#0D1117',
+  card: '#1E242C',
+  text: '#E6EDF3',
+  muted: '#8B97A7',
+  border: '#2C333D',
+  success: '#00B686',
+  error: '#E53935',
+  warning: '#FFB020',
+  gradient: ['#1E3A8A', '#0F172A'], // header gradient mapping
 };
 
 const colors = lightColors;

@@ -1,0 +1,19 @@
+{
+  "products": "Ürünler",
+  "new_product": "Yeni ürün",
+  "edit_product": "Ürünü düzenle",
+  "product_details": "Ürün detayları",
+  "total_products": "Toplam ürün",
+  "total_categories": "Toplam kategori",
+  "active_products": "Aktif ürün",
+  "uncategorized": "Kategori yok",
+  "price": "Fiyat",
+  "stock": "Stok",
+  "cannot_delete_title": "Silinemez",
+  "cannot_delete_message": "Satışı olan ürünü silemezsiniz.",
+  "create_form_placeholder": "Ürün oluşturma formu buraya gelecek.",
+  "edit_form_placeholder": "Ürün düzenleme formu buraya gelecek.",
+  "details_placeholder": "Ürün detay içeriği buraya gelecek."
+}
+
+

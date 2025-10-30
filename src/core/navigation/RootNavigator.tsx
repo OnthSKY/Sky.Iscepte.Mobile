@@ -8,6 +8,9 @@ import { useNavigation } from '@react-navigation/native';
 import FullScreenMenu from '../../shared/components/FullScreenMenu';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
+import AdminDashboardScreen from '../../screens/AdminDashboardScreen';
+import OwnerDashboardScreen from '../../screens/OwnerDashboardScreen';
+import StaffDashboardScreen from '../../screens/StaffDashboardScreen';
 
 type Props = {
   role: Role;
@@ -36,14 +39,23 @@ export default function RootNavigator({ role }: Props) {
           <CustomTabBar {...tabProps} onOpenMenu={() => setMenuVisible(true)} />
         )}
         >
-          {allRoutes.map((r) => (
-            <Tab.Screen 
-              key={r.name} 
-              name={r.name} 
-              component={r.component as any} 
-              options={r.options} 
-            />
-          ))}
+          {allRoutes.map((r) => {
+            const isDashboard = r.name === 'Dashboard';
+            const dashboardComponent = role === 'admin'
+              ? AdminDashboardScreen
+              : role === 'owner'
+                ? OwnerDashboardScreen
+                : StaffDashboardScreen;
+            const ComponentToRender = (isDashboard ? dashboardComponent : r.component) as any;
+            return (
+              <Tab.Screen 
+                key={r.name}
+                name={r.name}
+                component={ComponentToRender}
+                options={r.options}
+              />
+            );
+          })}
         </Tab.Navigator>
       </Suspense>
       <FullScreenMenu
@@ -99,6 +111,8 @@ function getIconName(routeName: string): string {
       return 'pie-chart-outline';
     case 'Employees':
       return 'person-outline';
+    case 'Profile':
+      return 'person-circle-outline';
     default:
       return 'apps-outline';
   }
@@ -112,7 +126,7 @@ function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenM
   const shortcuts = [
     { key: 'Dashboard', label: t('dashboard') || 'Dashboard', icon: 'home-outline' },
     { key: 'MENU', label: t('menu', { defaultValue: 'Menu' }) || 'Menu', icon: 'apps-outline' },
-    { key: 'Reports', label: t('reports') || 'Reports', icon: 'pie-chart-outline' },
+    { key: 'Profile', label: t('profile') || 'Profile', icon: 'person-circle-outline' },
   ];
 
   const activeName = state.routeNames[state.index];

@@ -1,15 +1,15 @@
 export type Permission = string;
 
-export type Role = 'admin' | 'manager' | 'user' | 'guest';
+export type Role = 'admin' | 'owner' | 'staff' | 'guest';
 
 export interface ModulePermissionConfig {
   module: string;
   permissions: Permission[];
 }
 
-export interface RolePermissionsMap {
-  [role in Role]?: Permission[];
-}
+export type RolePermissionsMap = {
+  [role in Role]: Permission[];
+};
 
 // Base permission registry – extend per module
 export const permissionsRegistry: ModulePermissionConfig[] = [
@@ -18,12 +18,28 @@ export const permissionsRegistry: ModulePermissionConfig[] = [
   { module: 'expenses', permissions: ['expenses:view', 'expenses:create', 'expenses:edit'] },
   { module: 'reports', permissions: ['reports:view'] },
   { module: 'employees', permissions: ['employees:view', 'employees:create', 'employees:edit'] },
+  { module: 'products', permissions: ['products:view', 'products:create', 'products:edit'] },
+  { module: 'settings', permissions: ['settings:view', 'settings:manage'] },
 ];
 
 export const rolePermissions: RolePermissionsMap = {
   admin: permissionsRegistry.flatMap((m) => m.permissions),
-  manager: ['sales:view', 'sales:create', 'customers:view', 'customers:create', 'expenses:view', 'expenses:create', 'reports:view'],
-  user: ['sales:view', 'customers:view', 'expenses:view'],
+  owner: [
+    'sales:view', 'sales:create', 'sales:edit',
+    'customers:view', 'customers:create', 'customers:edit',
+    'expenses:view', 'expenses:create', 'expenses:edit',
+    'employees:view', 'employees:create', 'employees:edit',
+    'reports:view',
+    'products:view', 'products:create', 'products:edit',
+    'settings:view', 'settings:manage',
+  ],
+  staff: [
+    'sales:view', 'sales:create',
+    'customers:view', 'customers:create',
+    'expenses:view', 'expenses:create',
+    'reports:view',
+    'products:view',
+  ],
   guest: [],
 };
 

@@ -43,7 +43,20 @@
     "required": "This field is required",
     "min_length": "Must be at least {{min}} characters",
     "email": "Invalid email address"
-  }
+  },
+  "are_you_sure": "Are you sure?",
+  "this_action_cannot_be_undone": "This action cannot be undone.",
+  "all_changes_will_be_lost": "All unsaved changes will be lost.",
+  "yes_delete": "Yes, delete",
+  "no_cancel": "No, cancel",
+  "logout_confirm_title": "Logout",
+  "logout_confirm_message": "Are you sure you want to log out?",
+  "buy_now": "Buy now",
+  "upgrade_needed": "Upgrade required",
+  "upgrade_message": "You need to upgrade your package to use the {{feature}} feature.",
+  "add_quick_action": "Add quick action",
+  "quick_actions": "Quick Actions",
+  "open": "Open"
 }
 
 

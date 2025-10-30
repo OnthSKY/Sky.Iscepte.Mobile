@@ -52,32 +52,29 @@ function handleAuthRequest<T>(method: HttpMethod, url: string, body?: any): Prom
       if (url === '/auth/login' && method === 'POST') {
         const { username, password } = body || {};
         
-        // Simple mock authentication
-        if (username === 'admin' && password === '1234') {
-          const response = {
-            accessToken: 'mock-access-token-' + Date.now(),
-            refreshToken: 'mock-refresh-token-' + Date.now(),
-            user: {
-              id: 1,
-              username: 'admin',
-              role: 'admin',
-            },
+        // Simple mock authentication for demo roles
+        if (password === '1234') {
+          const map: Record<string, { id: number; role: string }> = {
+            admin: { id: 1, role: 'admin' },
+            owner: { id: 2, role: 'owner' },
+            staff: { id: 3, role: 'staff' },
           };
-          resolve(response as T);
-        } else if (username === 'user' && password === '1234') {
-          const response = {
-            accessToken: 'mock-access-token-' + Date.now(),
-            refreshToken: 'mock-refresh-token-' + Date.now(),
-            user: {
-              id: 2,
-              username: 'user',
-              role: 'user',
-            },
-          };
-          resolve(response as T);
-        } else {
-          reject({ status: 401, message: 'Invalid credentials' });
+          const found = map[String(username).toLowerCase()];
+          if (found) {
+            const response = {
+              accessToken: 'mock-access-token-' + Date.now(),
+              refreshToken: 'mock-refresh-token-' + Date.now(),
+              user: {
+                id: found.id,
+                username,
+                role: found.role,
+              },
+            };
+            resolve(response as T);
+            return;
+          }
         }
+        reject({ status: 401, message: 'Invalid credentials' });
       } else if (url === '/auth/refresh' && method === 'POST') {
         const { refreshToken } = body || {};
         

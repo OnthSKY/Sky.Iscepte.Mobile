@@ -6,7 +6,7 @@ import Card from '../../../shared/components/Card';
 import Button from '../../../shared/components/Button';
 import { usePermissions } from '../../../core/hooks/usePermissions';
 import { useAppStore } from '../../../store/useAppStore';
-import colors from '../../../core/constants/colors';
+import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 
 type Props = {
@@ -25,6 +25,7 @@ export default function ExpenseDetailScreen({ route, navigation }: Props) {
   const { t: tExpenses } = useTranslation('expenses');
   const role = useAppStore((s) => s.role);
   const { can } = usePermissions(role);
+  const { colors } = useTheme();
 
   const { id, title, amount } = route.params;
 
@@ -105,7 +106,7 @@ export default function ExpenseDetailScreen({ route, navigation }: Props) {
                 <Button
                   title={t('delete')}
                   onPress={handleDelete}
-                  style={{ flex: 1, backgroundColor: '#ef4444' }}
+                  style={{ flex: 1, backgroundColor: colors.error }}
                 />
               )}
             </View>

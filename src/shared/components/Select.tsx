@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
-import colors from '../../core/constants/colors';
+import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 import Modal from './Modal';
 
@@ -14,13 +14,15 @@ type Props = {
 };
 
 export default function Select({ value, options, placeholder = 'Seçiniz', onChange }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const selected = options.find((o) => o.value === value)?.label || placeholder;
   const [open, setOpen] = useState(false);
   const data = useMemo(() => options, [options]);
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.button} onPress={() => setOpen(true)}>
-        <Text style={styles.text}>{selected}</Text>
+        <Text style={styles.text} numberOfLines={1}>{selected}</Text>
       </TouchableOpacity>
       <Modal visible={open} onRequestClose={() => setOpen(false)}>
         <FlatList
@@ -44,17 +46,18 @@ export default function Select({ value, options, placeholder = 'Seçiniz', onCha
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {},
   button: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    minHeight: 44,
     backgroundColor: colors.surface,
   },
-  text: { color: colors.text },
+  text: { color: colors.text, fontSize: 16, lineHeight: 22 },
 });
 
 
