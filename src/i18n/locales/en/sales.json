@@ -1,4 +1,5 @@
 {
+  "sales": "Sales",
   "search_product": "Search product",
   "complete_sale": "Complete Sale",
   "sale_details": "Sale Details",
@@ -13,7 +14,12 @@
   "price": "Price",
   "quantity": "Quantity",
   "subtotal": "Subtotal",
-  "product_name": "Product Name"
+  "product_name": "Product Name",
+  "total_sales": "Total Sales",
+  "total_revenue": "Total Revenue",
+  "monthly_sales": "Monthly Sales",
+  "average_order_value": "Average Order Value",
+  "quick_actions": "Quick Actions"
 }
 
 

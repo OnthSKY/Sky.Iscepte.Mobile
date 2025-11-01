@@ -1,4 +1,5 @@
 {
+  "customers": "Müşteriler",
   "customer_details": "Müşteri Detayları",
   "phone": "Telefon",
   "email": "E-posta",
@@ -9,7 +10,11 @@
   "transactions": "İşlem Geçmişi",
   "new_customer": "Yeni Müşteri",
   "edit_customer": "Müşteri Düzenle",
-  "name": "Ad"
+  "name": "Ad",
+  "total_customers": "Toplam Müşteri",
+  "active_customers": "Aktif Müşteri",
+  "total_orders": "Toplam Sipariş",
+  "quick_actions": "Hızlı İşlemler"
 }
 
 

@@ -4,7 +4,12 @@
   "statistics": "Statistics",
   "period": "Period",
   "summary": "Summary",
-  "chart": "Chart"
+  "chart": "Chart",
+  "total_reports": "Total Reports",
+  "monthly_reports": "Monthly Reports",
+  "completed_reports": "Completed Reports",
+  "pending_reports": "Pending Reports",
+  "quick_actions": "Quick Actions"
 }
 
 

@@ -17,6 +17,8 @@ import authService from './src/shared/services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from './src/core/contexts/ThemeContext';
 import ToastManager from './src/shared/components/ToastManager';
+import { PersistQueryClientProvider, queryClient, asyncStoragePersister } from './src/core/services/queryClient';
+import { useNavigationPrefetch } from './src/core/hooks/useNavigationPrefetch';
 
 const RootStack = createNativeStackNavigator();
 function MainApp() {
@@ -31,6 +33,9 @@ function AppWrapper() {
   const isLoading = useAppStore(s => s.isLoading);
   
   useEffect(() => { hydrate(); }, [hydrate]);
+  
+  // Enable navigation-based prefetching globally
+  useNavigationPrefetch();
   useEffect(() => {
     httpInterceptors.useRequest(({ config }: any) => {
       const token = useAppStore.getState().token;
@@ -111,8 +116,16 @@ function AppWrapper() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppWrapper />
-    </ThemeProvider>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: asyncStoragePersister,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      }}
+    >
+      <ThemeProvider>
+        <AppWrapper />
+      </ThemeProvider>
+    </PersistQueryClientProvider>
   );
 }

@@ -9,6 +9,7 @@ import { DashboardHeader } from '../shared/components/dashboard/DashboardHeader'
 import { StatCard } from '../shared/components/dashboard/StatCard';
 import { QuickActionCard } from '../shared/components/dashboard/QuickActionCard';
 import SummaryCard from '../shared/components/SummaryCard';
+import { useDashboardPrefetch } from '../core/hooks/useDashboardPrefetch';
 
 /**
  * DashboardScreen - SOLID Principles Applied
@@ -24,6 +25,9 @@ const DashboardScreen: React.FC = () => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const { data, loading, error, role, navigate } = useDashboard();
+  
+  // Prefetch module dashboard stats
+  useDashboardPrefetch();
 
   // Layout calculations
   const layoutConfig = useMemo(() => {

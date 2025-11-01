@@ -70,14 +70,33 @@ App Config & Modes
 - Storage keys: `access_token`, `refresh_token`, `user_role`, `user_id`, `lang`, `themePreference`.
 
 How to Add a New Module
-1) Create directory: `src/modules/<moduleName>/` with `screens/`, `services/`, `store/`.
+1) Create directory: `src/modules/<moduleName>/` with `screens/`, `services/`, `hooks/`, `config/`, `store/`.
 2) Add translations under both `en` and `tr` (new or existing namespace).
 3) Register permissions:
    - Add base permissions in `permissionsRegistry` in `src/core/config/permissions.ts`.
    - Update `rolePermissions` if needed.
    - Update mocks in `src/mocks/*` if using detailed permission store.
-4) Add routes in `src/core/navigation/routes.ts` with `requiredPermission` for each screen.
-5) Use `filterRoutesByRole` automatically via `RootNavigator` – no extra wiring needed.
+4) Create service: `src/modules/{module}/services/{module}Service.ts`
+   - Export entity interface (e.g., `Product`, `Customer`)
+   - Export stats interface (e.g., `ProductStats`, `CustomerStats`)
+   - Implement `list`, `get`, `stats`, `create`, `update`, `remove` methods
+5) Create query hooks: `src/modules/{module}/hooks/use{Module}Query.ts`
+   - Export `use{Module}sQuery()`, `use{Module}Query(id)`, `use{Module}StatsQuery()`
+   - Export `use{Module}sInfiniteQuery()` for pagination
+   - Export mutation hooks: `useCreate{Module}Mutation()`, `useUpdate{Module}Mutation()`, `useDelete{Module}Mutation()`
+   - Use `queryKeys` factory from `src/core/services/queryClient.ts`
+6) Create form config: `src/modules/{module}/config/{module}FormConfig.ts`
+   - Define `{module}FormFields` (DynamicField[])
+   - Define `{module}Validator` function using validators from `validators.ts`
+7) Create screens:
+   - `{Module}ListScreen.tsx` – Uses `use{Module}sQuery()` or `use{Module}sInfiniteQuery()`
+   - `{Module}DetailScreen.tsx` – Uses `use{Module}Query(id)`
+   - `{Module}DashboardScreen.tsx` – Uses `use{Module}StatsQuery()` with React Query
+   - `{Module}FormScreen.tsx` – Unified form for create/edit, uses mutation hooks
+   - `{Module}CreateScreen.tsx` and `{Module}EditScreen.tsx` – Wrappers passing `mode` prop
+8) Add routes in `src/core/navigation/routes.ts` with `requiredPermission` for each screen.
+9) Update `queryKeys` factory in `src/core/services/queryClient.ts` with new module keys.
+10) Use `filterRoutesByRole` automatically via `RootNavigator` – no extra wiring needed.
 
 How to Require a Permission in UI
 - Navigation-level: set `requiredPermission` on the route.
@@ -108,7 +127,13 @@ SOLID Screen Architecture
   - `useListScreen<T>` – Generic list screen logic (search, filters, pagination, permissions)
   - `useDetailScreen<T>` – Generic detail screen logic (load, edit, delete, permissions)
   - `useFormScreen<T>` – Generic form screen logic (validation, submit, create/edit modes)
-  - `useAsyncData<T>` – Generic async data fetching with loading/error state management ⭐
+  - `useAsyncData<T>` – Generic async data fetching with loading/error state management (legacy, prefer React Query hooks) ⚠️
+  - `useApiQuery<T>` – React Query wrapper for queries (caching, retry, prefetch) ⭐
+  - `useApiMutation<T>` – React Query wrapper for mutations (optimistic updates, cache invalidation) ⭐
+  - `useApiInfiniteQuery<T>` – React Query wrapper for pagination (infinite scroll) ⭐
+  - `useDashboardPrefetch` – Prefetches module dashboard stats ⭐
+  - `useNavigationPrefetch` – Prefetches data on navigation ⭐
+  - `useDetailPrefetch` – Prefetches detail pages from lists ⭐
   - `useAuth` – Authentication hooks (`useLogin`, `useRegister`)
   - `useOwnerDashboard` – Owner dashboard specific logic
   - `useDashboard` – Dashboard orchestration hook
@@ -129,6 +154,8 @@ SOLID Screen Architecture
 - Utilities (`src/core/utils/`):
   - `validators.ts` – Common validation functions (required, minLength, maxLength, isEmail, isNumber, isPositive, range, isPhone, isUrl, combine) ⭐
   - `errorUtils.ts` – Standardized error message utilities (getErrorMessage, errorMessages, createError, getErrorCode) ⭐
+  - `retryUtils.ts` – Smart retry strategies with exponential backoff and jitter ⭐
+  - `screenFactory.tsx` – Factory functions for creating list, detail, and form screens ⭐
 - Configuration (`src/core/config/`):
   - `navigationConfig.ts` – Navigation fallback routes configuration ⭐
   - `permissions.ts` – Permission registry and role mappings
@@ -138,10 +165,10 @@ SOLID Screen Architecture
     Screen Component (UI composition) → ListScreenContainer → useListScreen → Service Adapter
   
   Detail Screen:
-    Screen Component (UI composition) → DetailScreenContainer → useDetailScreen → useAsyncData → Service Adapter
+    Screen Component (UI composition) → DetailScreenContainer → useDetailScreen → useApiQuery / use{Module}Query → Service Adapter
   
   Form Screen:
-    Screen Component (UI composition) → FormScreenContainer → useFormScreen → useAsyncData → Service Adapter
+    Screen Component (UI composition) → FormScreenContainer → useFormScreen → useApiMutation / use{Module}Mutation → Service Adapter
   ```
 - Hook Organization:
   - Generic hooks (used by all modules) → `src/core/hooks/` ✅
@@ -158,8 +185,59 @@ SOLID Screen Architecture
   - `{Module}CreateScreen` and `{Module}EditScreen` are simple wrappers passing `mode` prop
   - Reduces code duplication by ~60%
 
+React Query & API Performance (NEW - Priority Pattern!) ⭐
+- **Library**: `@tanstack/react-query` for data fetching, caching, and synchronization
+- **Core Services** (`src/core/services/`):
+  - `queryClient.ts` – QueryClient configuration with smart retry and persistence
+  - `cacheConfig.ts` – Cache persistence configuration (critical vs non-critical queries)
+  - `cacheUtils.ts` – Cache management utilities (invalidation, cleanup, prefetch)
+  - `retryUtils.ts` – Smart retry strategies with exponential backoff and jitter
+- **Query Hooks** (`src/core/hooks/`):
+  - `useApiQuery<T>` – Type-safe query hook with automatic caching, retry, error handling
+  - `useApiMutation<T>` – Type-safe mutation hook with optimistic updates, cache invalidation
+  - `useApiInfiniteQuery<T>` – Infinite query for pagination with flattened `allItems`
+- **Module Hooks** (`src/modules/{module}/hooks/`):
+  - `use{Module}sQuery()` – Module list query hook (with filters support)
+  - `use{Module}Query(id)` – Single entity query hook
+  - `use{Module}StatsQuery()` – Module statistics query hook
+  - `use{Module}sInfiniteQuery()` – Infinite query for pagination
+  - `useCreate{Module}Mutation()` – Create mutation hook with cache invalidation
+  - `useUpdate{Module}Mutation(id?)` – Update mutation hook with optimistic updates
+  - `useDelete{Module}Mutation()` – Delete mutation hook with optimistic updates
+  - Uses `queryKeys` factory for type-safe cache keys
+- **Query Keys** (`src/core/services/queryClient.ts`):
+  - Centralized `queryKeys` factory for type-safe cache management
+  - Structure: `queryKeys.{module}.{operation}(params)`
+  - Example: `queryKeys.products.stats()`, `queryKeys.products.detail(id)`
+- **Cache Persistence**:
+  - Critical queries persisted (auth, user, permissions, settings, stats)
+  - Non-critical queries memory-only (lists, details)
+  - AsyncStorage persistence with 24h maxAge
+- **Retry Logic**:
+  - Smart retry based on error type (network, server, timeout)
+  - Exponential backoff with jitter (prevents retry storms)
+  - Configurable retry strategies per operation type
+- **Prefetching**:
+  - `useDashboardPrefetch` – Prefetches all module stats on dashboard load
+  - `useNavigationPrefetch` – Prefetches data on route changes
+  - `useDetailPrefetch` – Prefetches detail pages from list items
+- **Migration Pattern**:
+  - Replace `useAsyncData` with `useApiQuery` for queries
+  - Replace manual mutations with `useApiMutation`
+  - Use module-specific hooks from `src/modules/{module}/hooks/use{Module}Query.ts`
+  - Example: `useProductsQuery()`, `useProductQuery(id)`, `useProductStatsQuery()`, `useCreateProductMutation()`
+- **Module Hooks Pattern** (All modules now use this):
+  - Products: `src/modules/products/hooks/useProductsQuery.ts` ✅
+  - Sales: `src/modules/sales/hooks/useSalesQuery.ts` ✅
+  - Customers: `src/modules/customers/hooks/useCustomersQuery.ts` ✅
+  - Expenses: `src/modules/expenses/hooks/useExpensesQuery.ts` ✅
+  - Employees: `src/modules/employees/hooks/useEmployeesQuery.ts` ✅
+  - Reports: `src/modules/reports/hooks/useReportsQuery.ts` ✅
+
 Best Practices & Guidelines (IMPORTANT - Follow These Patterns!)
-- **Always use `useAsyncData` hook for async data fetching** – Eliminates loading/error state boilerplate
+- **ALWAYS use React Query hooks (`useApiQuery`, `useApiMutation`) for data fetching** ⭐ – Provides caching, retry, prefetch automatically
+- **ALWAYS use module-specific hooks** ⭐ – `useProductsQuery()`, `useSalesQuery()`, etc. from `src/modules/{module}/hooks/`
+- **NEVER use `useAsyncData` for new code** ⚠️ – Use React Query hooks instead (migrate existing code gradually)
 - **Always use `errorUtils` for standardized error messages** – Eliminates hardcoded error strings
 - **Always use `LoadingState` and `ErrorState` components** – Eliminates duplicate loading/error UI
 - **Always create form config file for new modules** – Centralizes form definitions
@@ -167,10 +245,11 @@ Best Practices & Guidelines (IMPORTANT - Follow These Patterns!)
 - **Always use `validators.ts` utilities** – Don't write custom validation logic
 - **Always use `navigationConfig.ts` for navigation fallbacks** – Don't hardcode fallback maps
 - Keep error handling consistent: Use `errorMessages` factory functions or `getErrorMessage` utility
-- Keep async patterns consistent: Use `useAsyncData` for all data fetching operations
+- Keep async patterns consistent: Use React Query hooks for all API operations
 - When adding new validators, add them to `validators.ts` and use i18n for error messages
 - When adding new error patterns, add them to `errorUtils.ts` with proper translation keys
 - When adding new navigation routes, update `navigationConfig.ts` fallback map if needed
+- When adding new modules, create `use{Module}Query.ts` hooks file with query/mutation hooks
 
 How to Refactor a Screen to SOLID Architecture
 1) Create service adapter: `src/modules/{module}/services/{module}ServiceAdapter.ts`
@@ -186,18 +265,28 @@ How to Refactor a Screen to SOLID Architecture
    - Replace custom logic with `DetailScreenContainer`
    - Pass service adapter and config
    - Provide `renderContent` prop for entity-specific UI
-   - Uses `useAsyncData` hook internally for data fetching
+   - Uses React Query hooks (`useApiQuery` or module-specific hook) internally for data fetching ⭐
 5) Refactor Form Screen:
    - Create unified `{Module}FormScreen` component
    - Replace custom logic with `FormScreenContainer`
    - Pass service adapter, config, validator (from form config), and `renderForm` prop
    - Use `DynamicForm` with fields from form config
+   - Use React Query mutations (`useApiMutation` or module-specific mutation hook) for submit ⭐
    - `{Module}CreateScreen` and `{Module}EditScreen` become simple wrappers passing `mode` prop
+6) Create Module Query Hooks:
+   - Create `src/modules/{module}/hooks/use{Module}Query.ts`
+   - Export query hooks: `use{Module}sQuery()`, `use{Module}Query(id)`, `use{Module}StatsQuery()`
+   - Export mutation hooks: `useCreate{Module}Mutation()`, `useUpdate{Module}Mutation()`, `useDelete{Module}Mutation()`
+   - Use `queryKeys` factory for cache keys
+   - Example: See `src/modules/products/hooks/useProductsQuery.ts` ⭐
 
 Notes
 - Replace mock auth and HTTP with real implementations before production.
 - If you introduce a new namespace, ensure it's added to `ns` array during `i18n.init`.
 - Keep generic hooks in `src/core/hooks/`, module-specific hooks in `src/modules/{module}/hooks/`.
 - ⭐ marks recently added/refactored patterns - use these as reference for new development.
+- ⚠️ marks deprecated patterns - migrate to new React Query pattern when possible.
+- React Query is the preferred pattern for all API operations - provides caching, retry, prefetch automatically.
+- Module-specific hooks provide type-safe, optimized API access with automatic cache management.
 
 

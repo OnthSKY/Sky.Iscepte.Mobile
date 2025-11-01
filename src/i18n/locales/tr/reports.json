@@ -4,7 +4,12 @@
   "statistics": "İstatistikler",
   "period": "Dönem",
   "summary": "Özet",
-  "chart": "Grafik"
+  "chart": "Grafik",
+  "total_reports": "Toplam Rapor",
+  "monthly_reports": "Aylık Rapor",
+  "completed_reports": "Tamamlanan Rapor",
+  "pending_reports": "Bekleyen Rapor",
+  "quick_actions": "Hızlı İşlemler"
 }
 
 

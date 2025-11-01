@@ -1,4 +1,5 @@
 {
+  "customers": "Customers",
   "customer_details": "Customer Details",
   "phone": "Phone",
   "email": "Email",
@@ -9,7 +10,11 @@
   "transactions": "Transaction History",
   "new_customer": "New Customer",
   "edit_customer": "Edit Customer",
-  "name": "Name"
+  "name": "Name",
+  "total_customers": "Total Customers",
+  "active_customers": "Active Customers",
+  "total_orders": "Total Orders",
+  "quick_actions": "Quick Actions"
 }
 
 

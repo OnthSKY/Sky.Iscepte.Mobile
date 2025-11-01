@@ -1,7 +1,17 @@
 import appConfig from '../../core/config/appConfig';
+import {
+  ApiError,
+  NetworkError,
+  TimeoutError,
+  createApiErrorFromStatus,
+  createNetworkError,
+  createTimeoutError,
+  isApiError,
+} from '../../core/types/apiErrors';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
+// Legacy HttpError interface for backward compatibility
 export interface HttpError extends Error {
   status?: number;
   code?: string;
@@ -52,22 +62,70 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
     for (const i of responseInterceptors) await i({ method, url, response: res });
 
     if (!res.ok) {
-      const err: HttpError = new Error(`HTTP ${res.status}`);
-      err.status = res.status;
+      // Try to parse error details from response
+      let errorDetails: any = undefined;
+      let errorMessage: string | undefined = undefined;
+      
       try {
-        err.details = await res.json();
+        const errorBody = await res.json();
+        errorDetails = errorBody;
+        
+        // Extract message from common error response formats
+        errorMessage = errorBody?.message || 
+                      errorBody?.error?.message || 
+                      errorBody?.errors?.[0]?.message ||
+                      undefined;
       } catch {
-        // ignore body parse error
+        // If JSON parse fails, try to get text
+        try {
+          const errorText = await res.text();
+          if (errorText) {
+            errorDetails = { message: errorText };
+            errorMessage = errorText;
+          }
+        } catch {
+          // Ignore body parse errors
+        }
       }
-      throw err;
+
+      // Create appropriate error based on HTTP status
+      const apiError = createApiErrorFromStatus(
+        res.status,
+        errorMessage || `HTTP ${res.status}`,
+        errorDetails
+      );
+      
+      throw apiError;
     }
-    // handle empty body
+    
+    // Handle empty body
     const text = await res.text();
     return (text ? JSON.parse(text) : (undefined as any)) as T;
   } catch (e: any) {
-    const err: HttpError = e?.name === 'AbortError' ? Object.assign(new Error('Request timeout'), { code: 'TIMEOUT' }) : e;
-    if (!err.code && !err.status) err.code = 'NETWORK_ERROR';
-    throw err;
+    // Handle timeout
+    if (e?.name === 'AbortError') {
+      throw createTimeoutError('Request timeout. Please try again.');
+    }
+    
+    // If it's already an ApiError, re-throw as-is
+    if (isApiError(e)) {
+      throw e;
+    }
+    
+    // Handle network errors (no connection, DNS failure, etc.)
+    if (
+      e?.message?.includes('Network request failed') ||
+      e?.message?.includes('Failed to fetch') ||
+      e?.message?.includes('NetworkError') ||
+      e?.message?.includes('network error') ||
+      e?.code === 'NETWORK_ERROR'
+    ) {
+      throw createNetworkError(e);
+    }
+    
+    // Unknown error - wrap in ApiError
+    const networkError = createNetworkError(e);
+    throw networkError;
   } finally {
     clearTimeout(timeout);
   }

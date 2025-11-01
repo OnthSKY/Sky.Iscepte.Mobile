@@ -6,14 +6,31 @@
  */
 
 import i18n from '../../i18n';
+import {
+  ApiError,
+  NetworkError,
+  TimeoutError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+  ServerError,
+  isApiError,
+} from '../types/apiErrors';
 
 /**
  * Get standard error message for common error scenarios
+ * Handles both ApiError types and generic errors
  */
 export const getErrorMessage = (error: Error | string | unknown, context?: string): string => {
   // If it's already a string, return it
   if (typeof error === 'string') {
     return error;
+  }
+
+  // Handle ApiError types with specific translations
+  if (isApiError(error)) {
+    return getApiErrorMessage(error, context);
   }
 
   // If it's an Error object, try to extract meaningful message
@@ -35,6 +52,53 @@ export const getErrorMessage = (error: Error | string | unknown, context?: strin
   // Default fallback
   return i18n.t('common:errors.unknown', { defaultValue: 'An unknown error occurred' });
 };
+
+/**
+ * Get error message for ApiError types
+ */
+function getApiErrorMessage(error: ApiError, context?: string): string {
+  // Check for custom message in details
+  if (error.details?.message) {
+    return error.details.message;
+  }
+
+  // Type-specific messages
+  if (error instanceof NetworkError) {
+    return i18n.t('common:errors.network', { defaultValue: error.message });
+  }
+
+  if (error instanceof TimeoutError) {
+    return i18n.t('common:errors.timeout', { defaultValue: error.message });
+  }
+
+  if (error instanceof UnauthorizedError) {
+    return i18n.t('common:errors.unauthorized', { defaultValue: error.message });
+  }
+
+  if (error instanceof ForbiddenError) {
+    return i18n.t('common:errors.forbidden', { defaultValue: error.message });
+  }
+
+  if (error instanceof NotFoundError) {
+    return i18n.t('common:errors.not_found', { defaultValue: error.message });
+  }
+
+  if (error instanceof ValidationError) {
+    // Try to extract validation errors
+    if (error.validationErrors) {
+      const firstError = Object.values(error.validationErrors)[0]?.[0];
+      if (firstError) return firstError;
+    }
+    return i18n.t('common:errors.validation', { defaultValue: error.message });
+  }
+
+  if (error instanceof ServerError) {
+    return i18n.t('common:errors.server', { defaultValue: error.message });
+  }
+
+  // Fallback to error message or translated generic message
+  return error.message || i18n.t('common:errors.unknown', { defaultValue: 'An unknown error occurred' });
+}
 
 /**
  * Get translation key for common error patterns
@@ -185,8 +249,49 @@ export function createError(message: string, code?: string): Error {
  * Extract error code from Error object
  */
 export function getErrorCode(error: Error | unknown): string | undefined {
+  if (isApiError(error)) {
+    return error.code;
+  }
   if (error instanceof Error) {
     return (error as any).code || (error as any).status;
+  }
+  return undefined;
+}
+
+/**
+ * Check if error is retryable
+ * Network errors and 5xx errors are retryable
+ */
+export function isRetryableError(error: Error | unknown): boolean {
+  if (isApiError(error)) {
+    // Network and timeout errors are retryable
+    if (error instanceof NetworkError || error instanceof TimeoutError) {
+      return true;
+    }
+    
+    // Server errors (5xx) are retryable
+    if (error instanceof ServerError || (error.status && error.status >= 500)) {
+      return true;
+    }
+    
+    // Client errors (4xx) are generally not retryable
+    // Exception: 401 can be retried after token refresh
+    return false;
+  }
+  
+  // Unknown errors - assume not retryable
+  return false;
+}
+
+/**
+ * Get error status code
+ */
+export function getErrorStatus(error: Error | unknown): number | undefined {
+  if (isApiError(error)) {
+    return error.status;
+  }
+  if (error instanceof Error && 'status' in error) {
+    return (error as any).status;
   }
   return undefined;
 }

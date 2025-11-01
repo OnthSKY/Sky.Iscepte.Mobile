@@ -4,6 +4,7 @@
  * Open/Closed: Easy to extend with new screen types
  */
 
+import React from 'react';
 import { BaseEntity } from '../types/screen.types';
 import { BaseEntityService } from '../services/baseEntityService.types';
 import { ListScreenContainer } from '../../shared/components/screens/ListScreenContainer';

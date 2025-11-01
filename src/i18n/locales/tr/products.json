@@ -13,7 +13,8 @@
   "cannot_delete_message": "Satışı olan ürünü silemezsiniz.",
   "create_form_placeholder": "Ürün oluşturma formu buraya gelecek.",
   "edit_form_placeholder": "Ürün düzenleme formu buraya gelecek.",
-  "details_placeholder": "Ürün detay içeriği buraya gelecek."
+  "details_placeholder": "Ürün detay içeriği buraya gelecek.",
+  "quick_actions": "Hızlı İşlemler"
 }
 
 

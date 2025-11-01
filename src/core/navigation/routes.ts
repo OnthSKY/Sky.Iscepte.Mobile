@@ -20,6 +20,14 @@ const ReportsScreen = React.lazy(() => import('../../modules/reports/screens/Rep
 const EmployeesScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeListScreen'));
 const ProductsListScreen = React.lazy(() => import('../../modules/products/screens/ProductListScreen'));
 
+// Module Dashboard screens
+const ProductsDashboardScreen = React.lazy(() => import('../../modules/products/screens/ProductsDashboardScreen'));
+const SalesDashboardScreen = React.lazy(() => import('../../modules/sales/screens/SalesDashboardScreen'));
+const CustomersDashboardScreen = React.lazy(() => import('../../modules/customers/screens/CustomersDashboardScreen'));
+const ExpensesDashboardScreen = React.lazy(() => import('../../modules/expenses/screens/ExpensesDashboardScreen'));
+const EmployeesDashboardScreen = React.lazy(() => import('../../modules/employees/screens/EmployeesDashboardScreen'));
+const ReportsDashboardScreen = React.lazy(() => import('../../modules/reports/screens/ReportsDashboardScreen'));
+
 // Detail screens
 const SalesDetailScreen = React.lazy(() => import('../../modules/sales/screens/SalesDetailScreen'));
 const CustomerDetailScreen = React.lazy(() => import('../../modules/customers/screens/CustomerDetailScreen'));
@@ -49,6 +57,13 @@ const NotificationsScreen = React.lazy(() => import('../../screens/Notifications
 
 export const allRoutes: RouteConfig[] = [
   { name: 'Dashboard', module: 'dashboard', component: DashboardScreen, options: { title: i18n.t('dashboard:title') } },
+  // Module Dashboard screens
+  { name: 'ProductsDashboard', module: 'products', component: ProductsDashboardScreen, requiredPermission: 'products:view', options: { title: i18n.t('products:products', { defaultValue: 'Products' }) } },
+  { name: 'SalesDashboard', module: 'sales', component: SalesDashboardScreen, requiredPermission: 'sales:view', options: { title: i18n.t('sales:sales') } },
+  { name: 'CustomersDashboard', module: 'customers', component: CustomersDashboardScreen, requiredPermission: 'customers:view', options: { title: i18n.t('customers:customers') } },
+  { name: 'ExpensesDashboard', module: 'expenses', component: ExpensesDashboardScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expenses') } },
+  { name: 'EmployeesDashboard', module: 'employees', component: EmployeesDashboardScreen, requiredPermission: 'employees:view', options: { title: i18n.t('settings:employees', { defaultValue: 'Employees' }) } },
+  { name: 'ReportsDashboard', module: 'reports', component: ReportsDashboardScreen, requiredPermission: 'reports:view', options: { title: i18n.t('reports:reports') } },
   // List screens
   { name: 'Sales', module: 'sales', component: SalesListScreen, requiredPermission: 'sales:view', options: { title: i18n.t('sales:sales') } },
   { name: 'Customers', module: 'customers', component: CustomersListScreen, requiredPermission: 'customers:view', options: { title: i18n.t('customers:customers') } },

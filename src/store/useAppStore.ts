@@ -68,6 +68,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     return ok;
   },
   async logout() {
+    // Invalidate queries before logout
+    const { invalidateOnLogout } = await import('../core/services/cacheUtils');
+    const { queryClient } = await import('../core/services/queryClient');
+    await invalidateOnLogout(queryClient);
+    
     // Call auth service logout (which handles API call and storage cleanup)
     await authService.logout();
     

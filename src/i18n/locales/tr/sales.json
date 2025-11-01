@@ -1,4 +1,5 @@
 {
+  "sales": "Satışlar",
   "search_product": "Ürün ara",
   "complete_sale": "Satışı Tamamla",
   "sale_details": "Satış Detayları",
@@ -13,7 +14,12 @@
   "price": "Fiyat",
   "quantity": "Miktar",
   "subtotal": "Ara Toplam",
-  "product_name": "Ürün Adı"
+  "product_name": "Ürün Adı",
+  "total_sales": "Toplam Satış",
+  "total_revenue": "Toplam Gelir",
+  "monthly_sales": "Aylık Satış",
+  "average_order_value": "Ortalama Sipariş Tutarı",
+  "quick_actions": "Hızlı İşlemler"
 }
 
 

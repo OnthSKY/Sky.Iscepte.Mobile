@@ -1,4 +1,5 @@
 {
+  "expenses": "Expenses",
   "expense_details": "Expense Details",
   "type": "Expense Type",
   "amount": "Amount",
@@ -12,7 +13,11 @@
   "expense_type_name": "Expense Type Name",
   "expense_type_name_placeholder": "Enter expense type name",
   "expense_types": "Expense Types",
-  "manage_expense_types": "Manage Types"
+  "manage_expense_types": "Manage Types",
+  "total_expenses": "Total Expenses",
+  "total_amount": "Total Amount",
+  "monthly_expenses": "Monthly Expenses",
+  "quick_actions": "Quick Actions"
 }
 
 

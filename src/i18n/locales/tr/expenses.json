@@ -1,4 +1,5 @@
 {
+  "expenses": "Giderler",
   "expense_details": "Gider Detayları",
   "type": "Gider Türü",
   "amount": "Tutar",
@@ -12,7 +13,11 @@
   "expense_type_name": "Gider Türü Adı",
   "expense_type_name_placeholder": "Gider türü adını girin",
   "expense_types": "Gider Türleri",
-  "manage_expense_types": "Türleri Yönet"
+  "manage_expense_types": "Türleri Yönet",
+  "total_expenses": "Toplam Gider",
+  "total_amount": "Toplam Tutar",
+  "monthly_expenses": "Aylık Gider",
+  "quick_actions": "Hızlı İşlemler"
 }
 
 
