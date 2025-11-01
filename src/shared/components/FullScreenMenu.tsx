@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, Pressable, StyleSheet, Platform, useWindowDimensions, ScrollView, TextInput, Animated, StatusBar } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Pressable, StyleSheet, Platform, useWindowDimensions, ScrollView, TextInput, Animated, StatusBar, BackHandler } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../core/constants/spacing';
 import { useTranslation } from 'react-i18next';
@@ -108,6 +108,18 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       scaleAnim.setValue(0.95);
     }
   }, [visible]);
+
+  // Handle Android back button - close menu instead of navigating away
+  useEffect(() => {
+    if (Platform.OS === 'android' && visible) {
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        onClose();
+        return true; // Prevent default back button behavior
+      });
+
+      return () => backHandler.remove();
+    }
+  }, [visible, onClose]);
   
   const processedItems = useMemo(() => {
     const mapped = MODULE_CONFIGS.map((module) => {
@@ -320,80 +332,6 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
             >
               <Ionicons name="close" size={22} color={colors.primary} />
             </TouchableOpacity>
-          </View>
-          
-          {/* Fixed Quick Actions */}
-          <View style={{ padding: spacing.lg, paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
-            <View style={[styles.quickHeader]}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('common:quick_actions', { defaultValue: 'Quick Actions' })}</Text>
-            </View>
-            <View style={styles.quickRow}>
-              {filteredQuickActions.map((qa) => (
-                <View
-                  key={qa.key}
-                  style={[styles.quickItem, { width: `${100 / qaCols}%` }]}
-                >
-                  {qa.isLocked ? (
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (role === 'owner') {
-                          setPurchaseTarget(qa.label);
-                          setPurchaseVisible(true);
-                        }
-                      }}
-                      activeOpacity={role === 'owner' ? 0.85 : 1}
-                      disabled={role !== 'owner'}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${qa.label}`}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15`, width: quickIconWrapSize, height: quickIconWrapSize, borderRadius: quickIconWrapSize / 2 }]}>
-                        <Ionicons name={qa.icon as any} size={quickIconSize} color={colors.muted} />
-                        <View style={[styles.lockBadge, { backgroundColor: colors.muted }]}>
-                          <Ionicons name="lock-closed" size={10} color={colors.surface} />
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => {
-                        onClose();
-                        safeNavigate(qa.routeName);
-                      }}
-                      activeOpacity={0.85}
-                      onLongPress={() => {
-                        // Sadece custom eklenmiş QA'lar kaldırılabilir
-                        if (processedCustomQuickActions.find(c => c.key === qa.key)) {
-                          handleRemoveCustomQuick(qa.key);
-                        }
-                      }}
-                      delayLongPress={400}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${qa.label}`}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}25`, width: quickIconWrapSize, height: quickIconWrapSize, borderRadius: quickIconWrapSize / 2 }]}>
-                        <Ionicons name={qa.icon as any} size={quickIconSize} color={colors.primary} />
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-              {canAddQuick && totalQuickCount < QUICK_MAX && (
-                <TouchableOpacity
-                  style={[styles.quickItem, { width: `${100 / qaCols}%` }]}
-                  onPress={() => setAddQaVisible(true)}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15`, borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed', width: quickIconWrapSize, height: quickIconWrapSize, borderRadius: quickIconWrapSize / 2 }]}> 
-                    <Ionicons name="add" size={quickIconSize} color={colors.primary} />
-                  </View>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
 
           <ScrollView keyboardShouldPersistTaps="handled">

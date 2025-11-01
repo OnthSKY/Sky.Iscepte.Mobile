@@ -75,22 +75,6 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
   const { width } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
-  
-  // Get current route name to determine if we should show back button
-  const route = navigation.getState()?.routes[navigation.getState()?.index ?? 0];
-  const currentRouteName = route?.name;
-  // Show back button for all module dashboards (not the main Dashboard)
-  const canGoBack = currentRouteName !== 'Dashboard' && navigation.canGoBack();
-  
-  // Custom back handler: navigate to Dashboard if in Tab Navigator
-  const handleBackPress = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      // Fallback: navigate to Dashboard if canGoBack doesn't work
-      navigation.navigate('Dashboard' as never);
-    }
-  };
 
   // Fetch stats - handle both sync and async
   const statsResult = React.useMemo(() => {
@@ -202,7 +186,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
 
   if (finalLoading) {
     return (
-      <ScreenLayout showBackButton={canGoBack} onBackPress={handleBackPress}>
+      <ScreenLayout showBackButton={false}>
         <LoadingState />
       </ScreenLayout>
     );
@@ -213,7 +197,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
     const errorMessage = errorMessages.failedToLoad(t(`${config.module}:module`, { defaultValue: 'Module data' }));
     
     return (
-      <ScreenLayout showBackButton={canGoBack} onBackPress={handleBackPress}>
+      <ScreenLayout showBackButton={false}>
         <ErrorState
           error={finalError}
           message={getErrorMessage(finalError)}
@@ -302,7 +286,14 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
                       marginRight: config.createRoute ? spacing.sm : 0,
                     },
                   ]}
-                  onPress={() => handleNavigate(config.listRoute)}
+                  onPress={() => {
+                    // If listConfig exists, switch to list tab instead of navigating
+                    if (config.listConfig) {
+                      setActiveTab('list');
+                    } else {
+                      handleNavigate(config.listRoute);
+                    }
+                  }}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="list-outline" size={20} color={colors.primary} />
@@ -491,8 +482,8 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
     };
 
     return (
-      <View style={{ flex: 1 }}>
-        <View style={[styles.listHeader, { paddingHorizontal: spacing.lg }]}>
+      <View style={{ flex: 1, backgroundColor: colors.page }}>
+        <View style={[styles.listHeader, { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }]}>
           {permissions.canCreate && (
             <Button
               title={t('common:create', { defaultValue: 'Oluştur' })}
@@ -502,7 +493,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
           )}
         </View>
         
-        <View style={{ paddingHorizontal: spacing.lg }}>
+        <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
           <SearchBar
             value={query}
             onChangeText={setQuery}
@@ -511,25 +502,27 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
           <FiltersEditor value={filters} onChange={setFilters} />
         </View>
 
-        <PaginatedList
-          key={`list-${listRefreshKey}`}
-          pageSize={config.listConfig.config.defaultPageSize || 10}
-          query={{
-            searchValue: query,
-            orderColumn: 'CreatedAt',
-            orderDirection: 'DESC',
-            filters,
-          }}
-          fetchPage={fetchPage}
-          keyExtractor={config.listConfig.keyExtractor}
-          renderItem={({ item }) => renderItemWithActions(item)}
-          ListEmptyComponent={
-            <EmptyState
-              title={t('common:no_results', { defaultValue: 'Sonuç bulunamadı' }) as string}
-              subtitle={t('common:try_adjust_filters', { defaultValue: 'Filtreleri ayarlamayı deneyin' }) as string}
-            />
-          }
-        />
+        <View style={{ flex: 1 }}>
+          <PaginatedList
+            key={`list-${listRefreshKey}`}
+            pageSize={config.listConfig.config.defaultPageSize || 10}
+            query={{
+              searchValue: query,
+              orderColumn: 'CreatedAt',
+              orderDirection: 'DESC',
+              filters,
+            }}
+            fetchPage={fetchPage}
+            keyExtractor={config.listConfig.keyExtractor}
+            renderItem={({ item }) => renderItemWithActions(item)}
+            ListEmptyComponent={
+              <EmptyState
+                title={t('common:no_results', { defaultValue: 'Sonuç bulunamadı' }) as string}
+                subtitle={t('common:try_adjust_filters', { defaultValue: 'Filtreleri ayarlamayı deneyin' }) as string}
+              />
+            }
+          />
+        </View>
 
         <ConfirmDialog
           visible={deleteDialog.visible}
@@ -543,7 +536,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
   };
 
   return (
-    <ScreenLayout noPadding showBackButton={canGoBack} onBackPress={handleBackPress}>
+    <ScreenLayout noPadding showBackButton={false}>
       {/* Tab Selector */}
       {config.listConfig && (
         <View style={[styles.tabContainer, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>

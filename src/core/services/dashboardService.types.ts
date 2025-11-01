@@ -18,5 +18,6 @@ export interface QuickActionData {
   icon: string;
   colorKey: 'primary' | 'success' | 'error' | 'info';
   route: string;
+  requiredPermission?: string; // Optional permission requirement
 }
 

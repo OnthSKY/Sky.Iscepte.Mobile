@@ -20,7 +20,7 @@ export const permissionsRegistry: ModulePermissionConfig[] = [
   { module: 'revenue', permissions: ['revenue:view', 'revenue:create', 'revenue:edit'] },
   { module: 'reports', permissions: ['reports:view'] },
   { module: 'employees', permissions: ['employees:view', 'employees:create', 'employees:edit'] },
-  { module: 'stock', permissions: ['stock:view', 'stock:create', 'stock:edit'] },
+  { module: 'stock', permissions: ['stock:view', 'stock:create', 'stock:edit', 'stock:manage_global_fields', 'stock:add_product_custom_fields'] },
   { module: 'purchases', permissions: ['purchases:view', 'purchases:create', 'purchases:edit'] },
   { module: 'settings', permissions: ['settings:view', 'settings:manage'] },
 ];
@@ -34,7 +34,7 @@ export const rolePermissions: RolePermissionsMap = {
     'revenue:view', 'revenue:create', 'revenue:edit',
     'employees:view', 'employees:create', 'employees:edit',
     'reports:view',
-    'stock:view', 'stock:create', 'stock:edit',
+    'stock:view', 'stock:create', 'stock:edit', 'stock:manage_global_fields', 'stock:add_product_custom_fields',
     'purchases:view', 'purchases:create', 'purchases:edit',
     'settings:view', 'settings:manage',
   ],

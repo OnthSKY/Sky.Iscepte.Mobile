@@ -90,6 +90,14 @@ export class AdminDashboardService extends BaseDashboardService {
         route: 'Users',
       },
       {
+        key: 'manage-global-fields',
+        translationKey: 'stock:manage_global_fields',
+        icon: 'grid-outline',
+        colorKey: 'info',
+        route: 'GlobalFieldsManagement',
+        requiredPermission: 'stock:manage_global_fields',
+      },
+      {
         key: 'settings',
         translationKey: 'common:settings',
         icon: 'settings-outline',
@@ -164,6 +172,14 @@ export class OwnerDashboardService extends BaseDashboardService {
         icon: 'add-circle-outline',
         colorKey: 'error',
         route: 'ExpenseCreate',
+      },
+      {
+        key: 'manage-global-fields',
+        translationKey: 'stock:manage_global_fields',
+        icon: 'grid-outline',
+        colorKey: 'info',
+        route: 'GlobalFieldsManagement',
+        requiredPermission: 'stock:manage_global_fields',
       },
       {
         key: 'reports',

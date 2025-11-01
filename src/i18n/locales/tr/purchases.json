@@ -31,6 +31,16 @@
   "module": "Alışlar",
   "module_name": "Alış Yönetimi",
   "module_overview": "Modül Özeti",
-  "module_description": "Alış modülü ile tedarikçilerden ürün satın alma işlemlerini yönetebilirsiniz. Yapılan alışlar otomatik olarak stok envanterinize eklenir ve gider takibinize kaydedilir."
+  "module_description": "Alış modülü ile tedarikçilerden ürün satın alma işlemlerini yönetebilirsiniz. Yapılan alışlar otomatik olarak stok envanterinize eklenir ve gider takibinize kaydedilir.",
+  "quick_purchase": "Hızlı Alış",
+  "quick_purchase_description": "Ürün seçip alış yapabilirsiniz",
+  "supplier_name": "Tedarikçi Adı",
+  "supplier_name_placeholder": "Tedarikçi adı girin...",
+  "purchase_items": "Alış Kalemleri",
+  "invalid_price": "Geçersiz fiyat",
+  "no_items": "Lütfen en az bir ürün ekleyin",
+  "current_price": "Mevcut Fiyat",
+  "purchase_completed": "Alış tamamlandı",
+  "complete_purchase": "Alışı Tamamla"
 }
 

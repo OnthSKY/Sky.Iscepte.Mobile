@@ -196,13 +196,13 @@ function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenM
       fontWeight: '600',
     },
     centerButton: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
+      width: 68,
+      height: 68,
+      borderRadius: 34,
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: -4,
+      marginTop: -22,
     },
   });
 
@@ -222,7 +222,7 @@ function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenM
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <View style={styles.centerButton}>
-                <Ionicons name={shortcut.icon as any} size={28} color="#FFFFFF" />
+                <Ionicons name={shortcut.icon as any} size={36} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
           );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useProductStatsQuery } from '../hooks/useProductsQuery';
@@ -12,6 +12,8 @@ import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashbo
 import LoadingState from '../../../shared/components/LoadingState';
 import ScreenLayout from '../../../shared/layouts/ScreenLayout';
 import spacing from '../../../core/constants/spacing';
+import StockAdjustmentModal from '../components/StockAdjustmentModal';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 /**
  * ProductListScreen - SOLID Principles Applied
@@ -24,6 +26,10 @@ export default function ProductListScreen() {
   const { t } = useTranslation(['stock', 'common']);
   const { activeTheme, colors } = useTheme();
   const isDark = activeTheme === 'dark';
+  
+  const [adjustmentModalVisible, setAdjustmentModalVisible] = React.useState(false);
+  const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
+  const [adjustmentMode, setAdjustmentMode] = React.useState<'increase' | 'decrease'>('increase');
 
   // Fetch stats using React Query hook
   const { data: stats, isLoading: statsLoading } = useProductStatsQuery();
@@ -95,17 +101,56 @@ export default function ProductListScreen() {
                 onPress={() => navigation.navigate('StockDetail', { id: item.id })}
               >
                 <View style={{ gap: spacing.sm }}>
-                  <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.name}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 16, fontWeight: '500', flex: 1 }}>{item.name}</Text>
+                    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setSelectedProduct(item);
+                          setAdjustmentMode('increase');
+                          setAdjustmentModalVisible(true);
+                        }}
+                        style={{
+                          backgroundColor: '#10B981',
+                          padding: spacing.xs,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Ionicons name="add-outline" size={18} color="#fff" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setSelectedProduct(item);
+                          setAdjustmentMode('decrease');
+                          setAdjustmentModalVisible(true);
+                        }}
+                        style={{
+                          backgroundColor: '#F59E0B',
+                          padding: spacing.xs,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Ionicons name="remove-outline" size={18} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                   <Text style={{ fontSize: 14, color: colors.muted }}>
                     {item.category || t('stock:uncategorized', { defaultValue: 'Kategori yok' })}
                   </Text>
-                  <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs }}>
+                  <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
                     <Text style={{ fontSize: 14, color: colors.text }}>
                       {t('stock:price', { defaultValue: 'Fiyat' })}: {item.price ?? '—'}
                     </Text>
                     <Text style={{ fontSize: 14, color: colors.text }}>
                       {t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' })}: {item.stock ?? '—'}
                     </Text>
+                    {item.moq && (
+                      <Text style={{ fontSize: 14, color: colors.primary }}>
+                        {t('stock:moq', { defaultValue: 'MOQ' })}: {item.moq}
+                      </Text>
+                    )}
                   </View>
                 </View>
               </Card>
@@ -114,6 +159,20 @@ export default function ProductListScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Stock Adjustment Modal */}
+      <StockAdjustmentModal
+        visible={adjustmentModalVisible}
+        product={selectedProduct}
+        mode={adjustmentMode}
+        onClose={() => {
+          setAdjustmentModalVisible(false);
+          setSelectedProduct(null);
+        }}
+        onSuccess={() => {
+          // List will automatically refresh due to query invalidation
+        }}
+      />
     </ScreenLayout>
   );
 }

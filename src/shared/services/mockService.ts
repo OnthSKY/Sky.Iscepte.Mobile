@@ -263,7 +263,25 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
       // Check owner access
       const filtered = filterByOwner([item], currentOwnerId);
       if (filtered.length === 0) throw new Error('Not found');
-      return filtered[0] as T;
+      
+      // Normalize product/stock item: convert field names and types
+      let result = filtered[0];
+      if (resource === 'stock' || resource === 'products') {
+        const normalized: any = {
+          ...result,
+          id: String(result.id), // Ensure ID is string
+          moq: result.moq !== undefined && result.moq !== null ? result.moq : 1,
+          // Map 'active' to 'isActive' if needed
+          isActive: result.isActive !== undefined ? result.isActive : (result.active !== undefined ? result.active : true),
+        };
+        // Remove 'active' if it exists (keep only isActive)
+        if ('active' in normalized && 'isActive' in normalized) {
+          delete normalized.active;
+        }
+        result = normalized;
+      }
+      
+      return result as T;
     }
     
     // Special handling for expenses and revenue: merge system-generated data with manual entries
@@ -408,7 +426,26 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
     // If consumer expects paginated, return items/total
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
-    const items = all.slice(start, end);
+    let items = all.slice(start, end);
+    
+    // Normalize products/stock items: convert field names and types
+    if (resource === 'stock' || resource === 'products') {
+      items = items.map((item: any) => {
+        const normalized: any = {
+          ...item,
+          id: String(item.id), // Ensure ID is string
+          moq: item.moq !== undefined && item.moq !== null ? item.moq : 1,
+          // Map 'active' to 'isActive' if needed
+          isActive: item.isActive !== undefined ? item.isActive : (item.active !== undefined ? item.active : true),
+        };
+        // Remove 'active' if it exists (keep only isActive)
+        if ('active' in normalized && 'isActive' in normalized) {
+          delete normalized.active;
+        }
+        return normalized;
+      });
+    }
+    
     const payload: any = { items, total: all.length };
     return payload as T;
   }

@@ -7,6 +7,7 @@ import { useNavigationHandler } from './useNavigationHandler';
 import { useAsyncData } from './useAsyncData';
 import { createError, errorMessages } from '../utils/errorUtils';
 import { log } from '../utils/logger';
+import { getNavigationFallback } from '../config/navigationConfig';
 
 /**
  * Single Responsibility: Handles form screen logic (form state, validation, submission)
@@ -95,18 +96,30 @@ export function useFormScreen<T extends BaseEntity>(
         await service.update(entityId, formData);
       }
       // Navigate back after successful submit
-      navigation.goBack();
+      const entityRouteName = config.entityName === 'stock_item' ? 'Stock' : 
+                              config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
+      const fallbackRoute = getNavigationFallback(`${entityRouteName}Create`) || entityRouteName;
+      if (navHandler.canNavigate(fallbackRoute)) {
+        navHandler.navigate(fallbackRoute);
+      }
     } catch (err) {
       const error = err instanceof Error ? err : createError(errorMessages.failedToSave(config.entityName), 'SAVE_ERROR');
       setErrors({ _general: error.message });
     } finally {
       setSubmitting(false);
     }
-  }, [formData, config.mode, entityId, validate, service, navigation]);
+  }, [formData, config.mode, entityId, validate, service, navigation, navHandler, config.entityName]);
 
   const handleCancel = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
+    // Always navigate to fallback route directly to avoid tab history issues
+    const entityRouteName = config.entityName === 'stock_item' ? 'Stock' : 
+                            config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
+    const fallbackRoute = getNavigationFallback(`${entityRouteName}Create`) || entityRouteName;
+    
+    if (navHandler.canNavigate(fallbackRoute)) {
+      navHandler.navigate(fallbackRoute);
+    }
+  }, [navHandler, config.entityName]);
 
   return {
     // Form state

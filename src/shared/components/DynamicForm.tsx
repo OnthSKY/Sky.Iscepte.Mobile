@@ -19,6 +19,7 @@ export type DynamicField = {
   required?: boolean;
   multiline?: boolean; // override for textarea
   render?: (value: any, onChange: (v: any) => void) => React.ReactNode; // for custom type
+  defaultValue?: any; // Default value for the field
 };
 
 type DynamicFormProps<T extends Record<string, any>> = {
@@ -57,7 +58,12 @@ export default function DynamicForm<T extends Record<string, any>>({
         <FormRow key={idx} columns={columns}>
           {row.map((field) => (
             <FormField key={field.name} label={t(field.labelKey)} required={field.required}>
-              {renderField(field, values[field.name], (v) => setValue(field.name, v), t)}
+              {renderField(
+                field, 
+                values[field.name] ?? field.defaultValue ?? '', 
+                (v) => setValue(field.name, v), 
+                t
+              )}
             </FormField>
           ))}
         </FormRow>

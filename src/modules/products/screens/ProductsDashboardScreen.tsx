@@ -14,6 +14,8 @@ import { Product } from '../services/productService';
 import Card from '../../../shared/components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
+import { useAppStore } from '../../../store/useAppStore';
+import { usePermissions } from '../../../core/hooks/usePermissions';
 
 /**
  * StockDashboardScreen - Dashboard for Stock module
@@ -22,6 +24,8 @@ export default function ProductsDashboardScreen() {
   const { t } = useTranslation(['stock', 'common']);
   const { activeTheme, colors } = useTheme();
   const isDark = activeTheme === 'dark';
+  const role = useAppStore((s) => s.role);
+  const permissions = usePermissions(role);
   
   // Use React Query hook for stats
   const { data: stats, isLoading, error } = useProductStatsQuery();
@@ -79,43 +83,80 @@ export default function ProductsDashboardScreen() {
   }, [t, isDark]);
 
   // Define quick actions - Stock management focused
-  const quickActions: ModuleQuickAction[] = React.useMemo(() => [
-    {
-      key: 'add-product',
-      label: t('stock:new_stock', { defaultValue: 'Ürün Ekle' }),
-      icon: 'add-circle-outline',
-      color: isDark ? '#34D399' : '#059669',
-      route: 'StockCreate',
-    },
-    {
-      key: 'stock-in',
-      label: t('stock:add_stock', { defaultValue: 'Stok Artır' }),
-      icon: 'arrow-up-circle-outline',
-      color: isDark ? '#60A5FA' : '#1D4ED8',
-      route: 'StockList', // Will navigate to list with stock increase option
-    },
-    {
-      key: 'stock-out',
-      label: t('stock:reduce_stock', { defaultValue: 'Stok Düş' }),
-      icon: 'arrow-down-circle-outline',
-      color: isDark ? '#F59E0B' : '#D97706',
-      route: 'StockList', // Will navigate to list with stock decrease option
-    },
-    {
-      key: 'make-sale',
-      label: t('stock:make_sale', { defaultValue: 'Satış Yap' }),
-      icon: 'receipt-outline',
-      color: isDark ? '#A78BFA' : '#7C3AED',
-      route: 'SalesCreate',
-    },
-    {
-      key: 'view-stock-list',
-      label: t('stock:view_stock_list', { defaultValue: 'Stok Listesi' }),
-      icon: 'list-outline',
-      color: isDark ? '#94A3B8' : '#64748B',
-      route: 'StockList',
-    },
-  ], [t, isDark]);
+  // Logical order: Create → Quick Operations → Management → View
+  const quickActions: ModuleQuickAction[] = React.useMemo(() => {
+    const actions: ModuleQuickAction[] = [
+      // 1. Primary Actions - Create new items
+      {
+        key: 'add-product',
+        label: t('stock:new_stock', { defaultValue: 'Ürün Ekle' }),
+        icon: 'add-circle-outline',
+        color: isDark ? '#34D399' : '#059669',
+        route: 'StockCreate',
+      },
+      {
+        key: 'category-management',
+        label: t('stock:category_management', { defaultValue: 'Kategori Yönetimi' }),
+        icon: 'apps-outline',
+        color: isDark ? '#60A5FA' : '#1D4ED8',
+        route: 'CategoryManagement',
+      },
+      // 2. Quick Operations - Fast sales/purchases
+      {
+        key: 'quick-sale',
+        label: t('stock:quick_sale', { defaultValue: 'Hızlı Satış' }),
+        icon: 'receipt-outline',
+        color: isDark ? '#A78BFA' : '#7C3AED',
+        route: 'QuickSale',
+      },
+      {
+        key: 'quick-purchase',
+        label: t('stock:quick_purchase', { defaultValue: 'Hızlı Alış' }),
+        icon: 'cart-outline',
+        color: isDark ? '#34D399' : '#059669',
+        route: 'QuickPurchase',
+      },
+      // 3. Stock Management - Increase/Decrease
+      {
+        key: 'stock-in',
+        label: t('stock:add_stock', { defaultValue: 'Stok Artır' }),
+        icon: 'arrow-up-circle-outline',
+        color: isDark ? '#60A5FA' : '#1D4ED8',
+        route: 'StockList',
+      },
+      {
+        key: 'stock-out',
+        label: t('stock:reduce_stock', { defaultValue: 'Stok Düş' }),
+        icon: 'arrow-down-circle-outline',
+        color: isDark ? '#F59E0B' : '#D97706',
+        route: 'StockList',
+      },
+      // 4. Configuration & Management - Categories and Custom Fields
+      {
+        key: 'manage-global-fields',
+        label: t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' }),
+        icon: 'grid-outline',
+        color: isDark ? '#60A5FA' : '#1D4ED8',
+        route: 'GlobalFieldsManagement',
+      },
+      // 5. View - List all items
+      {
+        key: 'view-stock-list',
+        label: t('stock:view_stock_list', { defaultValue: 'Stok Listesi' }),
+        icon: 'list-outline',
+        color: isDark ? '#94A3B8' : '#64748B',
+        route: 'StockList',
+      },
+    ];
+
+    // Filter out "Manage Global Fields" if user doesn't have permission
+    return actions.filter((action) => {
+      if (action.key === 'manage-global-fields') {
+        return permissions.can('stock:manage_global_fields');
+      }
+      return true;
+    });
+  }, [t, isDark, permissions]);
 
   // Fetch stats function (for ModuleDashboardScreen compatibility)
   const fetchStats = React.useCallback((): ModuleStat[] => {

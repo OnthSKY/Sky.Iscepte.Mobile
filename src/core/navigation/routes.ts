@@ -59,6 +59,10 @@ const ExpenseTypeCreateScreen = React.lazy(() => import('../../modules/expenses/
 const ExpenseTypeEditScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseTypeEditScreen'));
 const StockCreateScreen = React.lazy(() => import('../../modules/products/screens/ProductCreateScreen'));
 const StockEditScreen = React.lazy(() => import('../../modules/products/screens/ProductEditScreen'));
+const QuickSaleScreen = React.lazy(() => import('../../modules/products/screens/QuickSaleScreen'));
+const QuickPurchaseScreen = React.lazy(() => import('../../modules/products/screens/QuickPurchaseScreen'));
+const GlobalFieldsManagementScreen = React.lazy(() => import('../../modules/products/screens/GlobalFieldsManagementScreen'));
+const CategoryManagementScreen = React.lazy(() => import('../../modules/products/screens/CategoryManagementScreen'));
 const PurchaseCreateScreen = React.lazy(() => import('../../modules/purchases/screens/PurchaseCreateScreen'));
 const PurchaseEditScreen = React.lazy(() => import('../../modules/purchases/screens/PurchaseEditScreen'));
 
@@ -116,6 +120,10 @@ export const allRoutes: RouteConfig[] = [
   { name: 'EmployeeCreate', module: 'employees', component: EmployeeCreateScreen, requiredPermission: 'employees:create', options: { title: i18n.t('settings:new_employee') } },
   { name: 'ExpenseTypeCreate', module: 'expenses', component: ExpenseTypeCreateScreen, requiredPermission: 'expenses:create', options: { title: i18n.t('expenses:new_expense_type') } },
   { name: 'StockCreate', module: 'stock', component: StockCreateScreen, requiredPermission: 'stock:create', options: { title: i18n.t('stock:new_stock', { defaultValue: 'New stock' }) } },
+  { name: 'QuickSale', module: 'stock', component: QuickSaleScreen, requiredPermission: 'sales:create', options: { title: i18n.t('stock:quick_sale', { defaultValue: 'Quick Sale' }) } },
+  { name: 'QuickPurchase', module: 'stock', component: QuickPurchaseScreen, requiredPermission: 'purchases:create', options: { title: i18n.t('stock:quick_purchase', { defaultValue: 'Quick Purchase' }) } },
+  { name: 'GlobalFieldsManagement', module: 'stock', component: GlobalFieldsManagementScreen, requiredPermission: 'stock:manage_global_fields', options: { title: i18n.t('stock:manage_global_fields', { defaultValue: 'Manage Global Fields' }) } },
+  { name: 'CategoryManagement', module: 'stock', component: CategoryManagementScreen, requiredPermission: 'stock:view', options: { title: i18n.t('stock:category_management', { defaultValue: 'Category Management' }) } },
   
   // Edit screens
   { name: 'SalesEdit', module: 'sales', component: SalesEditScreen, requiredPermission: 'sales:edit', options: { title: i18n.t('sales:edit_sale') } },

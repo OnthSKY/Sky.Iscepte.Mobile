@@ -1,5 +1,7 @@
 import { DashboardStatData, QuickActionData } from '../services/dashboardService.types';
 import { useAsyncData } from './useAsyncData';
+import { Role } from '../config/appConstants';
+import { hasPermission } from '../config/permissions';
 
 /**
  * Single Responsibility: Handles dashboard data fetching and state
@@ -46,7 +48,8 @@ export interface DashboardService {
 export function useDashboardData(
   service: DashboardService,
   translate: (key: string, defaultValue?: string) => string,
-  getColor: (key: 'primary' | 'success' | 'error' | 'info') => string
+  getColor: (key: 'primary' | 'success' | 'error' | 'info') => string,
+  role?: Role // Optional role for permission checking
 ) {
   const { data, loading, error } = useAsyncData<DashboardData>(
     async () => {
@@ -65,7 +68,14 @@ export function useDashboardData(
         route: stat.route,
       }));
 
-      const quickActions: QuickAction[] = quickActionsData.map((action) => ({
+      // Filter quick actions by permission if role is provided
+      const filteredQuickActions = role
+        ? quickActionsData.filter((action) => 
+            !action.requiredPermission || hasPermission(role, action.requiredPermission)
+          )
+        : quickActionsData;
+
+      const quickActions: QuickAction[] = filteredQuickActions.map((action) => ({
         key: action.key,
         label: translate(action.translationKey, action.key),
         icon: action.icon,
@@ -83,7 +93,7 @@ export function useDashboardData(
         secondaryStats,
       };
     },
-    [service, translate, getColor]
+    [service, translate, getColor, role]
   );
 
   return { data, loading, error };

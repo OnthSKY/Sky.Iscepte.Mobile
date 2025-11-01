@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme, AppTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function SettingsScreen() {
-  const { t, i18n } = useTranslation(['settings', 'common']);
+  const navigation = useNavigation<any>();
+  const { t, i18n } = useTranslation(['settings', 'common', 'stock']);
   const { colors, theme, setTheme, activeTheme } = useTheme();
 
   const languageOptions = [
@@ -73,6 +75,28 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* Admin Settings */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('admin_settings', { defaultValue: 'Yönetici Ayarları' })}</Text>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('GlobalFieldsManagement')}
+          >
+            <View style={styles.settingItemLeft}>
+              <Ionicons name="grid-outline" size={22} color={colors.primary} />
+              <View style={styles.settingItemContent}>
+                <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                  {t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' })}
+                </Text>
+                <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                  {t('stock:manage_global_fields_desc', { defaultValue: 'Tüm ürünlerde kullanılabilecek genel alanları oluşturun' })}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+          </TouchableOpacity>
         </View>
 
         {/* App Info */}
@@ -153,6 +177,29 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+  },
+  settingItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.md,
+  },
+  settingItemContent: {
+    flex: 1,
+  },
+  settingItemTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: spacing.xs / 2,
+  },
+  settingItemDesc: {
+    fontSize: 12,
   },
 });
 

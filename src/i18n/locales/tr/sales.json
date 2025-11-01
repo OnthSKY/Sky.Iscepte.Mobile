@@ -31,6 +31,10 @@
   "module": "Satışlar",
   "module_name": "Satış Yönetimi",
   "module_overview": "Modül Özeti",
-  "module_description": "Satış modülü ile müşterilerinize ürün satış işlemlerini yönetebilirsiniz. Yapılan satışlar otomatik olarak stok envanterinizden düşülür ve gelir takibinize kaydedilir."
+  "module_description": "Satış modülü ile müşterilerinize ürün satış işlemlerini yönetebilirsiniz. Yapılan satışlar otomatik olarak stok envanterinizden düşülür ve gelir takibinize kaydedilir.",
+  "quick_sale_description": "Ürün seçip satış yapabilirsiniz",
+  "no_items": "Lütfen en az bir ürün ekleyin",
+  "sale_completed": "Satış tamamlandı",
+  "invalid_price": "Geçersiz fiyat"
 }
 

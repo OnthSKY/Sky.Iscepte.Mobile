@@ -6,6 +6,15 @@ import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
 import { toQueryParams } from '../../../shared/utils/query';
 
+export interface ProductCustomField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'date' | 'select' | 'boolean';
+  value: any;
+  options?: Array<{ label: string; value: any }>; // for select type
+  isGlobal?: boolean; // true: tüm ürünlerde kullanılabilir, false/undefined: sadece bu ürüne özel
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -13,8 +22,10 @@ export interface Product {
   category?: string;
   price?: number;
   stock?: number;
+  moq?: number; // Minimum Order Quantity
   isActive?: boolean;
   hasSales?: boolean; // if true, cannot be deleted
+  customFields?: ProductCustomField[]; // Dynamic custom fields
 }
 
 export interface ProductStats {

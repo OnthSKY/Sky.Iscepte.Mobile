@@ -50,11 +50,23 @@ export function FormScreenContainer<T extends BaseEntity>({
     t,
   } = useFormScreen(service, config, initialData, validator);
 
-  const screenTitle = title || (
-    isEditMode
-      ? t(`${config.translationNamespace}:edit_${config.entityName}`, { defaultValue: `Edit ${config.entityName}` })
-      : t(`${config.translationNamespace}:new_${config.entityName}`, { defaultValue: `New ${config.entityName}` })
-  );
+  // Generate fallback title - map entityName to appropriate translation key
+  const getFallbackTitle = () => {
+    // For stock_item, use 'stock' instead
+    const entityKey = config.entityName === 'stock_item' ? 'stock' : config.entityName;
+    
+    const translationKey = isEditMode
+      ? `${config.translationNamespace}:edit_${entityKey}`
+      : `${config.translationNamespace}:new_${entityKey}`;
+    
+    const defaultValue = isEditMode
+      ? `Edit ${config.entityName.replace('_', ' ')}`
+      : `New ${config.entityName.replace('_', ' ')}`;
+    
+    return t(translationKey, { defaultValue });
+  };
+
+  const screenTitle = title || getFallbackTitle();
 
   const renderFooter = () => (
     <View style={styles.footer}>
@@ -76,14 +88,14 @@ export function FormScreenContainer<T extends BaseEntity>({
 
   if (loading) {
     return (
-      <ScreenLayout title={screenTitle} showBackButton>
+      <ScreenLayout title={screenTitle} showBackButton onBackPress={handleCancel}>
         <LoadingState />
       </ScreenLayout>
     );
   }
 
   return (
-    <ScreenLayout title={screenTitle} showBackButton footer={renderFooter()}>
+    <ScreenLayout title={screenTitle} showBackButton onBackPress={handleCancel} footer={renderFooter()}>
       <ScrollView>
         <View style={styles.content}>
           <Card>

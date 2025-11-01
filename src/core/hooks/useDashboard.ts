@@ -6,6 +6,7 @@ import { useDashboardData } from './useDashboardData';
 import { useNavigationHandler } from './useNavigationHandler';
 import { DashboardServiceFactory, ThemeColors } from '../services/dashboardService';
 import { Role } from '../config/appConstants';
+import { hasPermission } from '../config/permissions';
 
 /**
  * Main dashboard hook that combines all dashboard concerns
@@ -15,7 +16,7 @@ import { Role } from '../config/appConstants';
 export function useDashboard() {
   const role = useAppStore((s) => s.role) as Role;
   const { colors } = useTheme();
-  const { t } = useTranslation(['dashboard', 'sales', 'customers', 'expenses', 'reports', 'common']);
+  const { t } = useTranslation(['dashboard', 'sales', 'customers', 'expenses', 'reports', 'stock', 'common']);
   
   // Convert theme colors to service-compatible format
   const themeColors: ThemeColors = useMemo(() => ({
@@ -53,7 +54,7 @@ export function useDashboard() {
   }, [t]);
 
   // Fetch dashboard data
-  const { data, loading, error } = useDashboardData(service, translate, getColor);
+  const { data, loading, error } = useDashboardData(service, translate, getColor, role);
 
   // Navigation handler with fallbacks
   const navigationHandler = useNavigationHandler({

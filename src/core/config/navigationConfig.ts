@@ -33,10 +33,23 @@ export const navigationFallbackMap: Record<string, string> = {
   EmployeeEdit: 'Employees',
   EmployeeDetail: 'Employees',
   
-  // Products module
+  // Products module (Stock)
+  StockCreate: 'Stock',
+  StockEdit: 'Stock',
+  StockDetail: 'Stock',
   ProductCreate: 'Products',
   ProductEdit: 'Products',
   ProductDetail: 'Products',
+  
+  // Purchases module
+  PurchaseCreate: 'Purchases',
+  PurchaseEdit: 'Purchases',
+  PurchaseDetail: 'Purchases',
+  
+  // Revenue module
+  RevenueCreate: 'Revenue',
+  RevenueEdit: 'Revenue',
+  RevenueDetail: 'Revenue',
   
   // Reports module
   ReportDetail: 'Reports',
