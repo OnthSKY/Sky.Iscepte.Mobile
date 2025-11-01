@@ -16,8 +16,14 @@ export default function DashboardTopBar({ variant = 'owner', style, showCompany 
   const user: any = useAppStore((s: any) => s.user);
   const role = useAppStore((s: any) => s.role);
   const roleLabel = (typeof role === 'string' ? role : 'guest') || 'guest';
-  const userName = user?.name || 'Kullanıcı';
-  const companyName = user?.company || 'Şirketiniz';
+  
+  // Get display name from firstName/lastName or name
+  const userName = user?.firstName && user?.lastName
+    ? `${user.firstName} ${user.lastName}`
+    : user?.name || 'Kullanıcı';
+  
+  // Get company name - owner has company, staff has ownerCompanyName
+  const companyName = user?.company || user?.ownerCompanyName || 'Şirketiniz';
   const userPackage: UserPackage = (user?.package as UserPackage) || DEFAULT_USER_PACKAGE;
   const packageLabel = PACKAGE_LABELS[userPackage];
 

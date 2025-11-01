@@ -4,6 +4,7 @@ import i18n from '../i18n';
 import authService from '../shared/services/authService';
 import { getRoleByUsername, getUserIdByRole, getUserIdByUsername } from '../core/utils/roleManager';
 import { Role, Language, ThemePreference } from '../core/config/appConstants';
+import { UserProfile } from '../shared/services/userService';
 
 type AppState = {
   isAuthenticated: boolean;
@@ -12,6 +13,7 @@ type AppState = {
   role: Role;
   token: string | null;
   refreshToken: string | null;
+  user: UserProfile | null;
   isLoading: boolean;
   originalRole: Role | null;
   impersonatedUserId: string | null;
@@ -20,6 +22,8 @@ type AppState = {
   setTheme: (pref: ThemePreference) => Promise<void>;
   setLanguage: (lng: Language) => Promise<void>;
   setRole: (role: Role) => void;
+  setUser: (user: UserProfile | null) => void;
+  fetchProfile: () => Promise<void>;
   impersonateUser: (userId: string, userRole: Role) => Promise<void>;
   stopImpersonating: () => Promise<void>;
   hydrate: () => Promise<void>;
@@ -33,9 +37,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   role: Role.GUEST,
   token: null,
   refreshToken: null,
+  user: null,
   isLoading: true,
   originalRole: null,
   impersonatedUserId: null,
+  async fetchProfile() {
+    try {
+      const { userService } = await import('../shared/services/userService');
+      const profile = await userService.getProfile();
+      set({ user: profile });
+    } catch (error) {
+      // Profile fetch failed, but don't block login
+      console.error('Failed to fetch profile:', error);
+    }
+  },
   async login(u: string, p: string) {
     try {
       // Use authService for proper authentication
@@ -51,6 +66,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           token: response.accessToken,
           refreshToken: response.refreshToken 
         });
+        
+        // Fetch user profile
+        await get().fetchProfile();
         
         // Load permissions for the user
         const userId = getUserIdByUsername(u);
@@ -85,7 +103,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       isAuthenticated: false, 
       role: Role.GUEST, 
       token: null,
-      refreshToken: null 
+      refreshToken: null,
+      user: null 
     });
   },
   async setTheme(pref) {
@@ -99,6 +118,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setRole(role) {
     set({ role });
+  },
+  setUser(user) {
+    set({ user });
   },
   async impersonateUser(userId: string, userRole: Role) {
     const currentRole = get().role;
@@ -171,6 +193,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           role
         });
         
+        // Fetch user profile after token refresh
+        await get().fetchProfile();
+        
         // Load permissions for the restored role using centralized helper
         const userId = getUserIdByRole(role);
         if (userId) {
@@ -190,7 +215,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
     
-    set({ isAuthenticated: false, token: null, refreshToken: null });
+    set({ isAuthenticated: false, token: null, refreshToken: null, user: null });
     return false;
   },
 }));

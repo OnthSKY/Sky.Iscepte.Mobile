@@ -9,6 +9,7 @@ import { useApiQuery } from '../../../core/hooks/useApiQuery';
 import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import { Expense, ExpenseStats } from '../services/expenseService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
@@ -19,7 +20,7 @@ import { toQueryParams } from '../../../shared/utils/query';
  */
 export function useExpensesQuery(filters?: Record<string, any>) {
   return useApiQuery<Paginated<Expense>>({
-    url: `/expenses${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
+    url: `${apiEndpoints.expenses.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
     queryKey: queryKeys.expenses.list(filters),
     staleTime: 2 * 60 * 1000,
     transform: (data) => {
@@ -41,7 +42,7 @@ export function useExpensesQuery(filters?: Record<string, any>) {
  */
 export function useExpenseQuery(id: string | number | undefined) {
   return useApiQuery<Expense>({
-    url: `/expenses/${id}`,
+    url: id ? apiEndpoints.expenses.get(id) : '',
     queryKey: queryKeys.expenses.detail(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -53,7 +54,7 @@ export function useExpenseQuery(id: string | number | undefined) {
  */
 export function useExpenseStatsQuery() {
   return useApiQuery<ExpenseStats>({
-    url: '/expenses/stats',
+    url: apiEndpoints.expenses.stats,
     queryKey: queryKeys.expenses.stats(),
     staleTime: 5 * 60 * 1000,
   });
@@ -64,7 +65,7 @@ export function useExpenseStatsQuery() {
  */
 export function useExpensesInfiniteQuery(pageSize: number = 20) {
   return useApiInfiniteQuery<Expense, number>({
-    url: '/expenses',
+    url: apiEndpoints.expenses.list,
     queryKey: queryKeys.expenses.lists(),
     pageSize,
     initialPageParam: 1,
@@ -80,7 +81,7 @@ export function useExpensesInfiniteQuery(pageSize: number = 20) {
  */
 export function useCreateExpenseMutation() {
   return useApiMutation<Expense, Partial<Expense>>({
-    url: '/expenses',
+    url: apiEndpoints.expenses.create,
     method: 'POST',
     invalidateQueries: [
       queryKeys.expenses.all,
@@ -94,7 +95,7 @@ export function useCreateExpenseMutation() {
  */
 export function useUpdateExpenseMutation(id?: string | number) {
   return useApiMutation<Expense, { id: string; data: Partial<Expense> }>({
-    url: (vars) => `/expenses/${vars.id}`,
+    url: (vars) => apiEndpoints.expenses.update(vars.id),
     method: 'PUT',
     bodyExtractor: (vars) => vars.data,
     invalidateQueries: [
@@ -131,7 +132,7 @@ export function useUpdateExpenseMutation(id?: string | number) {
  */
 export function useDeleteExpenseMutation() {
   return useApiMutation<void, string>({
-    url: (id) => `/expenses/${id}`,
+    url: (id) => apiEndpoints.expenses.remove(id),
     method: 'DELETE',
     invalidateQueries: [
       queryKeys.expenses.all,

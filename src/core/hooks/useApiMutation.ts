@@ -51,7 +51,7 @@ export interface ApiMutationOptions<TData, TVariables = unknown, TError = ApiErr
   /**
    * Query keys to invalidate after successful mutation
    */
-  invalidateQueries?: string[][];
+  invalidateQueries?: ReadonlyArray<readonly unknown[]>;
   
   /**
    * Optimistic update configuration
@@ -60,7 +60,7 @@ export interface ApiMutationOptions<TData, TVariables = unknown, TError = ApiErr
     /**
      * Query keys to update optimistically
      */
-    queryKeys: string[][];
+    queryKeys: ReadonlyArray<readonly unknown[]>;
     /**
      * Function to update cache optimistically
      */
@@ -176,7 +176,8 @@ export function useApiMutation<TData = unknown, TVariables = unknown, TError = A
     // Invalidate queries
     if (invalidateQueries) {
       invalidateQueries.forEach((queryKey) => {
-        queryClient.invalidateQueries({ queryKey });
+        // Convert readonly array to mutable array for queryClient
+        queryClient.invalidateQueries({ queryKey: [...queryKey] });
       });
     }
     
@@ -191,18 +192,19 @@ export function useApiMutation<TData = unknown, TVariables = unknown, TError = A
     ? async (variables: TVariables) => {
         // Cancel outgoing refetches
         const promises = optimisticUpdate.queryKeys.map((queryKey) =>
-          queryClient.cancelQueries({ queryKey })
+          queryClient.cancelQueries({ queryKey: [...queryKey] })
         );
         await Promise.all(promises);
 
         // Snapshot previous values for rollback
         const snapshots = optimisticUpdate.queryKeys.map((queryKey) => {
-          const snapshot = queryClient.getQueryData(queryKey);
+          const mutableKey = [...queryKey];
+          const snapshot = queryClient.getQueryData(mutableKey);
           // Update optimistically
-          queryClient.setQueryData(queryKey, (old: any) => {
+          queryClient.setQueryData(mutableKey, (old: any) => {
             return optimisticUpdate.updateFn(old, variables);
           });
-          return { queryKey, snapshot };
+          return { queryKey: mutableKey, snapshot };
         });
 
         return { snapshots };
@@ -213,14 +215,16 @@ export function useApiMutation<TData = unknown, TVariables = unknown, TError = A
   const handleError = (error: TError, variables: TVariables, context: any) => {
     // Rollback optimistic update if configured
     if (optimisticUpdate && context?.snapshots) {
-      context.snapshots.forEach(({ queryKey, snapshot }: { queryKey: string[]; snapshot: any }) => {
+      context.snapshots.forEach(({ queryKey, snapshot }: { queryKey: readonly unknown[]; snapshot: any }) => {
         if (optimisticUpdate.rollbackFn && snapshot !== undefined) {
-          queryClient.setQueryData(queryKey, (old: any) => {
+          const mutableKey = [...queryKey];
+          queryClient.setQueryData(mutableKey, (old: any) => {
             return optimisticUpdate.rollbackFn?.(old, variables) ?? snapshot;
           });
         } else {
           // If no rollback function, just restore snapshot
-          queryClient.setQueryData(queryKey, snapshot);
+          const mutableKey = [...queryKey];
+          queryClient.setQueryData(mutableKey, snapshot);
         }
       });
     }

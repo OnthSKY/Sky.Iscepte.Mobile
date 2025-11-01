@@ -7,21 +7,53 @@ import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
 import { useAppStore } from '../store/useAppStore';
+import { useProfileQuery } from '../core/hooks/useProfileQuery';
 import LanguagePicker from '../shared/components/LanguagePicker';
 import ThemeGradientToggle from '../shared/components/ThemeGradientToggle';
 import ConfirmDialog from '../shared/components/ConfirmDialog';
+import LoadingState from '../shared/components/LoadingState';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function ProfileScreen() {
   const { t } = useTranslation(['common', 'settings']);
   const { colors, activeTheme } = useTheme();
-  const user = useAppStore((s: any) => s.user);
-  const role = useAppStore((s: any) => s.role);
   const logout = useAppStore((s: any) => s.logout);
   const [logoutVisible, setLogoutVisible] = React.useState(false);
+  
+  // Fetch profile from API
+  const { data: profile, isLoading: isLoadingProfile } = useProfileQuery();
+  const userFromStore = useAppStore((s: any) => s.user);
+  const setUser = useAppStore((s: any) => s.setUser);
+  const user = userFromStore || profile;
+  const role = useAppStore((s: any) => s.role);
+  
+  // Update store when profile is fetched
+  React.useEffect(() => {
+    if (profile && !userFromStore) {
+      setUser(profile);
+    }
+  }, [profile, userFromStore, setUser]);
+  
+  const isLoading = isLoadingProfile && !userFromStore;
 
   const styles = getStyles({ colors });
-  const initials = user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U';
+  const initials = user?.firstName && user?.lastName 
+    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+    : user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
+  
+  const displayName = user?.firstName && user?.lastName
+    ? `${user.firstName} ${user.lastName}`
+    : user?.name || 'User Name';
+  
+  const companyName = user?.company || user?.ownerCompanyName || null;
+
+  if (isLoading && !user) {
+    return (
+      <ScreenLayout title={t('profile')}>
+        <LoadingState />
+      </ScreenLayout>
+    );
+  }
 
   return (
     <ScreenLayout title={t('profile')} headerRight={<LanguagePicker showLabel={false} variant="compact" />}>
@@ -35,12 +67,50 @@ export default function ProfileScreen() {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          <Text style={styles.name}>{user?.name || 'User Name'}</Text>
+          <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.email}>{user?.email || 'user@example.com'}</Text>
+          {companyName && (
+            <Text style={styles.company}>{companyName}</Text>
+          )}
           <View style={styles.roleBadge}>
             <Text style={styles.roleText}>{role?.toUpperCase() || 'GUEST'}</Text>
           </View>
         </LinearGradient>
+
+        <View style={styles.settingsGroup}>
+          <Text style={styles.groupTitle}>{t('settings:personal_info', { defaultValue: 'Kişisel Bilgiler' })}</Text>
+          <View style={styles.card}>
+            <View style={styles.infoRow}>
+              <Ionicons name="person-outline" size={20} color={colors.muted} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>{t('common:name', { defaultValue: 'Ad Soyad' })}</Text>
+                <Text style={styles.infoValue}>{displayName}</Text>
+              </View>
+            </View>
+            {user?.phone && (
+              <View style={[styles.infoRow, styles.infoRowMargin]}>
+                <Ionicons name="call-outline" size={20} color={colors.muted} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>{t('common:phone', { defaultValue: 'Telefon' })}</Text>
+                  <Text style={styles.infoValue}>{user.phone}</Text>
+                </View>
+              </View>
+            )}
+            {companyName && (
+              <View style={[styles.infoRow, styles.infoRowMargin]}>
+                <Ionicons name="business-outline" size={20} color={colors.muted} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>
+                    {user?.role === 'owner' 
+                      ? t('settings:company', { defaultValue: 'Şirket' })
+                      : t('settings:works_for', { defaultValue: 'Çalıştığı Şirket' })}
+                  </Text>
+                  <Text style={styles.infoValue}>{companyName}</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
 
         <View style={styles.settingsGroup}>
           <Text style={styles.groupTitle}>{t('settings:preferences')}</Text>
@@ -177,6 +247,32 @@ const getStyles = ({ colors }: { colors: any }) =>
     versionText: {
       color: colors.muted,
       fontSize: 12,
+    },
+    company: {
+      fontSize: 14,
+      color: 'rgba(255,255,255,0.7)',
+      marginTop: 4,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    infoRowMargin: {
+      marginTop: spacing.md,
+    },
+    infoContent: {
+      flex: 1,
+    },
+    infoLabel: {
+      fontSize: 12,
+      color: colors.muted,
+      marginBottom: 4,
+    },
+    infoValue: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: '500',
     },
   });
 

@@ -10,6 +10,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../services/queryClient';
+import { apiEndpoints } from '../config/apiEndpoints';
 import httpService from '../../shared/services/httpService';
 
 /**
@@ -29,37 +30,37 @@ const DETAIL_PREFETCH_CONFIGS: Record<string, DetailPrefetchConfig> = {
   products: {
     module: 'products',
     getQueryKey: (id) => queryKeys.products.detail(id),
-    getDetailUrl: (id) => `/products/${id}`,
+    getDetailUrl: (id) => apiEndpoints.products.get(id),
     maxPrefetch: 5, // Prefetch first 5 items
   },
   sales: {
     module: 'sales',
     getQueryKey: (id) => queryKeys.sales.detail(id),
-    getDetailUrl: (id) => `/sales/${id}`,
+    getDetailUrl: (id) => apiEndpoints.sales.get(id),
     maxPrefetch: 5,
   },
   customers: {
     module: 'customers',
     getQueryKey: (id) => queryKeys.customers.detail(id),
-    getDetailUrl: (id) => `/customers/${id}`,
+    getDetailUrl: (id) => apiEndpoints.customers.get(id),
     maxPrefetch: 3,
   },
   expenses: {
     module: 'expenses',
     getQueryKey: (id) => queryKeys.expenses.detail(id),
-    getDetailUrl: (id) => `/expenses/${id}`,
+    getDetailUrl: (id) => apiEndpoints.expenses.get(id),
     maxPrefetch: 3,
   },
   employees: {
     module: 'employees',
     getQueryKey: (id) => queryKeys.employees.detail(id),
-    getDetailUrl: (id) => `/employees/${id}`,
+    getDetailUrl: (id) => apiEndpoints.employees.get(id),
     maxPrefetch: 3,
   },
   reports: {
     module: 'reports',
     getQueryKey: (id) => queryKeys.reports.detail(id),
-    getDetailUrl: (id) => `/reports/${id}`,
+    getDetailUrl: (id) => apiEndpoints.reports.get(id),
     maxPrefetch: 3,
   },
 };

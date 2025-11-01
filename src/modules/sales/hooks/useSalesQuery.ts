@@ -9,6 +9,7 @@ import { useApiQuery } from '../../../core/hooks/useApiQuery';
 import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import { Sale, SalesStats } from '../services/salesService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
@@ -19,7 +20,7 @@ import { toQueryParams } from '../../../shared/utils/query';
  */
 export function useSalesQuery(filters?: Record<string, any>) {
   return useApiQuery<Paginated<Sale>>({
-    url: `/sales${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
+    url: `${apiEndpoints.sales.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
     queryKey: queryKeys.sales.list(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes for lists
     transform: (data) => {
@@ -41,7 +42,7 @@ export function useSalesQuery(filters?: Record<string, any>) {
  */
 export function useSaleQuery(id: string | number | undefined) {
   return useApiQuery<Sale>({
-    url: `/sales/${id}`,
+    url: id ? apiEndpoints.sales.get(id) : '',
     queryKey: queryKeys.sales.detail(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes for details
@@ -53,7 +54,7 @@ export function useSaleQuery(id: string | number | undefined) {
  */
 export function useSaleStatsQuery() {
   return useApiQuery<SalesStats>({
-    url: '/sales/stats',
+    url: apiEndpoints.sales.stats,
     queryKey: queryKeys.sales.stats(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -64,7 +65,7 @@ export function useSaleStatsQuery() {
  */
 export function useSalesInfiniteQuery(pageSize: number = 20) {
   return useApiInfiniteQuery<Sale, number>({
-    url: '/sales',
+    url: apiEndpoints.sales.list,
     queryKey: queryKeys.sales.lists(),
     pageSize,
     initialPageParam: 1,
@@ -80,7 +81,7 @@ export function useSalesInfiniteQuery(pageSize: number = 20) {
  */
 export function useCreateSaleMutation() {
   return useApiMutation<Sale, Partial<Sale>>({
-    url: '/sales',
+    url: apiEndpoints.sales.create,
     method: 'POST',
     invalidateQueries: [
       queryKeys.sales.all,
@@ -94,7 +95,7 @@ export function useCreateSaleMutation() {
  */
 export function useUpdateSaleMutation(id?: string | number) {
   return useApiMutation<Sale, { id: string; data: Partial<Sale> }>({
-    url: (vars) => `/sales/${vars.id}`,
+    url: (vars) => apiEndpoints.sales.update(vars.id),
     method: 'PUT',
     bodyExtractor: (vars) => vars.data,
     invalidateQueries: [
@@ -131,7 +132,7 @@ export function useUpdateSaleMutation(id?: string | number) {
  */
 export function useDeleteSaleMutation() {
   return useApiMutation<void, string>({
-    url: (id) => `/sales/${id}`,
+    url: (id) => apiEndpoints.sales.remove(id),
     method: 'DELETE',
     invalidateQueries: [
       queryKeys.sales.all,

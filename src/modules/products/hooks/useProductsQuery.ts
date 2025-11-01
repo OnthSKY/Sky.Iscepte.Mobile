@@ -9,6 +9,7 @@ import { useApiQuery } from '../../../core/hooks/useApiQuery';
 import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import { Product, ProductStats } from '../services/productService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
@@ -19,7 +20,7 @@ import { toQueryParams } from '../../../shared/utils/query';
  */
 export function useProductsQuery(filters?: Record<string, any>) {
   return useApiQuery<Paginated<Product>>({
-    url: `/products${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
+    url: `${apiEndpoints.products.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
     queryKey: queryKeys.products.list(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes for lists (fresher than detail)
     transform: (data) => {
@@ -42,7 +43,7 @@ export function useProductsQuery(filters?: Record<string, any>) {
  */
 export function useProductQuery(id: string | number | undefined) {
   return useApiQuery<Product>({
-    url: `/products/${id}`,
+    url: id ? apiEndpoints.products.get(id) : '',
     queryKey: queryKeys.products.detail(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes for details
@@ -54,7 +55,7 @@ export function useProductQuery(id: string | number | undefined) {
  */
 export function useProductStatsQuery() {
   return useApiQuery<ProductStats>({
-    url: '/products/stats',
+    url: apiEndpoints.products.stats,
     queryKey: queryKeys.products.stats(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -65,7 +66,7 @@ export function useProductStatsQuery() {
  */
 export function useProductsInfiniteQuery(pageSize: number = 20) {
   return useApiInfiniteQuery<Product, number>({
-    url: '/products',
+    url: apiEndpoints.products.list,
     queryKey: queryKeys.products.lists(),
     pageSize,
     initialPageParam: 1,
@@ -81,12 +82,12 @@ export function useProductsInfiniteQuery(pageSize: number = 20) {
  */
 export function useCreateProductMutation() {
   return useApiMutation<Product, Partial<Product>>({
-    url: '/products',
+    url: apiEndpoints.products.create,
     method: 'POST',
     invalidateQueries: [
       queryKeys.products.all,
       queryKeys.products.stats(),
-    ],
+    ] as ReadonlyArray<readonly unknown[]>,
   });
 }
 
@@ -95,19 +96,19 @@ export function useCreateProductMutation() {
  */
 export function useUpdateProductMutation(id?: string | number) {
   return useApiMutation<Product, { id: string; data: Partial<Product> }>({
-    url: (vars) => `/products/${vars.id}`,
+    url: (vars) => apiEndpoints.products.update(vars.id),
     method: 'PUT',
     bodyExtractor: (vars) => vars.data,
     invalidateQueries: [
       queryKeys.products.all,
       queryKeys.products.stats(),
       ...(id ? [queryKeys.products.detail(id)] : []),
-    ],
+    ] as ReadonlyArray<readonly unknown[]>,
     optimisticUpdate: {
       queryKeys: [
         queryKeys.products.all,
         ...(id ? [queryKeys.products.detail(id)] : []),
-      ],
+      ] as ReadonlyArray<readonly unknown[]>,
       updateFn: (oldData, vars) => {
         // If oldData is paginated list
         if (oldData?.items && Array.isArray(oldData.items)) {
@@ -134,14 +135,14 @@ export function useUpdateProductMutation(id?: string | number) {
  */
 export function useDeleteProductMutation() {
   return useApiMutation<void, string>({
-    url: (id) => `/products/${id}`,
+    url: (id) => apiEndpoints.products.remove(id),
     method: 'DELETE',
     invalidateQueries: [
       queryKeys.products.all,
       queryKeys.products.stats(),
-    ],
+    ] as ReadonlyArray<readonly unknown[]>,
     optimisticUpdate: {
-      queryKeys: [queryKeys.products.all],
+      queryKeys: [queryKeys.products.all] as ReadonlyArray<readonly unknown[]>,
       updateFn: (oldData, id) => {
         // Remove product from cache
         if (oldData?.items && Array.isArray(oldData.items)) {

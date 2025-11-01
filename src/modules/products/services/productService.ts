@@ -1,5 +1,6 @@
 import httpService from '../../../shared/services/httpService';
 import appConfig from '../../../core/config/appConfig';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
@@ -53,19 +54,19 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
 
 export const productService = {
   list: (req: GridRequest) =>
-    request<Paginated<Product>>('GET', `/products${toQueryParams(req)}`),
+    request<Paginated<Product>>('GET', `${apiEndpoints.products.list}${toQueryParams(req)}`),
 
-  get: (id: string) => request<Product>('GET', `/products/${id}`),
+  get: (id: string) => request<Product>('GET', apiEndpoints.products.get(id)),
 
-  stats: () => request<ProductStats>('GET', `/products/stats`),
+  stats: () => request<ProductStats>('GET', apiEndpoints.products.stats),
 
   create: (payload: Partial<Product>) =>
-    request<Product>('POST', '/products', payload),
+    request<Product>('POST', apiEndpoints.products.create, payload),
 
   update: (id: string, payload: Partial<Product>) =>
-    request<Product>('PUT', `/products/${id}`, payload),
+    request<Product>('PUT', apiEndpoints.products.update(id), payload),
 
-  remove: (id: string) => request<void>('DELETE', `/products/${id}`),
+  remove: (id: string) => request<void>('DELETE', apiEndpoints.products.remove(id)),
 };
 
 export default productService;

@@ -1,0 +1,152 @@
+/**
+ * API Endpoints Configuration
+ * 
+ * Centralized endpoint management for all modules
+ * Each module defines its own endpoints, allowing for easy expansion
+ * 
+ * Structure:
+ * - Module-based organization
+ * - Each module can have role-specific endpoints if needed
+ * - Functions for dynamic endpoints (with IDs)
+ * - Consistent naming across modules
+ */
+
+/**
+ * Authentication endpoints
+ */
+export const authEndpoints = {
+  login: '/auth/login',
+  refresh: '/auth/refresh',
+  logout: '/auth/logout',
+} as const;
+
+/**
+ * User endpoints
+ */
+export const userEndpoints = {
+  profile: '/users/me',
+  updateProfile: '/users/me',
+} as const;
+
+/**
+ * Sales module endpoints
+ */
+export const salesEndpoints = {
+  list: '/sales',
+  get: (id: string | number) => `/sales/${id}`,
+  stats: '/sales/stats',
+  create: '/sales',
+  update: (id: string | number) => `/sales/${id}`,
+  remove: (id: string | number) => `/sales/${id}`,
+} as const;
+
+/**
+ * Customers module endpoints
+ */
+export const customersEndpoints = {
+  list: '/customers',
+  get: (id: string | number) => `/customers/${id}`,
+  stats: '/customers/stats',
+  create: '/customers',
+  update: (id: string | number) => `/customers/${id}`,
+  remove: (id: string | number) => `/customers/${id}`,
+} as const;
+
+/**
+ * Products module endpoints
+ */
+export const productsEndpoints = {
+  list: '/products',
+  get: (id: string | number) => `/products/${id}`,
+  stats: '/products/stats',
+  create: '/products',
+  update: (id: string | number) => `/products/${id}`,
+  remove: (id: string | number) => `/products/${id}`,
+} as const;
+
+/**
+ * Expenses module endpoints
+ */
+export const expensesEndpoints = {
+  list: '/expenses',
+  get: (id: string | number) => `/expenses/${id}`,
+  stats: '/expenses/stats',
+  create: '/expenses',
+  update: (id: string | number) => `/expenses/${id}`,
+  remove: (id: string | number) => `/expenses/${id}`,
+} as const;
+
+/**
+ * Employees module endpoints
+ */
+export const employeesEndpoints = {
+  list: '/employees',
+  get: (id: string | number) => `/employees/${id}`,
+  stats: '/employees/stats',
+  create: '/employees',
+  update: (id: string | number) => `/employees/${id}`,
+  remove: (id: string | number) => `/employees/${id}`,
+} as const;
+
+/**
+ * Reports module endpoints
+ */
+export const reportsEndpoints = {
+  list: '/reports',
+  get: (id: string | number) => `/reports/${id}`,
+  stats: '/reports/stats',
+  create: '/reports',
+  update: (id: string | number) => `/reports/${id}`,
+  remove: (id: string | number) => `/reports/${id}`,
+} as const;
+
+/**
+ * Modules endpoint (for navigation/config)
+ */
+export const modulesEndpoints = {
+  list: '/modules',
+  get: (id: string | number) => `/modules/${id}`,
+} as const;
+
+/**
+ * All endpoints grouped by module
+ * 
+ * Usage:
+ * ```typescript
+ * import { apiEndpoints } from '@/core/config/apiEndpoints';
+ * const url = apiEndpoints.sales.get(saleId);
+ * ```
+ */
+export const apiEndpoints = {
+  auth: authEndpoints,
+  user: userEndpoints,
+  sales: salesEndpoints,
+  customers: customersEndpoints,
+  products: productsEndpoints,
+  expenses: expensesEndpoints,
+  employees: employeesEndpoints,
+  reports: reportsEndpoints,
+  modules: modulesEndpoints,
+} as const;
+
+/**
+ * Type helper for endpoint functions
+ */
+export type EndpointFunction = (id: string | number) => string;
+
+/**
+ * Get endpoint with role-specific logic if needed
+ * 
+ * Example usage for role-specific endpoints:
+ * ```typescript
+ * export const salesEndpointsByRole = {
+ *   admin: { ...salesEndpoints },
+ *   owner: { 
+ *     ...salesEndpoints,
+ *     customAction: '/sales/custom-action' // owner-only endpoint
+ *   }
+ * }
+ * ```
+ */
+export type ApiEndpoints = typeof apiEndpoints;
+

@@ -1,5 +1,6 @@
 import httpService from '../../../shared/services/httpService';
 import appConfig from '../../../core/config/appConfig';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
@@ -52,19 +53,19 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
 
 export const customerService = {
   list: (req: GridRequest) =>
-    request<Paginated<Customer>>('GET', `/customers${toQueryParams(req)}`),
+    request<Paginated<Customer>>('GET', `${apiEndpoints.customers.list}${toQueryParams(req)}`),
 
-  get: (id: string) => request<Customer>('GET', `/customers/${id}`),
+  get: (id: string) => request<Customer>('GET', apiEndpoints.customers.get(id)),
 
-  stats: () => request<CustomerStats>('GET', `/customers/stats`),
+  stats: () => request<CustomerStats>('GET', apiEndpoints.customers.stats),
 
   create: (payload: Partial<Customer>) =>
-    request<Customer>('POST', '/customers', payload),
+    request<Customer>('POST', apiEndpoints.customers.create, payload),
 
   update: (id: string, payload: Partial<Customer>) =>
-    request<Customer>('PUT', `/customers/${id}`, payload),
+    request<Customer>('PUT', apiEndpoints.customers.update(id), payload),
 
-  remove: (id: string) => request<void>('DELETE', `/customers/${id}`),
+  remove: (id: string) => request<void>('DELETE', apiEndpoints.customers.remove(id)),
 };
 
 export default customerService;

@@ -4,6 +4,7 @@ import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
 import SummaryCard from '../shared/components/SummaryCard';
 import DashboardTopBar from '../shared/components/DashboardTopBar';
+import LoadingState from '../shared/components/LoadingState';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useOwnerDashboard } from '../core/hooks/useOwnerDashboard';
@@ -41,8 +42,17 @@ export default function OwnerDashboardScreen() {
     employeeCards,
     stats,
     employeeStats,
+    isLoading,
     t,
   } = useOwnerDashboard();
+
+  if (isLoading) {
+    return (
+      <ScreenLayout>
+        <LoadingState />
+      </ScreenLayout>
+    );
+  }
 
   return (
     <ScreenLayout>

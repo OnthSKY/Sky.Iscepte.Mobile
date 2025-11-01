@@ -174,6 +174,22 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
     return handleAuthRequest<T>(method, url, body, authToken);
   }
 
+  // Handle profile endpoint - GET /users/me or GET /profile
+  if ((url === '/users/me' || url === '/profile') && method === 'GET') {
+    const userId = extractUserIdFromToken(authToken || null);
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    
+    const user = (usersSeed as any[]).find((u: any) => u.id === userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Return user profile with all details
+    return user as T;
+  }
+
   // Get current owner ID from token
   const currentOwnerId = await getCurrentOwnerIdFromToken(authToken || null);
 

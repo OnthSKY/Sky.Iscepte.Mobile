@@ -1,5 +1,6 @@
 import httpService from '../../../shared/services/httpService';
 import appConfig from '../../../core/config/appConfig';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
@@ -52,19 +53,19 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
 
 export const employeeService = {
   list: (req: GridRequest) =>
-    request<Paginated<Employee>>('GET', `/employees${toQueryParams(req)}`),
+    request<Paginated<Employee>>('GET', `${apiEndpoints.employees.list}${toQueryParams(req)}`),
 
-  get: (id: string) => request<Employee>('GET', `/employees/${id}`),
+  get: (id: string) => request<Employee>('GET', apiEndpoints.employees.get(id)),
 
-  stats: () => request<EmployeeStats>('GET', `/employees/stats`),
+  stats: () => request<EmployeeStats>('GET', apiEndpoints.employees.stats),
 
   create: (payload: Partial<Employee>) =>
-    request<Employee>('POST', '/employees', payload),
+    request<Employee>('POST', apiEndpoints.employees.create, payload),
 
   update: (id: string, payload: Partial<Employee>) =>
-    request<Employee>('PUT', `/employees/${id}`, payload),
+    request<Employee>('PUT', apiEndpoints.employees.update(id), payload),
 
-  remove: (id: string) => request<void>('DELETE', `/employees/${id}`),
+  remove: (id: string) => request<void>('DELETE', apiEndpoints.employees.remove(id)),
 };
 
 export default employeeService;

@@ -1,5 +1,6 @@
 import httpService from './httpService';
 import appConfig from '../../core/config/appConfig';
+import { apiEndpoints } from '../../core/config/apiEndpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface LoginResponse {
@@ -25,8 +26,7 @@ export const authService = {
    * @returns Login response with tokens and user info
    */
   async login(username: string, password: string): Promise<LoginResponse> {
-    // TODO: Replace with actual API call
-    const response = await httpService.post<LoginResponse>('/auth/login', {
+    const response = await httpService.post<LoginResponse>(apiEndpoints.auth.login, {
       username,
       password,
     });
@@ -57,7 +57,7 @@ export const authService = {
       },
     } : undefined;
     
-    const response = await httpService.post<RefreshTokenResponse>('/auth/refresh', {
+    const response = await httpService.post<RefreshTokenResponse>(apiEndpoints.auth.refresh, {
       refreshToken,
     }, config);
     
@@ -77,7 +77,7 @@ export const authService = {
     if (refreshToken) {
       try {
         // TODO: Call logout API to invalidate token on server
-        await httpService.post('/auth/logout', { refreshToken });
+        await httpService.post(apiEndpoints.auth.logout, { refreshToken });
       } catch (error) {
         // Ignore errors if server is unreachable
         // Logout API call failed - continue with local cleanup

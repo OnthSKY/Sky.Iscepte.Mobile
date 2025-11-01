@@ -11,6 +11,7 @@ import React, { useEffect, useRef } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../services/queryClient';
+import { apiEndpoints } from '../config/apiEndpoints';
 import httpService from '../../shared/services/httpService';
 import type { NavigationProp } from '@react-navigation/native';
 
@@ -28,61 +29,61 @@ const ROUTE_PREFETCH_MAP: Record<
   // Products
   ProductsDashboard: {
     queryKeys: [queryKeys.products.stats()],
-    prefetchFns: [() => httpService.get('/products/stats')],
+    prefetchFns: [() => httpService.get(apiEndpoints.products.stats)],
   },
   ProductsList: {
     queryKeys: [queryKeys.products.list()],
-    prefetchFns: [() => httpService.get('/products')],
+    prefetchFns: [() => httpService.get(apiEndpoints.products.list)],
   },
   
   // Sales
   SalesDashboard: {
     queryKeys: [queryKeys.sales.stats()],
-    prefetchFns: [() => httpService.get('/sales/stats')],
+    prefetchFns: [() => httpService.get(apiEndpoints.sales.stats)],
   },
   SalesList: {
     queryKeys: [queryKeys.sales.list()],
-    prefetchFns: [() => httpService.get('/sales')],
+    prefetchFns: [() => httpService.get(apiEndpoints.sales.list)],
   },
   
   // Customers
   CustomersDashboard: {
     queryKeys: [queryKeys.customers.stats()],
-    prefetchFns: [() => httpService.get('/customers/stats')],
+    prefetchFns: [() => httpService.get(apiEndpoints.customers.stats)],
   },
   CustomersList: {
     queryKeys: [queryKeys.customers.list()],
-    prefetchFns: [() => httpService.get('/customers')],
+    prefetchFns: [() => httpService.get(apiEndpoints.customers.list)],
   },
   
   // Expenses
   ExpensesDashboard: {
     queryKeys: [queryKeys.expenses.stats()],
-    prefetchFns: [() => httpService.get('/expenses/stats')],
+    prefetchFns: [() => httpService.get(apiEndpoints.expenses.stats)],
   },
   ExpensesList: {
     queryKeys: [queryKeys.expenses.list()],
-    prefetchFns: [() => httpService.get('/expenses')],
+    prefetchFns: [() => httpService.get(apiEndpoints.expenses.list)],
   },
   
   // Employees
   EmployeesDashboard: {
     queryKeys: [queryKeys.employees.stats()],
-    prefetchFns: [() => httpService.get('/employees/stats')],
+    prefetchFns: [() => httpService.get(apiEndpoints.employees.stats)],
   },
   EmployeesList: {
     queryKeys: [queryKeys.employees.list()],
-    prefetchFns: [() => httpService.get('/employees')],
+    prefetchFns: [() => httpService.get(apiEndpoints.employees.list)],
   },
   
   // Reports
   ReportsDashboard: {
     queryKeys: [queryKeys.reports.stats()],
-    prefetchFns: [() => httpService.get('/reports/stats')],
+    prefetchFns: [() => httpService.get(apiEndpoints.reports.stats)],
   },
   ReportsList: {
     queryKeys: [queryKeys.reports.list()],
-    prefetchFns: [() => httpService.get('/reports')],
+    prefetchFns: [() => httpService.get(apiEndpoints.reports.list)],
   },
 };
 
@@ -96,7 +97,7 @@ const LIST_TO_DETAIL_PREFETCH: Record<string, (itemIds: string[]) => void> = {
     itemIds.slice(0, 3).forEach((id) => {
       queryClient.prefetchQuery({
         queryKey: queryKeys.products.detail(id),
-        queryFn: () => httpService.get(`/products/${id}`),
+        queryFn: () => httpService.get(apiEndpoints.products.get(id)),
       });
     });
   },

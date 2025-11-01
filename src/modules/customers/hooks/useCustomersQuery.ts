@@ -9,6 +9,7 @@ import { useApiQuery } from '../../../core/hooks/useApiQuery';
 import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import { Customer, CustomerStats } from '../services/customerService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
@@ -19,7 +20,7 @@ import { toQueryParams } from '../../../shared/utils/query';
  */
 export function useCustomersQuery(filters?: Record<string, any>) {
   return useApiQuery<Paginated<Customer>>({
-    url: `/customers${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
+    url: `${apiEndpoints.customers.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
     queryKey: queryKeys.customers.list(filters),
     staleTime: 2 * 60 * 1000,
     transform: (data) => {
@@ -41,7 +42,7 @@ export function useCustomersQuery(filters?: Record<string, any>) {
  */
 export function useCustomerQuery(id: string | number | undefined) {
   return useApiQuery<Customer>({
-    url: `/customers/${id}`,
+    url: id ? apiEndpoints.customers.get(id) : '',
     queryKey: queryKeys.customers.detail(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -53,7 +54,7 @@ export function useCustomerQuery(id: string | number | undefined) {
  */
 export function useCustomerStatsQuery() {
   return useApiQuery<CustomerStats>({
-    url: '/customers/stats',
+    url: apiEndpoints.customers.stats,
     queryKey: queryKeys.customers.stats(),
     staleTime: 5 * 60 * 1000,
   });
@@ -64,7 +65,7 @@ export function useCustomerStatsQuery() {
  */
 export function useCustomersInfiniteQuery(pageSize: number = 20) {
   return useApiInfiniteQuery<Customer, number>({
-    url: '/customers',
+    url: apiEndpoints.customers.list,
     queryKey: queryKeys.customers.lists(),
     pageSize,
     initialPageParam: 1,
@@ -80,7 +81,7 @@ export function useCustomersInfiniteQuery(pageSize: number = 20) {
  */
 export function useCreateCustomerMutation() {
   return useApiMutation<Customer, Partial<Customer>>({
-    url: '/customers',
+    url: apiEndpoints.customers.create,
     method: 'POST',
     invalidateQueries: [
       queryKeys.customers.all,
@@ -94,7 +95,7 @@ export function useCreateCustomerMutation() {
  */
 export function useUpdateCustomerMutation(id?: string | number) {
   return useApiMutation<Customer, { id: string; data: Partial<Customer> }>({
-    url: (vars) => `/customers/${vars.id}`,
+    url: (vars) => apiEndpoints.customers.update(vars.id),
     method: 'PUT',
     bodyExtractor: (vars) => vars.data,
     invalidateQueries: [
@@ -131,7 +132,7 @@ export function useUpdateCustomerMutation(id?: string | number) {
  */
 export function useDeleteCustomerMutation() {
   return useApiMutation<void, string>({
-    url: (id) => `/customers/${id}`,
+    url: (id) => apiEndpoints.customers.remove(id),
     method: 'DELETE',
     invalidateQueries: [
       queryKeys.customers.all,

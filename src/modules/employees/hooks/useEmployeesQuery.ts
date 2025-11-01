@@ -9,6 +9,7 @@ import { useApiQuery } from '../../../core/hooks/useApiQuery';
 import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import { Employee, EmployeeStats } from '../services/employeeService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
@@ -19,7 +20,7 @@ import { toQueryParams } from '../../../shared/utils/query';
  */
 export function useEmployeesQuery(filters?: Record<string, any>) {
   return useApiQuery<Paginated<Employee>>({
-    url: `/users${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
+    url: `${apiEndpoints.employees.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
     queryKey: queryKeys.employees.list(filters),
     staleTime: 2 * 60 * 1000,
     transform: (data) => {
@@ -41,7 +42,7 @@ export function useEmployeesQuery(filters?: Record<string, any>) {
  */
 export function useEmployeeQuery(id: string | number | undefined) {
   return useApiQuery<Employee>({
-    url: `/users/${id}`,
+    url: id ? apiEndpoints.employees.get(id) : '',
     queryKey: queryKeys.employees.detail(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -53,7 +54,7 @@ export function useEmployeeQuery(id: string | number | undefined) {
  */
 export function useEmployeeStatsQuery() {
   return useApiQuery<EmployeeStats>({
-    url: '/employees/stats',
+    url: apiEndpoints.employees.stats,
     queryKey: queryKeys.employees.stats(),
     staleTime: 5 * 60 * 1000,
   });
@@ -64,7 +65,7 @@ export function useEmployeeStatsQuery() {
  */
 export function useEmployeesInfiniteQuery(pageSize: number = 20) {
   return useApiInfiniteQuery<Employee, number>({
-    url: '/users',
+    url: apiEndpoints.employees.list,
     queryKey: queryKeys.employees.lists(),
     pageSize,
     initialPageParam: 1,
@@ -80,7 +81,7 @@ export function useEmployeesInfiniteQuery(pageSize: number = 20) {
  */
 export function useCreateEmployeeMutation() {
   return useApiMutation<Employee, Partial<Employee>>({
-    url: '/users',
+    url: apiEndpoints.employees.create,
     method: 'POST',
     invalidateQueries: [
       queryKeys.employees.all,
@@ -94,7 +95,7 @@ export function useCreateEmployeeMutation() {
  */
 export function useUpdateEmployeeMutation(id?: string | number) {
   return useApiMutation<Employee, { id: string; data: Partial<Employee> }>({
-    url: (vars) => `/users/${vars.id}`,
+    url: (vars) => apiEndpoints.employees.update(vars.id),
     method: 'PUT',
     bodyExtractor: (vars) => vars.data,
     invalidateQueries: [
@@ -131,7 +132,7 @@ export function useUpdateEmployeeMutation(id?: string | number) {
  */
 export function useDeleteEmployeeMutation() {
   return useApiMutation<void, string>({
-    url: (id) => `/users/${id}`,
+    url: (id) => apiEndpoints.employees.remove(id),
     method: 'DELETE',
     invalidateQueries: [
       queryKeys.employees.all,

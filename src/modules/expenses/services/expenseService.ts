@@ -1,5 +1,6 @@
 import httpService from '../../../shared/services/httpService';
 import appConfig from '../../../core/config/appConfig';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
@@ -53,19 +54,19 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
 
 export const expenseService = {
   list: (req: GridRequest) =>
-    request<Paginated<Expense>>('GET', `/expenses${toQueryParams(req)}`),
+    request<Paginated<Expense>>('GET', `${apiEndpoints.expenses.list}${toQueryParams(req)}`),
 
-  get: (id: string) => request<Expense>('GET', `/expenses/${id}`),
+  get: (id: string) => request<Expense>('GET', apiEndpoints.expenses.get(id)),
 
-  stats: () => request<ExpenseStats>('GET', `/expenses/stats`),
+  stats: () => request<ExpenseStats>('GET', apiEndpoints.expenses.stats),
 
   create: (payload: Partial<Expense>) =>
-    request<Expense>('POST', '/expenses', payload),
+    request<Expense>('POST', apiEndpoints.expenses.create, payload),
 
   update: (id: string, payload: Partial<Expense>) =>
-    request<Expense>('PUT', `/expenses/${id}`, payload),
+    request<Expense>('PUT', apiEndpoints.expenses.update(id), payload),
 
-  remove: (id: string) => request<void>('DELETE', `/expenses/${id}`),
+  remove: (id: string) => request<void>('DELETE', apiEndpoints.expenses.remove(id)),
 };
 
 export default expenseService;

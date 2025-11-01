@@ -9,6 +9,7 @@ import { useApiQuery } from '../../../core/hooks/useApiQuery';
 import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
+import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import { Report, ReportStats } from '../services/reportService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
@@ -19,7 +20,7 @@ import { toQueryParams } from '../../../shared/utils/query';
  */
 export function useReportsQuery(filters?: Record<string, any>) {
   return useApiQuery<Paginated<Report>>({
-    url: `/modules${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
+    url: `${apiEndpoints.modules.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
     queryKey: queryKeys.reports.list(filters),
     staleTime: 2 * 60 * 1000,
     transform: (data) => {
@@ -41,7 +42,7 @@ export function useReportsQuery(filters?: Record<string, any>) {
  */
 export function useReportQuery(id: string | number | undefined) {
   return useApiQuery<Report>({
-    url: `/modules/${id}`,
+    url: id ? apiEndpoints.modules.get(id) : '',
     queryKey: queryKeys.reports.detail(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -53,7 +54,7 @@ export function useReportQuery(id: string | number | undefined) {
  */
 export function useReportStatsQuery() {
   return useApiQuery<ReportStats>({
-    url: '/reports/stats',
+    url: apiEndpoints.reports.stats,
     queryKey: queryKeys.reports.stats(),
     staleTime: 5 * 60 * 1000,
   });
@@ -64,7 +65,7 @@ export function useReportStatsQuery() {
  */
 export function useReportsInfiniteQuery(pageSize: number = 20) {
   return useApiInfiniteQuery<Report, number>({
-    url: '/modules',
+    url: apiEndpoints.modules.list,
     queryKey: queryKeys.reports.lists(),
     pageSize,
     initialPageParam: 1,
@@ -80,7 +81,7 @@ export function useReportsInfiniteQuery(pageSize: number = 20) {
  */
 export function useCreateReportMutation() {
   return useApiMutation<Report, Partial<Report>>({
-    url: '/modules',
+    url: apiEndpoints.modules.list,
     method: 'POST',
     invalidateQueries: [
       queryKeys.reports.all,
@@ -94,7 +95,7 @@ export function useCreateReportMutation() {
  */
 export function useUpdateReportMutation(id?: string | number) {
   return useApiMutation<Report, { id: string; data: Partial<Report> }>({
-    url: (vars) => `/modules/${vars.id}`,
+    url: (vars) => apiEndpoints.modules.get(vars.id),
     method: 'PUT',
     bodyExtractor: (vars) => vars.data,
     invalidateQueries: [
@@ -131,7 +132,7 @@ export function useUpdateReportMutation(id?: string | number) {
  */
 export function useDeleteReportMutation() {
   return useApiMutation<void, string>({
-    url: (id) => `/modules/${id}`,
+    url: (id) => apiEndpoints.modules.get(id),
     method: 'DELETE',
     invalidateQueries: [
       queryKeys.reports.all,

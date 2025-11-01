@@ -10,6 +10,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../services/queryClient';
+import { apiEndpoints } from '../config/apiEndpoints';
 import httpService from '../../shared/services/httpService';
 
 /**
@@ -35,42 +36,42 @@ const MODULE_PREFETCH_CONFIGS: ModulePrefetchConfig[] = [
   {
     module: 'products',
     service: {
-      stats: () => httpService.get<any>('/products/stats'),
+      stats: () => httpService.get<any>(apiEndpoints.products.stats),
     },
     queryKey: queryKeys.products.stats(),
   },
   {
     module: 'sales',
     service: {
-      stats: () => httpService.get<any>('/sales/stats'),
+      stats: () => httpService.get<any>(apiEndpoints.sales.stats),
     },
     queryKey: queryKeys.sales.stats(),
   },
   {
     module: 'customers',
     service: {
-      stats: () => httpService.get<any>('/customers/stats'),
+      stats: () => httpService.get<any>(apiEndpoints.customers.stats),
     },
     queryKey: queryKeys.customers.stats(),
   },
   {
     module: 'expenses',
     service: {
-      stats: () => httpService.get<any>('/expenses/stats'),
+      stats: () => httpService.get<any>(apiEndpoints.expenses.stats),
     },
     queryKey: queryKeys.expenses.stats(),
   },
   {
     module: 'employees',
     service: {
-      stats: () => httpService.get<any>('/employees/stats'),
+      stats: () => httpService.get<any>(apiEndpoints.employees.stats),
     },
     queryKey: queryKeys.employees.stats(),
   },
   {
     module: 'reports',
     service: {
-      stats: () => httpService.get<any>('/reports/stats'),
+      stats: () => httpService.get<any>(apiEndpoints.reports.stats),
     },
     queryKey: queryKeys.reports.stats(),
   },
