@@ -102,8 +102,65 @@ Common Tasks – Cheatsheet
 - Add route with permission:
   - In `routes.ts`: `{ name: 'MyScreen', module: 'mymodule', component: MyScreen, requiredPermission: 'mymodule:view' }`.
 
+SOLID Screen Architecture
+- Pattern: Generic container components + custom hooks for business logic + service adapters
+- Core Hooks (`src/core/hooks/`):
+  - `useListScreen<T>` – Generic list screen logic (search, filters, pagination, permissions)
+  - `useDetailScreen<T>` – Generic detail screen logic (load, edit, delete, permissions)
+  - `useFormScreen<T>` – Generic form screen logic (validation, submit, create/edit modes)
+  - `usePermissions` – Generic permission checks
+  - `useNavigationHandler` – Generic navigation handling
+  - `useDashboard` – Dashboard orchestration hook
+- Container Components (`src/shared/components/screens/`):
+  - `ListScreenContainer<T>` – Generic list UI (search, filters, paginated list, empty state)
+  - `DetailScreenContainer<T>` – Generic detail UI (loading, error, edit/delete buttons)
+  - `FormScreenContainer<T>` – Generic form UI (validation, submit/cancel buttons)
+- Service Layer:
+  - `BaseEntityService<T>` interface in `src/core/services/baseEntityService.types.ts`
+  - `createBaseServiceAdapter<T>` function adapts existing services to interface
+  - Module-specific adapters in `src/modules/{module}/services/{module}ServiceAdapter.ts`
+- Screen Structure:
+  ```
+  List Screen:
+    Screen Component (UI composition) → ListScreenContainer → useListScreen → Service Adapter
+  
+  Detail Screen:
+    Screen Component (UI composition) → DetailScreenContainer → useDetailScreen → Service Adapter
+  
+  Form Screen:
+    Screen Component (UI composition) → FormScreenContainer → useFormScreen → Service Adapter
+  ```
+- Hook Organization:
+  - Generic hooks (used by all modules) → `src/core/hooks/` ✅
+  - Module-specific hooks (custom logic) → `src/modules/{module}/hooks/` (when needed)
+  - Decision: If hook is used by multiple modules or depends on generic interfaces → Core
+  - Decision: If hook contains module-specific business logic → Module
+- SOLID Principles Applied:
+  - Single Responsibility: Each hook/component has one purpose
+  - Open/Closed: Extend via composition, not modification
+  - Liskov Substitution: Service implementations are interchangeable
+  - Interface Segregation: Minimal, focused interfaces
+  - Dependency Inversion: Depend on abstractions (BaseEntityService), not concrete implementations
+
+How to Refactor a Screen to SOLID Architecture
+1) Create service adapter: `src/modules/{module}/services/{module}ServiceAdapter.ts`
+   - Adapt existing service to `BaseEntityService<T>` interface using `createBaseServiceAdapter`
+2) Refactor List Screen:
+   - Replace custom logic with `ListScreenContainer`
+   - Pass service adapter and config
+   - Provide `renderItem` and `keyExtractor` props
+3) Refactor Detail Screen:
+   - Replace custom logic with `DetailScreenContainer`
+   - Pass service adapter and config
+   - Provide `renderContent` prop for entity-specific UI
+4) Refactor Form Screen:
+   - Replace custom logic with `FormScreenContainer`
+   - Pass service adapter, config, validator, and `renderForm` prop
+   - Validator function handles module-specific validation rules
+
 Notes
 - Replace mock auth and HTTP with real implementations before production.
-- If you introduce a new namespace, ensure it’s added to `ns` array during `i18n.init`.
+- If you introduce a new namespace, ensure it's added to `ns` array during `i18n.init`.
+- Keep generic hooks in `src/core/hooks/`, module-specific hooks in `src/modules/{module}/hooks/`.
 
 

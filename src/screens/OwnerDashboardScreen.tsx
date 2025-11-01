@@ -2,24 +2,20 @@ import React from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, Modal, ScrollView } from 'react-native';
 import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
-import { useTranslation } from 'react-i18next';
 import SummaryCard from '../shared/components/SummaryCard';
 import DashboardTopBar from '../shared/components/DashboardTopBar';
-import { DEFAULT_USER_PACKAGE, PACKAGE_LABELS, type UserPackage } from '../core/constants/packages';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useAppStore } from '../store/useAppStore';
-import { useEmployeeStore } from '../modules/employees/store/employeeStore';
+import { useOwnerDashboard } from '../core/hooks/useOwnerDashboard';
 
+/**
+ * OwnerDashboardScreen - SOLID Principles Applied
+ * 
+ * Single Responsibility: Only composes owner dashboard UI
+ * Dependency Inversion: Depends on useOwnerDashboard hook, not concrete implementation
+ */
 export default function OwnerDashboardScreen() {
   const { colors, activeTheme } = useTheme();
-  const { t } = useTranslation(['dashboard', 'sales', 'reports', 'common']);
-
-  const [showValues, setShowValues] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'today' | 'all'>('today');
-  const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<'total' | string>('total');
-  const [showEmpValues, setShowEmpValues] = React.useState(false);
-  const [employeePickerVisible, setEmployeePickerVisible] = React.useState(false);
   const { width } = useWindowDimensions();
 
   const isDark = activeTheme === 'dark';
@@ -29,34 +25,24 @@ export default function OwnerDashboardScreen() {
 
   const masked = '••••••';
 
-  // Placeholder data – replace with real API data when available
-  const todaySales = '₺12.450';
-  const todayExpenses = '₺3.200';
-  const todayTotal = '₺9.250';
-  // All-time (bugüne kadar) placeholders
-  const allSales = '₺1.245.000';
-  const allExpenses = '₺820.000';
-  const allTotal = '₺425.000';
-
-  const user: any = useAppStore((s: any) => s.user);
-  const role = useAppStore((s: any) => s.role);
-  const ownerName = user?.name || 'Kullanıcı';
-  const companyName = user?.company || 'Şirketiniz';
-  const roleRaw = typeof role === 'string' ? role : 'guest';
-
-  // Employees (placeholder if store empty)
-  const employees = useEmployeeStore((s: any) => s.items);
-  const employeeCards = React.useMemo(() => {
-    if (employees && employees.length > 0) return employees;
-    return [
-      { id: 'e1', name: 'Ahmet Yılmaz', role: 'cashier' },
-      { id: 'e2', name: 'Ayşe Demir', role: 'sales' },
-      { id: 'e3', name: 'Mehmet Kaya', role: 'sales' },
-    ];
-  }, [employees]);
-  // TODO: Replace DEFAULT_USER_PACKAGE with value from user profile/store when available
-  const userPackage: UserPackage = DEFAULT_USER_PACKAGE;
-  const packageLabel = PACKAGE_LABELS[userPackage];
+  const {
+    activeTab,
+    setActiveTab,
+    showValues,
+    setShowValues,
+    selectedEmployeeId,
+    setSelectedEmployeeId,
+    showEmpValues,
+    setShowEmpValues,
+    employeePickerVisible,
+    setEmployeePickerVisible,
+    ownerName,
+    companyName,
+    employeeCards,
+    stats,
+    employeeStats,
+    t,
+  } = useOwnerDashboard();
 
   return (
     <ScreenLayout>
@@ -98,7 +84,7 @@ export default function OwnerDashboardScreen() {
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_sales', { defaultValue: 'Satış' })}</Text>
               <Text style={{ color: showValues ? colors.success : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-                {showValues ? (activeTab === 'today' ? todaySales : allSales) : masked}
+                {showValues ? stats.sales : masked}
               </Text>
               <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:income_desc', { defaultValue: 'Gelir' })}</Text>
             </View>
@@ -109,7 +95,7 @@ export default function OwnerDashboardScreen() {
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Gider' })}</Text>
               <Text style={{ color: showValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-                {showValues ? (activeTab === 'today' ? todayExpenses : allExpenses) : masked}
+                {showValues ? stats.expenses : masked}
               </Text>
               <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:expense_desc', { defaultValue: 'Gider' })}</Text>
             </View>
@@ -120,7 +106,7 @@ export default function OwnerDashboardScreen() {
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_total', { defaultValue: 'Toplam' })}</Text>
               <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-                {showValues ? (activeTab === 'today' ? todayTotal : allTotal) : masked}
+                {showValues ? stats.total : masked}
               </Text>
               <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:net_desc', { defaultValue: 'Net' })}</Text>
             </View>
@@ -180,19 +166,19 @@ export default function OwnerDashboardScreen() {
             <View style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_sales', { defaultValue: 'Bugün satış' })}</Text>
               <Text style={{ color: showEmpValues ? colors.success : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {showEmpValues ? (selectedEmployeeId === 'total' ? '₺18.700' : '₺6.200') : '••••••'}
+                {showEmpValues ? employeeStats.sales : '••••••'}
               </Text>
             </View>
             <View style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Bugün gider' })}</Text>
               <Text style={{ color: showEmpValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {showEmpValues ? (selectedEmployeeId === 'total' ? '₺2.150' : '₺720') : '••••••'}
+                {showEmpValues ? employeeStats.expenses : '••••••'}
               </Text>
             </View>
             <View style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_total', { defaultValue: 'Bugün toplam' })}</Text>
               <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {showEmpValues ? (selectedEmployeeId === 'total' ? '₺16.550' : '₺5.480') : '••••••'}
+                {showEmpValues ? employeeStats.total : '••••••'}
               </Text>
             </View>
           </View>

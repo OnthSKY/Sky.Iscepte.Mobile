@@ -1,73 +1,42 @@
-import React, { useState } from 'react';
-import { View, ImageBackground, KeyboardAvoidingView, Platform } from 'react-native';
+import React from 'react';
+import { View, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button, TextInput, Text, Surface, Checkbox } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import i18n from '../i18n';
-import LanguagePicker from '../shared/components/LanguagePicker';
-import { usePermissionStore } from '../store/permissionsStore';
-import { useAppStore } from '../store/useAppStore';
-import { required, minLength } from '../core/utils/validators';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import LanguagePicker from '../shared/components/LanguagePicker';
 import ThemeGradientToggle from '../shared/components/ThemeGradientToggle';
 import { useTheme } from '../core/contexts/ThemeContext';
+import { useLogin } from '../core/hooks/useAuth';
 
 type Props = NativeStackScreenProps<any>;
 
+/**
+ * LoginScreen - SOLID Principles Applied
+ * 
+ * Single Responsibility: Only composes login UI
+ * Dependency Inversion: Depends on useAuth hook, not concrete implementation
+ */
 export default function LoginScreen({ navigation }: Props) {
   const { t } = useTranslation('login');
   const { colors, activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState('');
-  const [usernameError, setUsernameError] = useState<string | undefined>();
-  const [passwordError, setPasswordError] = useState<string | undefined>();
-  const [loading, setLoading] = useState(false);
-  const [lang, setLang] = useState<'tr' | 'en'>((i18n.language as 'tr' | 'en') || 'tr');
-  const login = useAppStore(s => s.login);
-  const loadPermissions = usePermissionStore(s => s.loadPermissions);
-  const setRole = useAppStore(s => s.setRole);
-
-  const handleLogin = async () => {
-    setError('');
-    setUsernameError(undefined);
-    setPasswordError(undefined);
-
-    const uReq = required(username);
-    const uMin = minLength(3)(username);
-    const pReq = required(password);
-    const pMin = minLength(4)(password);
-    const finalUError = uReq || uMin;
-    const finalPError = pReq || pMin;
-    if (finalUError || finalPError) {
-      setUsernameError(finalUError);
-      setPasswordError(finalPError);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const success = await login(username, password);
-      if (success) {
-        if (username === 'admin') {
-          loadPermissions(2);
-          setRole('admin');
-        } else {
-          loadPermissions(1);
-          setRole('user');
-        }
-      } else {
-        setError(t('invalid_credentials'));
-      }
-    } catch (err) {
-      setError(t('invalid_credentials'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  const {
+    username,
+    setUsername,
+    password,
+    setPassword,
+    passwordVisible,
+    setPasswordVisible,
+    rememberMe,
+    setRememberMe,
+    error,
+    usernameError,
+    passwordError,
+    loading,
+    handleLogin,
+  } = useLogin();
 
   return (
     <LinearGradient

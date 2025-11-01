@@ -1,131 +1,65 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import ScreenLayout from '../../../shared/layouts/ScreenLayout';
+import { View, Text } from 'react-native';
+import { DetailScreenContainer } from '../../../shared/components/screens/DetailScreenContainer';
+import { salesEntityService } from '../services/salesServiceAdapter';
 import Card from '../../../shared/components/Card';
-import Button from '../../../shared/components/Button';
-import { usePermissions } from '../../../core/hooks/usePermissions';
-import { useAppStore } from '../../../store/useAppStore';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
+import { Sale } from '../store/salesStore';
+import { useTranslation } from 'react-i18next';
 
-type Props = {
-  route: {
-    params: {
-      id: string;
-      title?: string;
-      amount?: number;
-    };
-  };
-  navigation: any;
-};
-
-export default function SalesDetailScreen({ route, navigation }: Props) {
-  const { t } = useTranslation();
-  const { t: tSales } = useTranslation('sales');
-  const role = useAppStore((s) => s.role);
-  const { can } = usePermissions(role);
+/**
+ * SalesDetailScreen - SOLID Principles Applied
+ * 
+ * Single Responsibility: Only composes detail screen UI
+ * Dependency Inversion: Depends on service adapter interface
+ */
+export default function SalesDetailScreen() {
   const { colors } = useTheme();
-
-  const { id, title, amount } = route.params;
-
-  const canEdit = can('sales:edit');
-  const canDelete = can('sales:delete');
-
-  const handleEdit = () => {
-    navigation.navigate('SalesEdit', { id });
-  };
-
-  const handleDelete = () => {
-    // Delete logic will be added
-  };
+  const { t } = useTranslation('sales');
 
   return (
-    <ScreenLayout>
-      <ScrollView>
+    <DetailScreenContainer
+      service={salesEntityService}
+      config={{
+        entityName: 'sale',
+        translationNamespace: 'sales',
+      }}
+      renderContent={(data: Sale) => (
         <View style={{ gap: spacing.md }}>
-          <Text style={{ fontSize: 24, fontWeight: '600' }}>{tSales('sale_details')}</Text>
-
           <Card>
             <View style={{ gap: spacing.sm }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 16, fontWeight: '500', color: colors.muted }}>
-                  {tSales('product_name')}
+                  {t('product_name', { defaultValue: 'Product Name' })}
                 </Text>
-                <Text style={{ fontSize: 16 }}>{title || '-'}</Text>
+                <Text style={{ fontSize: 16 }}>{data.title || '-'}</Text>
               </View>
 
               <View style={{ height: 1, backgroundColor: colors.border }} />
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 16, fontWeight: '500', color: colors.muted }}>
-                  {tSales('customer')}
-                </Text>
-                <Text style={{ fontSize: 16 }}>-</Text>
-              </View>
-
-              <View style={{ height: 1, backgroundColor: colors.border }} />
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.muted }}>
-                  {tSales('total_amount')}
+                  {t('total_amount', { defaultValue: 'Total Amount' })}
                 </Text>
                 <Text style={{ fontSize: 16, fontWeight: '600' }}>
-                  {amount ? `${amount.toFixed(2)} ₺` : '-'}
+                  {data.amount ? `${data.amount.toFixed(2)} ₺` : '-'}
                 </Text>
-              </View>
-
-              <View style={{ height: 1, backgroundColor: colors.border }} />
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.muted }}>
-                  {tSales('payment_method')}
-                </Text>
-                <Text style={{ fontSize: 16 }}>-</Text>
-              </View>
-
-              <View style={{ height: 1, backgroundColor: colors.border }} />
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.muted }}>
-                  {tSales('date')}
-                </Text>
-                <Text style={{ fontSize: 16 }}>{new Date().toLocaleDateString('tr-TR')}</Text>
               </View>
             </View>
           </Card>
 
           <Card>
             <Text style={{ fontSize: 18, fontWeight: '500', marginBottom: spacing.sm }}>
-              {tSales('items')}
+              {t('items', { defaultValue: 'Items' })}
             </Text>
             <View style={{ gap: spacing.sm }}>
-              {/* Items list will be added when item data is available */}
-              <Text style={{ color: colors.muted }}>{t('no_results')}</Text>
+              <Text style={{ color: colors.muted }}>No items available</Text>
             </View>
           </Card>
-
-          {(canEdit || canDelete) && (
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              {canEdit && (
-                <Button
-                  title={t('edit')}
-                  onPress={handleEdit}
-                  style={{ flex: 1 }}
-                />
-              )}
-              {canDelete && (
-                <Button
-                  title={t('delete')}
-                  onPress={handleDelete}
-                  style={{ flex: 1, backgroundColor: colors.error }}
-                />
-              )}
-            </View>
-          )}
         </View>
-      </ScrollView>
-    </ScreenLayout>
+      )}
+    />
   );
 }
 

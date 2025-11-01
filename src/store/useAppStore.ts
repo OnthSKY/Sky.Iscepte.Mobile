@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n';
 import authService from '../shared/services/authService';
+import { getRoleByUsername, getUserIdByRole } from '../core/utils/roleManager';
+import { Role } from '../core/config/permissions';
 
 type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -31,10 +33,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   refreshToken: null,
   isLoading: true,
   async login(u: string, p: string) {
-    const allowed = ['admin', 'owner', 'staff'];
-    const ok = allowed.includes(u) && p === '1234';
+    const ok = getRoleByUsername(u) !== null && p === '1234';
     if (ok) {
-      const role = u as any;
+      const role = getRoleByUsername(u)!;
       const accessToken = 'mock-access-token';
       const refreshToken = 'mock-refresh-token';
       
@@ -42,18 +43,32 @@ export const useAppStore = create<AppState>((set, get) => ({
       await AsyncStorage.setItem('refresh_token', refreshToken);
       await AsyncStorage.setItem('user_role', role);
       
+      // Set role and load permissions in one place
       set({ 
         isAuthenticated: true, 
         role, 
         token: accessToken,
         refreshToken: refreshToken 
       });
+      
+      // Load permissions for the role
+      const userId = getUserIdByRole(role);
+      if (userId) {
+        const { usePermissionStore } = await import('./permissionsStore');
+        const permStore = usePermissionStore.getState();
+        permStore.loadPermissions(userId);
+      }
     }
     return ok;
   },
   async logout() {
     // Call auth service logout (which handles API call and storage cleanup)
     await authService.logout();
+    
+    // Clear permissions using centralized method
+    const { usePermissionStore } = await import('./permissionsStore');
+    const permStore = usePermissionStore.getState();
+    permStore.clearPermissions();
     
     set({ 
       isAuthenticated: false, 
@@ -100,20 +115,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         // Try to refresh the access token
         const response = await authService.refreshToken(refreshToken);
         
+        const role = (storedRole || 'guest') as Role;
+        
         set({ 
           isAuthenticated: true, 
           token: response.accessToken,
           refreshToken: response.refreshToken,
-          role: storedRole || 'guest'
+          role
         });
         
-        // Load permissions for the restored role
-        const { usePermissionStore } = await import('./permissionsStore');
-        const permStore = usePermissionStore.getState();
-        if (storedRole === 'admin') {
-          permStore.loadPermissions(2); // Admin role ID
-        } else if (storedRole === 'user') {
-          permStore.loadPermissions(1); // User role ID
+        // Load permissions for the restored role using centralized helper
+        const userId = getUserIdByRole(role);
+        if (userId) {
+          const { usePermissionStore } = await import('./permissionsStore');
+          const permStore = usePermissionStore.getState();
+          permStore.loadPermissions(userId);
         }
         
         return true;

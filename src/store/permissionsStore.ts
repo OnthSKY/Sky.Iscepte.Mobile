@@ -12,6 +12,7 @@ export interface PermissionDetail {
 interface PermissionStore {
   modulePermissions: Record<string, PermissionDetail>;
   loadPermissions: (userId: number) => void;
+  clearPermissions: () => void;
 }
 
 export const usePermissionStore = create<PermissionStore>((set) => ({
@@ -40,6 +41,9 @@ export const usePermissionStore = create<PermissionStore>((set) => ({
     });
 
     set({ modulePermissions: finalPerms });
+  },
+  clearPermissions: () => {
+    set({ modulePermissions: {} });
   },
 }));
 

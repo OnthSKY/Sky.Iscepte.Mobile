@@ -1,0 +1,141 @@
+import React from 'react';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import ScreenLayout from '../../layouts/ScreenLayout';
+import Button from '../Button';
+import Card from '../Card';
+import { useTheme } from '../../../core/contexts/ThemeContext';
+import spacing from '../../../core/constants/spacing';
+import { BaseEntity, DetailScreenConfig } from '../../../core/types/screen.types';
+import { BaseEntityService } from '../../../core/services/baseEntityService.types';
+import { useDetailScreen } from '../../../core/hooks/useDetailScreen';
+
+/**
+ * Single Responsibility: Composes detail screen UI
+ * Interface Segregation: Receives render function, not specific entity structure
+ */
+
+interface DetailScreenContainerProps<T extends BaseEntity> {
+  config: DetailScreenConfig;
+  service: BaseEntityService<T>;
+  renderContent: (data: T) => React.ReactNode;
+  title?: string;
+  showEditButton?: boolean;
+  showDeleteButton?: boolean;
+}
+
+/**
+ * Generic Detail Screen Container
+ * SRP: Only responsible for composing detail screen UI
+ * Open/Closed: Can be extended via renderContent prop
+ */
+export function DetailScreenContainer<T extends BaseEntity>({
+  config,
+  service,
+  renderContent,
+  title,
+  showEditButton = true,
+  showDeleteButton = true,
+}: DetailScreenContainerProps<T>) {
+  const { colors } = useTheme();
+  const navigation = useNavigation();
+  const {
+    data,
+    loading,
+    error,
+    permissions,
+    handleEdit,
+    handleDelete,
+    t,
+  } = useDetailScreen(service, config);
+
+  if (loading) {
+    return (
+      <ScreenLayout title={title} showBackButton>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <ScreenLayout title={title} showBackButton>
+        <View style={styles.centerContainer}>
+          <Text style={{ color: colors.error }}>
+            {error?.message || t('common:not_found', { defaultValue: 'Not found' })}
+          </Text>
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  const renderFooter = () => {
+    if (!showEditButton && !showDeleteButton) return null;
+    if (!permissions.canEdit && !permissions.canDelete) return null;
+
+    const handleDeleteConfirm = async () => {
+      try {
+        await handleDelete();
+        // Navigate back after successful delete
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        }
+      } catch (err) {
+        // Error is already handled in hook
+      }
+    };
+
+    return (
+      <View style={styles.footer}>
+        {showEditButton && permissions.canEdit && (
+          <Button
+            title={t('common:edit', { defaultValue: 'Edit' })}
+            onPress={handleEdit}
+            style={[styles.footerButton, { flex: 1 }]}
+          />
+        )}
+        {showDeleteButton && permissions.canDelete && (
+          <Button
+            title={t('common:delete', { defaultValue: 'Delete' })}
+            onPress={handleDeleteConfirm}
+            style={[styles.footerButton, { flex: 1, backgroundColor: colors.error }]}
+          />
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <ScreenLayout title={title} showBackButton footer={renderFooter()}>
+      <ScrollView>
+        <View style={styles.content}>
+          {renderContent(data)}
+        </View>
+      </ScrollView>
+    </ScreenLayout>
+  );
+}
+
+const styles = StyleSheet.create({
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  content: {
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  footerButton: {
+    minHeight: 44,
+  },
+});
+

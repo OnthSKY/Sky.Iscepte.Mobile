@@ -1,59 +1,45 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { Button, TextInput, Text, Surface } from 'react-native-paper';
 import spacing from '../core/constants/spacing';
-import { required, isEmail, minLength } from '../core/utils/validators';
 import ThemeGradientToggle from '../shared/components/ThemeGradientToggle';
-import { useAppStore } from '../store/useAppStore';
 import LanguagePicker from '../shared/components/LanguagePicker';
 import { useTheme } from '../core/contexts/ThemeContext';
+import { useRegister } from '../core/hooks/useAuth';
 
 type Props = {
   navigation: any;
 };
 
+/**
+ * RegisterScreen - SOLID Principles Applied
+ * 
+ * Single Responsibility: Only composes register UI
+ * Dependency Inversion: Depends on useAuth hook, not concrete implementation
+ */
 export default function RegisterScreen({ navigation }: Props) {
   const { t } = useTranslation('register');
   const { colors, activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [errors, setErrors] = useState<{ [k: string]: string | undefined }>({});
-  const [submitting, setSubmitting] = useState(false);
-
-  const validate = () => {
-    const next: { [k: string]: string | undefined } = {};
-    next.name = required(formData.name) || (minLength(2)(formData.name) ?? undefined);
-    if (!formData.email) next.email = t('errors.email_required');
-    else next.email = isEmail(formData.email);
-    next.phone = required(formData.phone);
-    const pwdMin = minLength(6)(formData.password);
-    next.password = required(formData.password) || pwdMin;
-    next.confirmPassword = required(formData.confirmPassword) ||
-      (formData.password !== formData.confirmPassword ? t('errors.passwords_mismatch') : undefined);
-    setErrors(next);
-    return Object.values(next).every((e) => !e);
-  };
-
-  const handleRegister = () => {
-    if (!validate()) return;
-    setSubmitting(true);
-    // Simulate success; integrate API when ready
-    setTimeout(() => {
-      setSubmitting(false);
-      navigation.navigate('Login');
-    }, 500);
-  };
+  const {
+    formData,
+    updateField,
+    errors,
+    submitting,
+    handleRegister,
+  } = useRegister();
 
   const handleLogin = () => navigation.navigate('Login');
+
+  const onRegisterSuccess = async () => {
+    const success = await handleRegister();
+    if (success) {
+      navigation.navigate('Login');
+    }
+  };
 
   return (
     <LinearGradient
@@ -73,7 +59,7 @@ export default function RegisterScreen({ navigation }: Props) {
           <TextInput
             label={t('name')}
             value={formData.name}
-            onChangeText={(text) => setFormData({ ...formData, name: text })}
+            onChangeText={(text) => updateField('name', text)}
             mode="outlined"
             error={!!errors.name}
           />
@@ -82,7 +68,7 @@ export default function RegisterScreen({ navigation }: Props) {
           <TextInput
             label={t('email')}
             value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
+            onChangeText={(text) => updateField('email', text)}
             mode="outlined"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -93,7 +79,7 @@ export default function RegisterScreen({ navigation }: Props) {
           <TextInput
             label={t('phone')}
             value={formData.phone}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+            onChangeText={(text) => updateField('phone', text)}
             mode="outlined"
             keyboardType="phone-pad"
             error={!!errors.phone}
@@ -103,18 +89,7 @@ export default function RegisterScreen({ navigation }: Props) {
           <TextInput
             label={t('password')}
             value={formData.password}
-            onChangeText={(text) => {
-              const next = { ...formData, password: text };
-              setFormData(next);
-              // live validate confirm match if user typed confirm already
-              if (next.confirmPassword) {
-                setErrors((prev) => ({
-                  ...prev,
-                  confirmPassword:
-                    next.password !== next.confirmPassword ? t('errors.passwords_mismatch') : undefined,
-                }));
-              }
-            }}
+            onChangeText={(text) => updateField('password', text)}
             mode="outlined"
             secureTextEntry
             error={!!errors.password}
@@ -124,16 +99,7 @@ export default function RegisterScreen({ navigation }: Props) {
           <TextInput
             label={t('confirm_password')}
             value={formData.confirmPassword}
-            onChangeText={(text) => {
-              const next = { ...formData, confirmPassword: text };
-              setFormData(next);
-              // live validate mismatch
-              setErrors((prev) => ({
-                ...prev,
-                confirmPassword:
-                  next.password !== next.confirmPassword ? t('errors.passwords_mismatch') : undefined,
-              }));
-            }}
+            onChangeText={(text) => updateField('confirmPassword', text)}
             mode="outlined"
             secureTextEntry
             error={!!errors.confirmPassword}
@@ -141,7 +107,7 @@ export default function RegisterScreen({ navigation }: Props) {
           {errors.confirmPassword ? <Text style={{ color: colors.error }}>{errors.confirmPassword}</Text> : null}
         </View>
 
-        <Button mode="contained" onPress={handleRegister} loading={submitting} disabled={submitting} style={{ marginTop: spacing.lg }}>
+        <Button mode="contained" onPress={onRegisterSuccess} loading={submitting} disabled={submitting} style={{ marginTop: spacing.lg }}>
           {t('register')}
         </Button>
 
