@@ -15,6 +15,9 @@
   "related_modules": "Related Modules",
   "dashboard": "Dashboard",
   "list": "List",
-  "module": "Reports"
+  "module": "Reports",
+  "module_name": "Reporting",
+  "module_overview": "Module Overview",
+  "module_description": "View sales, income, expense, and stock reports with the Reports module. Analyze your business performance and make better plans for the future."
 }
 

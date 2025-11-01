@@ -134,6 +134,7 @@ export default function CustomersDashboardScreen() {
         relatedModules: relatedModules,
         listRoute: 'CustomersList',
         createRoute: 'CustomerCreate',
+        description: 'customers:module_description',
         listConfig: {
           service: customerEntityService,
           config: {

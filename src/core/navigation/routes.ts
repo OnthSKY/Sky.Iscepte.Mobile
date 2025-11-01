@@ -16,6 +16,7 @@ export type RouteConfig = {
 const SalesListScreen = React.lazy(() => import('../../modules/sales/screens/SalesListScreen'));
 const CustomersListScreen = React.lazy(() => import('../../modules/customers/screens/CustomerListScreen'));
 const ExpensesListScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseListScreen'));
+const RevenueListScreen = React.lazy(() => import('../../modules/revenue/screens/RevenueListScreen'));
 const ReportsScreen = React.lazy(() => import('../../modules/reports/screens/ReportsScreen'));
 const EmployeesScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeListScreen'));
 const StockListScreen = React.lazy(() => import('../../modules/products/screens/ProductListScreen'));
@@ -26,6 +27,7 @@ const StockDashboardScreen = React.lazy(() => import('../../modules/products/scr
 const SalesDashboardScreen = React.lazy(() => import('../../modules/sales/screens/SalesDashboardScreen'));
 const CustomersDashboardScreen = React.lazy(() => import('../../modules/customers/screens/CustomersDashboardScreen'));
 const ExpensesDashboardScreen = React.lazy(() => import('../../modules/expenses/screens/ExpensesDashboardScreen'));
+const RevenueDashboardScreen = React.lazy(() => import('../../modules/revenue/screens/RevenueDashboardScreen'));
 const EmployeesDashboardScreen = React.lazy(() => import('../../modules/employees/screens/EmployeesDashboardScreen'));
 const ReportsDashboardScreen = React.lazy(() => import('../../modules/reports/screens/ReportsDashboardScreen'));
 const PurchasesDashboardScreen = React.lazy(() => import('../../modules/purchases/screens/PurchasesDashboardScreen'));
@@ -34,6 +36,7 @@ const PurchasesDashboardScreen = React.lazy(() => import('../../modules/purchase
 const SalesDetailScreen = React.lazy(() => import('../../modules/sales/screens/SalesDetailScreen'));
 const CustomerDetailScreen = React.lazy(() => import('../../modules/customers/screens/CustomerDetailScreen'));
 const ExpenseDetailScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseDetailScreen'));
+const RevenueDetailScreen = React.lazy(() => import('../../modules/revenue/screens/RevenueDetailScreen'));
 const EmployeeDetailScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeDetailScreen'));
 const ReportDetailScreen = React.lazy(() => import('../../modules/reports/screens/ReportDetailScreen'));
 const StockDetailScreen = React.lazy(() => import('../../modules/products/screens/ProductDetailScreen'));
@@ -46,6 +49,8 @@ const CustomerCreateScreen = React.lazy(() => import('../../modules/customers/sc
 const CustomerEditScreen = React.lazy(() => import('../../modules/customers/screens/CustomerEditScreen'));
 const ExpenseCreateScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseCreateScreen'));
 const ExpenseEditScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseEditScreen'));
+const RevenueCreateScreen = React.lazy(() => import('../../modules/revenue/screens/RevenueCreateScreen'));
+const RevenueEditScreen = React.lazy(() => import('../../modules/revenue/screens/RevenueEditScreen'));
 const EmployeeCreateScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeCreateScreen'));
 const EmployeeEditScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeEditScreen'));
 const EmployeePermissionsScreen = React.lazy(() => import('../../modules/employees/screens/EmployeePermissionsScreen'));
@@ -69,6 +74,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'PurchasesDashboard', module: 'purchases', component: PurchasesDashboardScreen, requiredPermission: 'purchases:view', options: { title: i18n.t('purchases:purchases', { defaultValue: 'Alışlar' }) } },
   { name: 'CustomersDashboard', module: 'customers', component: CustomersDashboardScreen, requiredPermission: 'customers:view', options: { title: i18n.t('customers:customers') } },
   { name: 'ExpensesDashboard', module: 'expenses', component: ExpensesDashboardScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expenses') } },
+  { name: 'RevenueDashboard', module: 'revenue', component: RevenueDashboardScreen, requiredPermission: 'revenue:view', options: { title: i18n.t('revenue:revenue', { defaultValue: 'Gelirler' }) } },
   { name: 'EmployeesDashboard', module: 'employees', component: EmployeesDashboardScreen, requiredPermission: 'employees:view', options: { title: i18n.t('settings:employees', { defaultValue: 'Employees' }) } },
   { name: 'ReportsDashboard', module: 'reports', component: ReportsDashboardScreen, requiredPermission: 'reports:view', options: { title: i18n.t('reports:reports') } },
   // Main module routes (point to dashboard)
@@ -76,6 +82,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'Purchases', module: 'purchases', component: PurchasesDashboardScreen, requiredPermission: 'purchases:view', options: { title: i18n.t('purchases:purchases', { defaultValue: 'Alışlar' }) } },
   { name: 'Customers', module: 'customers', component: CustomersDashboardScreen, requiredPermission: 'customers:view', options: { title: i18n.t('customers:customers') } },
   { name: 'Expenses', module: 'expenses', component: ExpensesDashboardScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expenses') } },
+  { name: 'Revenue', module: 'revenue', component: RevenueDashboardScreen, requiredPermission: 'revenue:view', options: { title: i18n.t('revenue:revenue', { defaultValue: 'Gelirler' }) } },
   { name: 'Stock', module: 'stock', component: StockDashboardScreen, requiredPermission: 'stock:view', options: { title: i18n.t('stock:stock', { defaultValue: 'Stock' }) } },
   { name: 'Employees', module: 'employees', component: EmployeesDashboardScreen, requiredPermission: 'employees:view', options: { title: i18n.t('settings:employees', { defaultValue: 'Employees' }) } },
   { name: 'Reports', module: 'reports', component: ReportsDashboardScreen, requiredPermission: 'reports:view', options: { title: i18n.t('reports:reports') } },
@@ -84,6 +91,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'PurchaseList', module: 'purchases', component: PurchaseListScreen, requiredPermission: 'purchases:view', options: { title: i18n.t('purchases:purchases', { defaultValue: 'Alışlar' }) } },
   { name: 'CustomersList', module: 'customers', component: CustomersListScreen, requiredPermission: 'customers:view', options: { title: i18n.t('customers:customers') } },
   { name: 'ExpensesList', module: 'expenses', component: ExpensesListScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expenses') } },
+  { name: 'RevenueList', module: 'revenue', component: RevenueListScreen, requiredPermission: 'revenue:view', options: { title: i18n.t('revenue:revenue', { defaultValue: 'Gelirler' }) } },
   { name: 'StockList', module: 'stock', component: StockListScreen, requiredPermission: 'stock:view', options: { title: i18n.t('stock:stock', { defaultValue: 'Stock' }) } },
   { name: 'EmployeesList', module: 'employees', component: EmployeesScreen, requiredPermission: 'employees:view', options: { title: i18n.t('settings:employees', { defaultValue: 'Employees' }) } },
   { name: 'ReportsList', module: 'reports', component: ReportsScreen, requiredPermission: 'reports:view', options: { title: i18n.t('reports:reports') } },
@@ -94,6 +102,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'PurchaseDetail', module: 'purchases', component: PurchaseDetailScreen, requiredPermission: 'purchases:view', options: { title: i18n.t('purchases:purchase_details', { defaultValue: 'Alış Detayları' }) } },
   { name: 'CustomerDetail', module: 'customers', component: CustomerDetailScreen, requiredPermission: 'customers:view', options: { title: i18n.t('customers:customer_details') } },
   { name: 'ExpenseDetail', module: 'expenses', component: ExpenseDetailScreen, requiredPermission: 'expenses:view', options: { title: i18n.t('expenses:expense_details') } },
+  { name: 'RevenueDetail', module: 'revenue', component: RevenueDetailScreen, requiredPermission: 'revenue:view', options: { title: i18n.t('revenue:revenue_details', { defaultValue: 'Gelir Detayları' }) } },
   { name: 'EmployeeDetail', module: 'employees', component: EmployeeDetailScreen, requiredPermission: 'employees:view', options: { title: i18n.t('settings:employee_details') } },
   { name: 'ReportDetail', module: 'reports', component: ReportDetailScreen, requiredPermission: 'reports:view', options: { title: i18n.t('reports:report_details') } },
   { name: 'StockDetail', module: 'stock', component: StockDetailScreen, requiredPermission: 'stock:view', options: { title: i18n.t('stock:stock_details', { defaultValue: 'Stock details' }) } },
@@ -103,6 +112,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'PurchaseCreate', module: 'purchases', component: PurchaseCreateScreen, requiredPermission: 'purchases:create', options: { title: i18n.t('purchases:new_purchase', { defaultValue: 'Yeni Alış' }) } },
   { name: 'CustomerCreate', module: 'customers', component: CustomerCreateScreen, requiredPermission: 'customers:create', options: { title: i18n.t('customers:new_customer') } },
   { name: 'ExpenseCreate', module: 'expenses', component: ExpenseCreateScreen, requiredPermission: 'expenses:create', options: { title: i18n.t('expenses:new_expense') } },
+  { name: 'RevenueCreate', module: 'revenue', component: RevenueCreateScreen, requiredPermission: 'revenue:create', options: { title: i18n.t('revenue:new_revenue', { defaultValue: 'Yeni Gelir' }) } },
   { name: 'EmployeeCreate', module: 'employees', component: EmployeeCreateScreen, requiredPermission: 'employees:create', options: { title: i18n.t('settings:new_employee') } },
   { name: 'ExpenseTypeCreate', module: 'expenses', component: ExpenseTypeCreateScreen, requiredPermission: 'expenses:create', options: { title: i18n.t('expenses:new_expense_type') } },
   { name: 'StockCreate', module: 'stock', component: StockCreateScreen, requiredPermission: 'stock:create', options: { title: i18n.t('stock:new_stock', { defaultValue: 'New stock' }) } },
@@ -112,6 +122,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'PurchaseEdit', module: 'purchases', component: PurchaseEditScreen, requiredPermission: 'purchases:edit', options: { title: i18n.t('purchases:edit_purchase', { defaultValue: 'Alış Düzenle' }) } },
   { name: 'CustomerEdit', module: 'customers', component: CustomerEditScreen, requiredPermission: 'customers:edit', options: { title: i18n.t('customers:edit_customer') } },
   { name: 'ExpenseEdit', module: 'expenses', component: ExpenseEditScreen, requiredPermission: 'expenses:edit', options: { title: i18n.t('expenses:edit_expense') } },
+  { name: 'RevenueEdit', module: 'revenue', component: RevenueEditScreen, requiredPermission: 'revenue:edit', options: { title: i18n.t('revenue:edit_revenue', { defaultValue: 'Gelir Düzenle' }) } },
   { name: 'EmployeeEdit', module: 'employees', component: EmployeeEditScreen, requiredPermission: 'employees:edit', options: { title: i18n.t('settings:edit_employee') } },
   { name: 'EmployeePermissions', module: 'employees', component: EmployeePermissionsScreen, requiredPermission: 'employees:edit', options: { title: i18n.t('employees:manage_permissions') } },
   { name: 'ExpenseTypeEdit', module: 'expenses', component: ExpenseTypeEditScreen, requiredPermission: 'expenses:edit', options: { title: i18n.t('expenses:edit_expense_type') } },

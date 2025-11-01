@@ -26,31 +26,11 @@ export default function ExpensesDashboardScreen() {
   // Use React Query hook for stats
   const { data: stats, isLoading, error } = useExpenseStatsQuery();
 
-  // Transform stats to ModuleStat format
+  // Transform stats to ModuleStat format (only expenses, no income)
   const moduleStats: ModuleStat[] = React.useMemo(() => {
     if (!stats) return [];
       
     return [
-      {
-        key: 'total-amount',
-        label: t('expenses:total_amount', { defaultValue: 'Net Tutar' }),
-        value: typeof stats.totalAmount === 'number' 
-          ? `₺${stats.totalAmount.toLocaleString()}` 
-          : stats.totalAmount ?? '₺0',
-        icon: 'wallet-outline',
-        color: isDark ? '#10B981' : '#059669',
-        route: 'ExpensesList',
-      },
-      {
-        key: 'total-income',
-        label: t('expenses:total_income', { defaultValue: 'Toplam Gelir' }),
-        value: typeof stats.totalIncome === 'number' 
-          ? `₺${stats.totalIncome.toLocaleString()}` 
-          : `₺${stats.totalIncome ?? 0}`,
-        icon: 'trending-up-outline',
-        color: isDark ? '#10B981' : '#059669',
-        route: 'ExpensesList',
-      },
       {
         key: 'total-expenses',
         label: t('expenses:total_expenses', { defaultValue: 'Toplam Gider' }),
@@ -59,16 +39,6 @@ export default function ExpensesDashboardScreen() {
           : `₺${stats.totalExpenses ?? 0}`,
         icon: 'trending-down-outline',
         color: isDark ? '#F87171' : '#DC2626',
-        route: 'ExpensesList',
-      },
-      {
-        key: 'monthly-income',
-        label: t('expenses:monthly_income', { defaultValue: 'Aylık Gelir' }),
-        value: typeof stats.monthlyIncome === 'number' 
-          ? `₺${stats.monthlyIncome.toLocaleString()}` 
-          : `₺${stats.monthlyIncome ?? 0}`,
-        icon: 'calendar-outline',
-        color: isDark ? '#34D399' : '#10B981',
         route: 'ExpensesList',
       },
       {
@@ -97,12 +67,12 @@ export default function ExpensesDashboardScreen() {
     return [
       {
         key: 'expense-types',
-        label: t('expenses:expense_types', { defaultValue: 'Gelir / Gider Türleri' }),
+        label: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
         icon: 'apps-outline',
         color: isDark ? '#A78BFA' : '#7C3AED',
         route: 'ExpenseTypes',
         stat: stats?.expenseTypes ?? 0,
-        statLabel: t('expenses:expense_types', { defaultValue: 'Gelir / Gider Türleri' }),
+        statLabel: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
       },
     ];
   }, [stats, t, isDark]);
@@ -111,21 +81,21 @@ export default function ExpensesDashboardScreen() {
   const quickActions: ModuleQuickAction[] = React.useMemo(() => [
     {
       key: 'view-expenses',
-      label: t('expenses:expenses', { defaultValue: 'Gelir / Giderler' }),
+      label: t('expenses:expenses', { defaultValue: 'Giderler' }),
       icon: 'list-outline',
       color: isDark ? '#F87171' : '#DC2626',
       route: 'ExpensesList',
     },
     {
       key: 'add-expense',
-      label: t('expenses:new_expense', { defaultValue: 'Yeni Gelir / Gider' }),
+      label: t('expenses:new_expense', { defaultValue: 'Yeni Gider' }),
       icon: 'add-circle-outline',
       color: isDark ? '#F59E0B' : '#D97706',
       route: 'ExpenseCreate',
     },
     {
       key: 'expense-types',
-      label: t('expenses:expense_types', { defaultValue: 'Gelir / Gider Türleri' }),
+      label: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
       icon: 'apps-outline',
       color: isDark ? '#A78BFA' : '#7C3AED',
       route: 'ExpenseTypes',
@@ -164,10 +134,11 @@ export default function ExpensesDashboardScreen() {
         module: 'expenses',
         stats: fetchStats,
         quickActions: quickActions,
-        mainStatKey: 'total-amount',
+        mainStatKey: 'total-expenses',
         relatedModules: relatedModules,
         listRoute: 'ExpensesList',
         createRoute: 'ExpenseCreate',
+        description: 'expenses:module_description',
         listConfig: {
           service: expenseEntityService,
           config: {
@@ -180,7 +151,7 @@ export default function ExpensesDashboardScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                    {item.title || t('expenses:expense', { defaultValue: 'Gelir / Gider' })}
+                    {item.title || t('expenses:expense', { defaultValue: 'Gider' })}
                   </Text>
                   {item.isSystemGenerated && (
                     <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>
@@ -189,23 +160,7 @@ export default function ExpensesDashboardScreen() {
                   )}
                 </View>
                 <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
-                  {item.type && (
-                    <View style={{ 
-                      backgroundColor: item.type === 'income' ? '#10B98120' : '#DC262620',
-                      paddingHorizontal: spacing.sm,
-                      paddingVertical: spacing.xs,
-                      borderRadius: 8
-                    }}>
-                      <Text style={{ 
-                        fontSize: 11, 
-                        color: item.type === 'income' ? '#10B981' : '#DC2626', 
-                        fontWeight: '600' 
-                      }}>
-                        {item.type === 'income' ? t('expenses:income', { defaultValue: 'Gelir' }) : 
-                         t('expenses:expense', { defaultValue: 'Gider' })}
-                      </Text>
-                    </View>
-                  )}
+                  {/* Type badge removed - always expense */}
                   {item.status && (
                     <View style={{ 
                       backgroundColor: item.status === 'paid' ? '#10B981' : item.status === 'pending' ? '#F59E0B' : '#6B7280',
@@ -226,17 +181,17 @@ export default function ExpensesDashboardScreen() {
                 {item.amount && (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons 
-                      name={item.type === 'income' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'} 
+                      name="arrow-down-circle-outline" 
                       size={16} 
-                      color={item.type === 'income' ? '#10B981' : (colors.error || '#DC2626')} 
+                      color={colors.error || '#DC2626'} 
                     />
                     <Text style={{ 
                       marginLeft: spacing.xs, 
                       fontSize: 14, 
                       fontWeight: '600', 
-                      color: item.type === 'income' ? '#10B981' : (colors.error || '#DC2626') 
+                      color: colors.error || '#DC2626'
                     }}>
-                      {item.type === 'income' ? '+' : '-'}₺{item.amount.toLocaleString()}
+                      -₺{item.amount.toLocaleString()}
                     </Text>
                   </View>
                 )}
@@ -245,7 +200,6 @@ export default function ExpensesDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons 
                       name={
-                        item.source === 'sales' ? 'pricetag-outline' :
                         item.source === 'product_purchase' ? 'cube-outline' :
                         item.source === 'employee_salary' ? 'person-outline' :
                         'receipt-outline'
@@ -254,8 +208,7 @@ export default function ExpensesDashboardScreen() {
                       color={isDark ? '#94A3B8' : colors.muted} 
                     />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, color: isDark ? '#E2E8F0' : colors.muted }}>
-                      {item.source === 'sales' ? 'Satış' :
-                       item.source === 'product_purchase' ? 'Ürün Alışı' :
+                      {item.source === 'product_purchase' ? 'Ürün Alışı' :
                        item.source === 'employee_salary' ? 'Maaş' :
                        item.expenseTypeName || 'Manuel'}
                     </Text>

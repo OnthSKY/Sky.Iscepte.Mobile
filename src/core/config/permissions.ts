@@ -17,6 +17,7 @@ export const permissionsRegistry: ModulePermissionConfig[] = [
   { module: 'sales', permissions: ['sales:view', 'sales:create', 'sales:edit'] },
   { module: 'customers', permissions: ['customers:view', 'customers:create', 'customers:edit'] },
   { module: 'expenses', permissions: ['expenses:view', 'expenses:create', 'expenses:edit'] },
+  { module: 'revenue', permissions: ['revenue:view', 'revenue:create', 'revenue:edit'] },
   { module: 'reports', permissions: ['reports:view'] },
   { module: 'employees', permissions: ['employees:view', 'employees:create', 'employees:edit'] },
   { module: 'stock', permissions: ['stock:view', 'stock:create', 'stock:edit'] },
@@ -30,6 +31,7 @@ export const rolePermissions: RolePermissionsMap = {
     'sales:view', 'sales:create', 'sales:edit',
     'customers:view', 'customers:create', 'customers:edit',
     'expenses:view', 'expenses:create', 'expenses:edit',
+    'revenue:view', 'revenue:create', 'revenue:edit',
     'employees:view', 'employees:create', 'employees:edit',
     'reports:view',
     'stock:view', 'stock:create', 'stock:edit',
@@ -39,7 +41,7 @@ export const rolePermissions: RolePermissionsMap = {
   [Role.STAFF]: [
     'sales:view', 'sales:create',
     'customers:view', 'customers:create',
-    'expenses:view', 'expenses:create',
+    'expenses:view', 'expenses:create', // STAFF can only create expenses, not income
     'reports:view',
     'stock:view',
     'purchases:view', 'purchases:create',

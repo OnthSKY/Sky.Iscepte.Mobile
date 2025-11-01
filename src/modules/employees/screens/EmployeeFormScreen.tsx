@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { useRoute } from '@react-navigation/native';
-import { View, Text, Switch, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { employeeEntityService } from '../services/employeeServiceAdapter';
@@ -62,7 +62,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   const isCreateMode = formMode === 'create';
   
   // Module definitions
-  const ALL_MODULES = ['sales', 'customers', 'expenses', 'employees', 'reports', 'stock'];
+  const ALL_MODULES = ['sales', 'customers', 'expenses', 'revenue', 'employees', 'reports', 'stock', 'purchases'];
   const ALL_ACTIONS = ['view', 'create', 'edit', 'delete'];
 
   // Role options for select (NO GUEST)
@@ -106,17 +106,17 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
               <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: spacing.md, color: colors.text }}>
                 {t('basic_information', { defaultValue: 'Basic Information' })}
               </Text>
-              <DynamicForm
-                namespace="employees"
-                columns={2}
-                fields={employeeFormFields}
-                values={formData}
-                onChange={(v) => {
-                  Object.keys(v).forEach((key) => {
+        <DynamicForm
+          namespace="employees"
+          columns={2}
+          fields={employeeFormFields}
+          values={formData}
+          onChange={(v) => {
+            Object.keys(v).forEach((key) => {
                     handleFieldChange(key as keyof Employee, v[key]);
-                  });
-                }}
-              />
+            });
+          }}
+        />
             </View>
 
           {/* User Account Section */}
@@ -241,8 +241,12 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                         <Text style={{ fontSize: 14, color: colors.muted, marginBottom: spacing.md }}>
                           {t('select_permissions_desc', { defaultValue: 'Select the permissions this user will have:' })}
                         </Text>
-                        <ScrollView style={{ maxHeight: 500 }}>
-                          <View style={{ gap: spacing.md }}>
+                        <View style={{ marginBottom: spacing.md, padding: spacing.md, backgroundColor: colors.primary + '10', borderRadius: 8, borderWidth: 1, borderColor: colors.primary + '30' }}>
+                          <Text style={{ fontSize: 13, color: colors.text }}>
+                            {t('view_all_data_note', { defaultValue: 'Note: With View permission, this user can view data entered by others as well.' })}
+                          </Text>
+                        </View>
+                        <View style={{ gap: spacing.md }}>
                             {/* Sales Module */}
                             <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
                               <TouchableOpacity 
@@ -429,6 +433,72 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                                             updateField('customPermissions', {
                                               ...current,
                                               expenses: { ...expenses, actions },
+                                            });
+                                          }}
+                                          trackColor={{ false: colors.border, true: colors.primary }}
+                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
+                                        />
+                                      </View>
+                                    ))}
+                                  </View>
+                                </View>
+                              )}
+                            </View>
+
+                            {/* Revenue Module */}
+                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
+                              <TouchableOpacity 
+                                onPress={() => setExpandedModules({ ...expandedModules, revenue: !expandedModules.revenue })}
+                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
+                              >
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                                  {t('common:revenue', { defaultValue: 'Revenue' })}
+                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                                  <TouchableOpacity
+                                    onPress={(e) => {
+                                      e.stopPropagation();
+                                      const current = formData.customPermissions || {};
+                                      const revenue = current.revenue || { actions: [], fields: [], notifications: [] };
+                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => revenue.actions?.includes(action));
+                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
+                                      updateField('customPermissions', {
+                                        ...current,
+                                        revenue: { ...revenue, actions: newActions },
+                                      });
+                                    }}
+                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
+                                  >
+                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
+                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.revenue?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
+                                    </Text>
+                                  </TouchableOpacity>
+                                  <Ionicons 
+                                    name={expandedModules.revenue ? 'chevron-up' : 'chevron-down'} 
+                                    size={20} 
+                                    color={colors.text} 
+                                  />
+                                </View>
+                              </TouchableOpacity>
+                              {expandedModules.revenue && (
+                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
+                                  <View style={{ gap: spacing.xs }}>
+                                    {['view', 'create', 'edit', 'delete'].map((action) => (
+                                      <View key={`revenue_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
+                                        <Text style={{ flex: 1, color: colors.text }}>
+                                          {t(`common:${action}`, { defaultValue: action })}
+                                        </Text>
+                                        <Switch
+                                          value={formData.customPermissions?.revenue?.actions?.includes(action) || false}
+                                          onValueChange={(value) => {
+                                            const current = formData.customPermissions || {};
+                                            const revenue = current.revenue || { actions: [], fields: [], notifications: [] };
+                                            const actions = value
+                                              ? [...(revenue.actions || []), action]
+                                              : (revenue.actions || []).filter(a => a !== action);
+                                            updateField('customPermissions', {
+                                              ...current,
+                                              revenue: { ...revenue, actions },
                                             });
                                           }}
                                           trackColor={{ false: colors.border, true: colors.primary }}
@@ -638,8 +708,73 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                                 </View>
                               )}
                             </View>
+
+                            {/* Purchases Module */}
+                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
+                              <TouchableOpacity 
+                                onPress={() => setExpandedModules({ ...expandedModules, purchases: !expandedModules.purchases })}
+                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
+                              >
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                                  {t('common:purchases', { defaultValue: 'Purchases' })}
+                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                                  <TouchableOpacity
+                                    onPress={(e) => {
+                                      e.stopPropagation();
+                                      const current = formData.customPermissions || {};
+                                      const purchases = current.purchases || { actions: [], fields: [], notifications: [] };
+                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => purchases.actions?.includes(action));
+                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
+                                      updateField('customPermissions', {
+                                        ...current,
+                                        purchases: { ...purchases, actions: newActions },
+                                      });
+                                    }}
+                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
+                                  >
+                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
+                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.purchases?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
+                                    </Text>
+                                  </TouchableOpacity>
+                                  <Ionicons 
+                                    name={expandedModules.purchases ? 'chevron-up' : 'chevron-down'} 
+                                    size={20} 
+                                    color={colors.text} 
+                                  />
+                                </View>
+                              </TouchableOpacity>
+                              {expandedModules.purchases && (
+                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
+                                  <View style={{ gap: spacing.xs }}>
+                                    {['view', 'create', 'edit', 'delete'].map((action) => (
+                                      <View key={`purchases_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
+                                        <Text style={{ flex: 1, color: colors.text }}>
+                                          {t(`common:${action}`, { defaultValue: action })}
+                                        </Text>
+                                        <Switch
+                                          value={formData.customPermissions?.purchases?.actions?.includes(action) || false}
+                                          onValueChange={(value) => {
+                                            const current = formData.customPermissions || {};
+                                            const purchases = current.purchases || { actions: [], fields: [], notifications: [] };
+                                            const actions = value
+                                              ? [...(purchases.actions || []), action]
+                                              : (purchases.actions || []).filter(a => a !== action);
+                                            updateField('customPermissions', {
+                                              ...current,
+                                              purchases: { ...purchases, actions },
+                                            });
+                                          }}
+                                          trackColor={{ false: colors.border, true: colors.primary }}
+                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
+                                        />
+                                      </View>
+                                    ))}
+                                  </View>
+                                </View>
+                              )}
+                            </View>
                           </View>
-                        </ScrollView>
                       </Card>
                     ) : null}
                   </>

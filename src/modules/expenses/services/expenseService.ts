@@ -6,15 +6,15 @@ import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
 
-export type ExpenseType = 'income' | 'expense';
-export type ExpenseSource = 'sales' | 'product_purchase' | 'employee_salary' | 'manual';
+export type ExpenseType = 'expense'; // Only expense, income has separate module
+export type ExpenseSource = 'product_purchase' | 'employee_salary' | 'manual';
 
 export interface Expense {
   id: string;
   title?: string;
   amount?: number;
-  type?: ExpenseType; // 'income' or 'expense'
-  source?: ExpenseSource; // 'sales', 'product_purchase', 'employee_salary', 'manual'
+  type?: ExpenseType; // Always 'expense'
+  source?: ExpenseSource; // 'product_purchase', 'employee_salary', 'manual'
   expenseTypeId?: string;
   expenseTypeName?: string;
   date?: string;
@@ -30,17 +30,11 @@ export interface Expense {
 export interface ExpenseStats {
   // Total counts
   totalTransactions: number;
-  totalIncomeTransactions: number;
-  totalExpenseTransactions: number;
   // Amounts
-  totalAmount: number; // Net (income - expenses)
-  totalIncome: number;
   totalExpenses: number;
   // Monthly
-  monthlyIncome: number;
   monthlyExpenses: number;
   // By source
-  incomeFromSales: number;
   expensesFromProducts: number;
   expensesFromSalaries: number;
   expensesFromManual: number;

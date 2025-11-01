@@ -63,25 +63,8 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Build dynamic fields - Gelir/Gider first, then category
+  // Build dynamic fields - category first, then other fields (only expense type, no income)
   const expenseFields: DynamicField[] = useMemo(() => [
-    {
-      name: 'type',
-      labelKey: 'transaction_type',
-      type: 'custom',
-      render: (value, onChange) => (
-        <Select
-          options={[
-            { label: t('expense', { defaultValue: 'Gider' }), value: 'expense' },
-            { label: t('income', { defaultValue: 'Gelir' }), value: 'income' },
-          ]}
-          value={String(value || 'expense')}
-          onChange={onChange}
-          placeholder={t('transaction_type', { defaultValue: 'Gelir veya Gider' })}
-        />
-      ),
-      required: true,
-    },
     {
       name: 'expenseTypeId',
       labelKey: 'category',
@@ -110,10 +93,10 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
       }}
       validator={expenseValidator}
       renderForm={(formData, updateField, errors) => {
-        // Ensure default values are set
+        // Ensure default values are set (only expense, no type selection)
         const formDataWithDefaults = {
           ...formData,
-          type: formData.type || 'expense',
+          type: 'expense', // Always expense for this module
           source: formData.source || 'manual',
         };
         

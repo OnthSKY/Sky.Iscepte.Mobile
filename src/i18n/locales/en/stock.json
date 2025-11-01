@@ -29,6 +29,9 @@
   "dashboard": "Dashboard",
   "list": "List",
   "module": "Stock",
-  "stock_item": "Stock Item"
+  "module_name": "Stock Management",
+  "stock_item": "Stock Item",
+  "module_overview": "Module Overview",
+  "module_description": "Track your product inventory with the Stock module. Manage products, update stock levels, and receive low stock alerts to streamline inventory management."
 }
 

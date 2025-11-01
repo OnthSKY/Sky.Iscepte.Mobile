@@ -132,6 +132,7 @@ export default function EmployeesDashboardScreen() {
         relatedModules: relatedModules,
         listRoute: 'EmployeesList',
         createRoute: 'EmployeeCreate',
+        description: 'employees:module_description',
         listConfig: {
           service: employeeEntityService,
           config: {

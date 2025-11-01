@@ -24,6 +24,7 @@
   "dashboard": "Dashboard",
   "list": "Liste",
   "module": "Çalışanlar",
+  "module_name": "Çalışan Yönetimi",
   "employee": "Çalışan",
   "basic_information": "Temel Bilgiler",
   "user_account": "Kullanıcı Hesabı",
@@ -49,10 +50,13 @@
   "owner_full_access": "Owner tüm modüllere tam erişime sahiptir",
   "select_all": "Tümünü Seç",
   "deselect_all": "Tümünü Kaldır",
+  "view_all_data_note": "Not: Görüntüle izni ile bu kullanıcı, başkaları tarafından girilen verileri de görüntüleyebilir.",
   "errors": {
     "first_name_required": "Ad zorunludur",
     "last_name_required": "Soyad zorunludur"
-  }
+  },
+  "module_overview": "Modül Özeti",
+  "module_description": "Çalışan modülü ile personel bilgilerinizi, departmanları, maaşları ve çalışan yetkilerini yönetebilirsiniz. İnsan kaynakları yönetimini dijitalleştirerek iş süreçlerinizi kolaylaştırın."
 }
 
 

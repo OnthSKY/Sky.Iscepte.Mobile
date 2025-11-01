@@ -28,6 +28,9 @@
   "related_modules": "İlgili Modüller",
   "dashboard": "Dashboard",
   "list": "Liste",
-  "module": "Alışlar"
+  "module": "Alışlar",
+  "module_name": "Alış Yönetimi",
+  "module_overview": "Modül Özeti",
+  "module_description": "Alış modülü ile tedarikçilerden ürün satın alma işlemlerini yönetebilirsiniz. Yapılan alışlar otomatik olarak stok envanterinize eklenir ve gider takibinize kaydedilir."
 }
 

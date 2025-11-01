@@ -145,6 +145,7 @@ export default function PurchasesDashboardScreen() {
         relatedModules: relatedModules,
         listRoute: 'PurchaseList',
         createRoute: 'PurchaseCreate',
+        description: 'purchases:module_description',
         listConfig: {
           service: purchaseEntityService,
           config: {

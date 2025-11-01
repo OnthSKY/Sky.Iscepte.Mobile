@@ -234,7 +234,8 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
       const defaultStats: any = {
         sales: { totalSales: 0, totalRevenue: 0, monthlySales: 0, averageOrderValue: 0 },
         customers: { totalCustomers: 0, activeCustomers: 0, totalOrders: 0 },
-        expenses: { totalExpenses: 0, totalAmount: 0, monthlyExpenses: 0, expenseTypes: 0 },
+        expenses: { totalExpenses: 0, monthlyExpenses: 0, expenseTypes: 0 },
+        revenue: { totalRevenue: 0, monthlyRevenue: 0, revenueTypes: 0 },
         employees: { totalEmployees: 0, activeEmployees: 0, totalDepartments: 0 },
         stock: { totalStockItems: 0, totalCategories: 0, lowStock: 0 },
         products: { totalProducts: 0, totalCategories: 0, totalActive: 0 }, // Keep for backward compatibility
@@ -265,36 +266,15 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
       return filtered[0] as T;
     }
     
-    // Special handling for expenses: merge system-generated data with manual expenses
+    // Special handling for expenses and revenue: merge system-generated data with manual entries
     let all: any[] = [];
     if (resource === 'expenses') {
-      // Get manual expenses
+      // Get manual expenses (only expenses, no income)
       const manualExpenses = filterByOwner(store.list(), currentOwnerId);
       
-      // Get system-generated data: Sales (income), Product purchases (expense), Employee salaries (expense)
-      const salesStore: any = (stores as any).sales;
+      // Get system-generated data: Product purchases (expense), Employee salaries (expense)
       const productsStore: any = (stores as any).products;
       const employeesStore: any = (stores as any).employees;
-      
-      // Sales as income
-      let salesData = salesStore ? salesStore.list() : [];
-      salesData = filterByOwner(salesData, currentOwnerId);
-      const incomeFromSales = salesData
-        .filter((s: any) => s.status === 'completed')
-        .map((sale: any) => ({
-          id: `income_sale_${sale.id}`,
-          title: `${sale.title || 'Satış'}`,
-          amount: sale.amount || sale.total || 0,
-          type: 'income' as const,
-          source: 'sales' as const,
-          date: sale.date,
-          saleId: String(sale.id),
-          employeeId: sale.employeeId,
-          ownerId: sale.ownerId,
-          isSystemGenerated: true,
-          expenseTypeName: 'Satış',
-          description: `Satış: ${sale.customerName || sale.customerId || ''}`,
-        }));
       
       // Product purchases as expense (assume purchase cost is 70% of sale price)
       let productsData = productsStore ? productsStore.list() : [];
@@ -336,20 +316,57 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
           description: `Çalışan: ${employee.name || employee.email || ''}`,
         }));
       
-      // Mark manual expenses
+      // Mark manual expenses (only expense type)
       const manualExpensesMarked = manualExpenses.map((exp: any) => ({
         ...exp,
-        type: (exp.type && (exp.type === 'income' || exp.type === 'expense')) ? exp.type : 'expense' as const,
+        type: 'expense' as const, // Always expense for this module
         source: exp.source || 'manual' as const,
         isSystemGenerated: false,
       }));
       
-      // Combine all expenses
+      // Combine all expenses (no income)
       all = [
-        ...incomeFromSales,
         ...expenseFromProducts,
         ...expenseFromSalaries,
         ...manualExpensesMarked,
+      ];
+    } else if (resource === 'revenue') {
+      // Get manual revenue entries
+      const manualRevenue = filterByOwner(store.list(), currentOwnerId);
+      
+      // Get system-generated data: Sales (revenue)
+      const salesStore: any = (stores as any).sales;
+      
+      // Sales as revenue
+      let salesData = salesStore ? salesStore.list() : [];
+      salesData = filterByOwner(salesData, currentOwnerId);
+      const revenueFromSales = salesData
+        .filter((s: any) => s.status === 'completed')
+        .map((sale: any) => ({
+          id: `revenue_sale_${sale.id}`,
+          title: `${sale.title || 'Satış'}`,
+          amount: sale.amount || sale.total || 0,
+          source: 'sales' as const,
+          date: sale.date,
+          saleId: String(sale.id),
+          employeeId: sale.employeeId,
+          ownerId: sale.ownerId,
+          isSystemGenerated: true,
+          revenueTypeName: 'Satış',
+          description: `Satış: ${sale.customerName || sale.customerId || ''}`,
+        }));
+      
+      // Mark manual revenue entries
+      const manualRevenueMarked = manualRevenue.map((rev: any) => ({
+        ...rev,
+        source: rev.source || 'manual' as const,
+        isSystemGenerated: false,
+      }));
+      
+      // Combine all revenue
+      all = [
+        ...revenueFromSales,
+        ...manualRevenueMarked,
       ];
     } else {
       all = filterByOwner(store.list(), currentOwnerId);
@@ -563,8 +580,9 @@ function calculateStats(resource: string, ownerId: number | null): any {
     const defaultStats: any = {
       sales: { totalSales: 0, totalRevenue: 0, monthlySales: 0, averageOrderValue: 0 },
       customers: { totalCustomers: 0, activeCustomers: 0, totalOrders: 0 },
-      expenses: { totalExpenses: 0, totalAmount: 0, monthlyExpenses: 0, expenseTypes: 0 },
-      employees: { totalEmployees: 0, activeEmployees: 0, totalDepartments: 0 },
+        expenses: { totalExpenses: 0, monthlyExpenses: 0, expenseTypes: 0 },
+        revenue: { totalRevenue: 0, monthlyRevenue: 0, revenueTypes: 0 },
+        employees: { totalEmployees: 0, activeEmployees: 0, totalDepartments: 0 },
       products: { totalProducts: 0, totalCategories: 0, totalActive: 0 },
       reports: { totalReports: 0, monthlyReports: 0 },
     };
@@ -616,30 +634,15 @@ function calculateStats(resource: string, ownerId: number | null): any {
     }
 
     case 'expenses': {
-      // Merge system-generated data with manual expenses for stats
-      const salesStore: any = (stores as any).sales;
+      // Calculate expenses stats (only expenses, no income)
       const productsStore: any = (stores as any).products;
       const employeesStore: any = (stores as any).employees;
-      
-      let salesData = salesStore ? salesStore.list() : [];
-      salesData = filterByOwner(salesData, ownerId);
       
       let productsData = productsStore ? productsStore.list() : [];
       productsData = filterByOwner(productsData, ownerId);
       
       let employeesData = employeesStore ? employeesStore.list() : [];
       employeesData = filterByOwner(employeesData, ownerId);
-      
-      // Calculate income from sales
-      const completedSales = salesData.filter((s: any) => s.status === 'completed');
-      const incomeFromSales = completedSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
-      const monthlyIncomeFromSales = completedSales
-        .filter((s: any) => {
-          if (!s.date) return false;
-          const saleDate = new Date(s.date);
-          return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
-        })
-        .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
       
       // Calculate expenses from product purchases (70% of price)
       const expenseFromProducts = productsData.reduce((sum: number, p: any) => 
@@ -661,19 +664,12 @@ function calculateStats(resource: string, ownerId: number | null): any {
         })
         .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
       
-      // Totals
-      const totalIncome = incomeFromSales;
+      // Totals (only expenses)
       const totalExpenses = expenseFromProducts + expenseFromSalaries + expenseFromManual;
-      const totalAmount = totalIncome - totalExpenses;
-      
-      const monthlyIncome = monthlyIncomeFromSales;
       const monthlyExpenses = expenseFromProducts + expenseFromSalaries + monthlyExpenseFromManual;
       
       // Counts
-      const totalTransactions = completedSales.length + productsData.length + 
-        employeesData.filter((e: any) => e.salary && e.salary > 0).length + manualExpenses.length;
-      const totalIncomeTransactions = completedSales.length;
-      const totalExpenseTransactions = productsData.length + 
+      const totalTransactions = productsData.length + 
         employeesData.filter((e: any) => e.salary && e.salary > 0).length + manualExpenses.length;
       
       // Count unique expense types from manual expenses
@@ -682,18 +678,62 @@ function calculateStats(resource: string, ownerId: number | null): any {
 
       return {
         totalTransactions,
-        totalIncomeTransactions,
-        totalExpenseTransactions,
-        totalAmount,
-        totalIncome,
         totalExpenses,
-        monthlyIncome,
         monthlyExpenses,
-        incomeFromSales,
         expensesFromProducts: expenseFromProducts,
         expensesFromSalaries: expenseFromSalaries,
         expensesFromManual: expenseFromManual,
         expenseTypes,
+      };
+    }
+
+    case 'revenue': {
+      // Calculate revenue stats
+      const salesStore: any = (stores as any).sales;
+      
+      let salesData = salesStore ? salesStore.list() : [];
+      salesData = filterByOwner(salesData, ownerId);
+      
+      // Calculate revenue from sales
+      const completedSales = salesData.filter((s: any) => s.status === 'completed');
+      const revenueFromSales = completedSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+      const monthlyRevenueFromSales = completedSales
+        .filter((s: any) => {
+          if (!s.date) return false;
+          const saleDate = new Date(s.date);
+          return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+        })
+        .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+      
+      // Calculate manual revenue
+      const manualRevenue = data.filter((r: any) => !r.isSystemGenerated || r.source === 'manual');
+      const revenueFromManual = manualRevenue.reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      const monthlyRevenueFromManual = manualRevenue
+        .filter((r: any) => {
+          if (!r.date) return false;
+          const revenueDate = new Date(r.date);
+          return revenueDate.getMonth() === currentMonth && revenueDate.getFullYear() === currentYear;
+        })
+        .reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      
+      // Totals
+      const totalRevenue = revenueFromSales + revenueFromManual;
+      const monthlyRevenue = monthlyRevenueFromSales + monthlyRevenueFromManual;
+      
+      // Counts
+      const totalTransactions = completedSales.length + manualRevenue.length;
+      
+      // Count unique revenue types from manual revenue
+      const uniqueTypes = new Set(manualRevenue.map((r: any) => r.revenueTypeName || r.type).filter(Boolean));
+      const revenueTypes = uniqueTypes.size;
+
+      return {
+        totalTransactions,
+        totalRevenue,
+        monthlyRevenue,
+        revenueFromSales,
+        revenueFromManual,
+        revenueTypes,
       };
     }
 

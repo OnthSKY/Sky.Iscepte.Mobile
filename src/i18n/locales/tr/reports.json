@@ -15,6 +15,9 @@
   "related_modules": "İlgili Modüller",
   "dashboard": "Dashboard",
   "list": "Liste",
-  "module": "Raporlar"
+  "module": "Raporlar",
+  "module_name": "Raporlama",
+  "module_overview": "Modül Özeti",
+  "module_description": "Raporlama modülü ile satış, gelir, gider ve stok raporlarınızı görüntüleyebilirsiniz. İş performansınızı analiz ederek gelecek planlamalarınızı daha iyi yapabilirsiniz."
 }
 

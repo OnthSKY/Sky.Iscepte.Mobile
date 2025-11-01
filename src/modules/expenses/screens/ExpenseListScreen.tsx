@@ -28,31 +28,11 @@ export default function ExpenseListScreen() {
   // Fetch stats
   const { data: stats, isLoading: statsLoading } = useExpenseStatsQuery();
 
-  // Transform stats to ModuleStat format
+  // Transform stats to ModuleStat format (only expenses, no income)
   const moduleStats: ModuleStat[] = React.useMemo(() => {
     if (!stats) return [];
     
     return [
-      {
-        key: 'total-amount',
-        label: t('expenses:total_amount', { defaultValue: 'Net Tutar' }),
-        value: typeof stats.totalAmount === 'number' 
-          ? `₺${stats.totalAmount.toLocaleString()}` 
-          : stats.totalAmount ?? '₺0',
-        icon: 'wallet-outline',
-        color: isDark ? '#10B981' : '#059669',
-        route: 'ExpensesList',
-      },
-      {
-        key: 'total-income',
-        label: t('expenses:total_income', { defaultValue: 'Toplam Gelir' }),
-        value: typeof stats.totalIncome === 'number' 
-          ? `₺${stats.totalIncome.toLocaleString()}` 
-          : `₺${stats.totalIncome ?? 0}`,
-        icon: 'trending-up-outline',
-        color: isDark ? '#10B981' : '#059669',
-        route: 'ExpensesList',
-      },
       {
         key: 'total-expenses',
         label: t('expenses:total_expenses', { defaultValue: 'Toplam Gider' }),
@@ -61,16 +41,6 @@ export default function ExpenseListScreen() {
           : `₺${stats.totalExpenses ?? 0}`,
         icon: 'trending-down-outline',
         color: isDark ? '#F87171' : '#DC2626',
-        route: 'ExpensesList',
-      },
-      {
-        key: 'monthly-income',
-        label: t('expenses:monthly_income', { defaultValue: 'Aylık Gelir' }),
-        value: typeof stats.monthlyIncome === 'number' 
-          ? `₺${stats.monthlyIncome.toLocaleString()}` 
-          : `₺${stats.monthlyIncome ?? 0}`,
-        icon: 'calendar-outline',
-        color: isDark ? '#34D399' : '#10B981',
         route: 'ExpensesList',
       },
       {
@@ -101,7 +71,7 @@ export default function ExpenseListScreen() {
         ) : (
           <ModuleStatsHeader 
             stats={moduleStats}
-            mainStatKey="total-amount"
+            mainStatKey="total-expenses"
             translationNamespace="expenses"
           />
         )}
@@ -121,7 +91,7 @@ export default function ExpenseListScreen() {
                 onPress={() => navigation.navigate('ExpenseDetail', { id: item.id, title: item.title, amount: item.amount })}
               >
                 <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
-                <Text>{item.amount} ₺</Text>
+                <Text style={{ color: '#DC2626', fontWeight: '600' }}>-{item.amount} ₺</Text>
               </Card>
             )}
             keyExtractor={(item: Expense) => String(item.id)}

@@ -151,6 +151,7 @@ export default function SalesDashboardScreen() {
         relatedModules: relatedModules,
         listRoute: 'SalesList',
         createRoute: 'SalesCreate',
+        description: 'sales:module_description',
         listConfig: {
           service: salesEntityService,
           config: {

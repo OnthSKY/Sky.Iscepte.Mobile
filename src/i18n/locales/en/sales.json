@@ -28,6 +28,9 @@
   "related_modules": "Related Modules",
   "dashboard": "Dashboard",
   "list": "List",
-  "module": "Sales"
+  "module": "Sales",
+  "module_name": "Sales Management",
+  "module_overview": "Module Overview",
+  "module_description": "Manage product sales to customers with the Sales module. Sales are automatically deducted from your stock inventory and recorded in your income tracking."
 }
 

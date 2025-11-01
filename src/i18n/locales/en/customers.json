@@ -21,6 +21,9 @@
   "related_modules": "Related Modules",
   "dashboard": "Dashboard",
   "list": "List",
-  "module": "Customers"
+  "module": "Customers",
+  "module_name": "Customer Management",
+  "module_overview": "Module Overview",
+  "module_description": "Manage customer information, contact details, and order history with the Customers module. Keep your customer relationships organized and optimize your sales processes."
 }
 

@@ -153,6 +153,7 @@ export default function ProductsDashboardScreen() {
         relatedModules: relatedModules,
         listRoute: 'StockList',
         createRoute: 'StockCreate',
+        description: 'stock:module_description',
         listConfig: {
           service: productEntityService,
           config: {

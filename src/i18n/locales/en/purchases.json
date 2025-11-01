@@ -28,6 +28,9 @@
   "related_modules": "Related Modules",
   "dashboard": "Dashboard",
   "list": "List",
-  "module": "Purchases"
+  "module": "Purchases",
+  "module_name": "Purchase Management",
+  "module_overview": "Module Overview",
+  "module_description": "Manage product purchases from suppliers with the Purchases module. Purchases are automatically added to your stock inventory and recorded in your expense tracking."
 }
 

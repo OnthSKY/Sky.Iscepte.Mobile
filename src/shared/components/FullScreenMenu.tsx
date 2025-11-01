@@ -9,6 +9,7 @@ import { useTheme } from '../../core/contexts/ThemeContext';
 import ConfirmDialog from './ConfirmDialog';
 import AppModal from './Modal';
 import storage from '../services/storageService';
+import { MODULE_CONFIGS, ALL_QUICK_ACTIONS, getQuickActionFallback } from '../../core/config/moduleConfig';
 
 type MenuItem = {
   key: string;
@@ -16,6 +17,8 @@ type MenuItem = {
   icon: string;
   routeName: string;
   requiredPermission?: string;
+  isLocked?: boolean;
+  isAvailable?: boolean;
 };
 
 type Props = {
@@ -26,36 +29,22 @@ type Props = {
   role?: Role;
 };
 
-const ITEMS: MenuItem[] = [
-  { key: 'stock', label: '', icon: 'cube-outline', routeName: 'Stock', requiredPermission: 'stock:view' },
-  { key: 'purchases', label: '', icon: 'cart-outline', routeName: 'Purchases', requiredPermission: 'purchases:view' },
-  { key: 'sales', label: '', icon: 'pricetag-outline', routeName: 'Sales', requiredPermission: 'sales:view' },
-  { key: 'customers', label: '', icon: 'people-outline', routeName: 'Customers', requiredPermission: 'customers:view' },
-  { key: 'expenses', label: '', icon: 'wallet-outline', routeName: 'Expenses', requiredPermission: 'expenses:view' },
-  { key: 'employees', label: '', icon: 'person-outline', routeName: 'Employees', requiredPermission: 'employees:view' },
-  { key: 'reports', label: '', icon: 'bar-chart-outline', routeName: 'Reports', requiredPermission: 'reports:view' },
-];
-
-const QUICK_ACTIONS: MenuItem[] = [
-  { key: 'qa-purchase', label: '', icon: 'cart-outline', routeName: 'PurchaseCreate', requiredPermission: 'purchases:create' },
-  { key: 'qa-sale', label: '', icon: 'pricetag-outline', routeName: 'SalesCreate', requiredPermission: 'sales:create' },
-  { key: 'qa-customer', label: '', icon: 'person-add-outline', routeName: 'CustomerCreate', requiredPermission: 'customers:create' },
-  { key: 'qa-expense', label: '', icon: 'wallet-outline', routeName: 'ExpenseCreate', requiredPermission: 'expenses:create' },
-  { key: 'qa-employee', label: '', icon: 'briefcase-outline', routeName: 'EmployeeCreate', requiredPermission: 'employees:create' },
-  { key: 'qa-stock', label: '', icon: 'cube-outline', routeName: 'StockCreate', requiredPermission: 'stock:create' },
-];
-
 export default function FullScreenMenu({ visible, onClose, onNavigate, availableRoutes, role = 'guest' }: Props) {
-  const { t } = useTranslation([
-    'sales',
-    'customers',
-    'expenses',
-    'employees',
-    'stock',
-    'reports',
-    'settings',
-    'common',
-  ]);
+  // Get all unique translation namespaces from module configs
+  const translationNamespaces = useMemo(() => {
+    const namespaces = new Set<string>();
+    MODULE_CONFIGS.forEach((module) => {
+      namespaces.add(module.translationNamespace);
+      module.quickActions?.forEach((qa) => {
+        namespaces.add(qa.translationNamespace);
+      });
+    });
+    namespaces.add('settings');
+    namespaces.add('common');
+    return Array.from(namespaces);
+  }, []);
+
+  const { t } = useTranslation(translationNamespaces);
   const { width, height } = useWindowDimensions();
   // Responsive breakpoints for grid columns (items)
   // phones: 2-3, tablets: 3-4, large tablets/desktop: 4-5 (max 6 for very wide)
@@ -121,21 +110,21 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   }, [visible]);
   
   const processedItems = useMemo(() => {
-    const labelByRoute: Record<string, string> = {
-      Sales: t('sales', { ns: 'common' }),
-      Customers: t('customers', { ns: 'common' }),
-      Expenses: t('expenses', { ns: 'common' }),
-      Reports: t('reports', { ns: 'reports' }),
-      Employees: t('employees', { ns: 'common' }),
-      Stock: t('stock', { ns: 'stock' }),
-    };
-    
-    const mapped = ITEMS.map((it) => {
-      const hasAccess = !it.requiredPermission || hasPermission(role, it.requiredPermission);
-      const isAvailable = availableRoutes?.includes(it.routeName) ?? false;
+    const mapped = MODULE_CONFIGS.map((module) => {
+      const hasAccess = !module.requiredPermission || hasPermission(role, module.requiredPermission);
+      const isAvailable = availableRoutes?.includes(module.routeName) ?? false;
+      
+      // Get label from translation
+      const label = t(`${module.translationNamespace}:${module.translationKey}`, {
+        defaultValue: module.key,
+      });
+      
       return {
-        ...it,
-        label: labelByRoute[it.routeName] ?? it.label,
+        key: module.key,
+        label,
+        icon: module.icon,
+        routeName: module.routeName,
+        requiredPermission: module.requiredPermission,
         isLocked: !hasAccess,
         isAvailable,
       };
@@ -154,35 +143,30 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     return available;
   }, [t, role, availableRoutes]);
 
-  const quickActionLabelByRoute = useMemo(() => ({
-    SalesCreate: t('sales:new_sale', { defaultValue: 'Yeni satış' }),
-    CustomerCreate: t('customers:new_customer', { defaultValue: 'Yeni müşteri' }),
-    ExpenseCreate: t('expenses:new_expense', { defaultValue: 'Yeni gelir / gider' }),
-    EmployeeCreate: t('settings:new_employee', { defaultValue: 'Yeni çalışan' }),
-    StockCreate: t('stock:new_stock', { defaultValue: 'Yeni stok' }),
-  }) as Record<string, string>, [t]);
+  const quickActionLabelByRoute = useMemo(() => {
+    const labels: Record<string, string> = {};
+    ALL_QUICK_ACTIONS.forEach((qa) => {
+      labels[qa.routeName] = t(`${qa.translationNamespace}:${qa.translationKey}`, {
+        defaultValue: qa.routeName,
+      });
+    });
+    return labels;
+  }, [t]);
 
   const processedQuickActions = useMemo(() => {
-    const getFallback = (routeName: string): string | undefined => {
-      const fallbackMap: Record<string, string> = {
-        SalesCreate: 'Sales',
-        CustomerCreate: 'Customers',
-        ExpenseCreate: 'Expenses',
-        EmployeeCreate: 'Employees',
-        StockCreate: 'Stock',
-      };
-      return fallbackMap[routeName];
-    };
-
-    const mapped = QUICK_ACTIONS.map((qa) => {
+    const mapped = ALL_QUICK_ACTIONS.map((qa) => {
       const hasAccess = !qa.requiredPermission || hasPermission(role, qa.requiredPermission);
       // Check if the route or its fallback is available
       const isAvailable = availableRoutes?.includes(qa.routeName) ?? false;
-      const fallback = getFallback(qa.routeName);
+      const fallback = qa.fallbackRoute || getQuickActionFallback(qa.routeName);
       const fallbackAvailable = fallback && (availableRoutes?.includes(fallback) ?? false);
+      
       return {
-        ...qa,
-        label: quickActionLabelByRoute[qa.routeName] ?? qa.label,
+        key: qa.key,
+        label: quickActionLabelByRoute[qa.routeName] ?? qa.routeName,
+        icon: qa.icon,
+        routeName: qa.routeName,
+        requiredPermission: qa.requiredPermission,
         isLocked: !hasAccess,
         isAvailable: isAvailable || fallbackAvailable,
       };
@@ -198,24 +182,13 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   }, [role, quickActionLabelByRoute, availableRoutes]);
 
   const processedCustomQuickActions = useMemo(() => {
-    const getFallback = (routeName: string): string | undefined => {
-      const fallbackMap: Record<string, string> = {
-        SalesCreate: 'Sales',
-        CustomerCreate: 'Customers',
-        ExpenseCreate: 'Expenses',
-        EmployeeCreate: 'Employees',
-        StockCreate: 'Stock',
-      };
-      return fallbackMap[routeName];
-    };
-
     return customQuickActions
       .map((qa) => {
         const hasAccess = !qa.requiredPermission || hasPermission(role, qa.requiredPermission);
         const routeName = (qa as any).routeName;
         // Check if the route or its fallback is available
         const isAvailable = availableRoutes?.includes(routeName) ?? false;
-        const fallback = getFallback(routeName);
+        const fallback = getQuickActionFallback(routeName);
         const fallbackAvailable = fallback && (availableRoutes?.includes(fallback) ?? false);
         const label = quickActionLabelByRoute[routeName] ?? qa.label;
         return { ...qa, label, isLocked: !hasAccess, isAvailable: isAvailable || fallbackAvailable } as any;
@@ -224,8 +197,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   }, [customQuickActions, role, quickActionLabelByRoute, availableRoutes]);
 
   const canAddQuick = useMemo(() => {
-    const perms = ['sales:create','customers:create','expenses:create'];
-    return perms.some(p => hasPermission(role, p));
+    // Check if user has permission to create any quick action
+    return ALL_QUICK_ACTIONS.some((qa) => hasPermission(role, qa.requiredPermission));
   }, [role]);
 
   // Persist custom quick actions
@@ -257,19 +230,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       onNavigate(routeName);
       return;
     }
-    const fallbackMap: Record<string, string> = {
-      SalesCreate: 'Sales',
-      SalesEdit: 'Sales',
-      CustomerCreate: 'Customers',
-      CustomerEdit: 'Customers',
-      ExpenseCreate: 'Expenses',
-      ExpenseEdit: 'Expenses',
-      EmployeeCreate: 'Employees',
-      EmployeeEdit: 'Employees',
-      StockCreate: 'Stock',
-      StockEdit: 'Stock',
-    };
-    const fallback = fallbackMap[routeName];
+    // Try to get fallback route from module config
+    const fallback = getQuickActionFallback(routeName);
     if (fallback && availableRoutes?.includes(fallback)) {
       onNavigate(fallback);
       return;
@@ -333,6 +295,22 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
               <Text style={[styles.headerTitle, { color: colors.text }]}>
                 {t('common:menu', { defaultValue: 'Menü' })}
               </Text>
+            </View>
+            <View style={[styles.searchWrap, { borderColor: colors.border, backgroundColor: colors.surface, flex: 1, maxWidth: 300, marginHorizontal: spacing.md }]}>
+              <Ionicons name="search" size={16} color={colors.muted} />
+              <TextInput
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+                placeholder={t('common:search', { defaultValue: 'Ara...' })}
+                placeholderTextColor={colors.muted}
+                style={[styles.searchInput, { color: colors.text }]}
+                accessibilityLabel={t('common:search', { defaultValue: 'Ara' }) as string}
+              />
+              {!!searchTerm && (
+                <TouchableOpacity onPress={() => setSearchTerm('')} accessibilityRole="button" accessibilityLabel={t('common:clear', { defaultValue: 'Temizle' }) as string}>
+                  <Ionicons name="close-circle" size={16} color={colors.muted} />
+                </TouchableOpacity>
+              )}
             </View>
             <TouchableOpacity 
               onPress={onClose} 
@@ -420,25 +398,6 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
 
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={{ padding: spacing.lg, gap: spacing.lg }}>
-              <View style={{ paddingHorizontal: spacing.md }}>
-                <View style={[styles.searchWrap, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                  <Ionicons name="search" size={16} color={colors.muted} />
-                  <TextInput
-                    value={searchTerm}
-                    onChangeText={setSearchTerm}
-                    placeholder={t('common:search', { defaultValue: 'Ara...' })}
-                    placeholderTextColor={colors.muted}
-                    style={[styles.searchInput, { color: colors.text }]}
-                    accessibilityLabel={t('common:search', { defaultValue: 'Ara' }) as string}
-                  />
-                  {!!searchTerm && (
-                    <TouchableOpacity onPress={() => setSearchTerm('')} accessibilityRole="button" accessibilityLabel={t('common:clear', { defaultValue: 'Temizle' }) as string}>
-                      <Ionicons name="close-circle" size={16} color={colors.muted} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
               <View>
                 <View style={styles.itemsGrid}>
                   {filteredItems.map((item) => {
@@ -509,29 +468,38 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
           <AppModal visible={addQaVisible} onRequestClose={() => setAddQaVisible(false)}>
             <View style={{ gap: spacing.md }}>
               <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: spacing.xs }}>{t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' })}</Text>
-              {QUICK_ACTIONS
-                .filter(qa => hasPermission(role, qa.requiredPermission as any))
+              {ALL_QUICK_ACTIONS
+                .filter(qa => hasPermission(role, qa.requiredPermission))
                 .filter(qa => !customQuickActions.find(c => c.key === qa.key))
                 .filter(() => totalQuickCount < QUICK_MAX)
-                .map(qa => (
-                  <TouchableOpacity
-                    key={qa.key}
-                    onPress={() => {
-                      if (totalQuickCount < QUICK_MAX) {
-                        setCustomQuickActions((prev) => [...prev, qa]);
-                      }
-                      setAddQaVisible(false);
-                    }}
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${quickActionLabelByRoute[qa.routeName] || qa.routeName}`}
-                  >
-                    <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15`, marginRight: spacing.sm }]}> 
-                      <Ionicons name={qa.icon as any} size={18} color={colors.primary} />
-                    </View>
-                    <Text style={{ color: colors.text, fontWeight: '600' }}>{quickActionLabelByRoute[qa.routeName] || qa.routeName}</Text>
-                  </TouchableOpacity>
-                ))}
+                .map(qa => {
+                  const menuItem: MenuItem = {
+                    key: qa.key,
+                    label: quickActionLabelByRoute[qa.routeName] || qa.routeName,
+                    icon: qa.icon,
+                    routeName: qa.routeName,
+                    requiredPermission: qa.requiredPermission,
+                  };
+                  return (
+                    <TouchableOpacity
+                      key={qa.key}
+                      onPress={() => {
+                        if (totalQuickCount < QUICK_MAX) {
+                          setCustomQuickActions((prev) => [...prev, menuItem]);
+                        }
+                        setAddQaVisible(false);
+                      }}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm }}
+                      accessibilityRole="button"
+                      accessibilityLabel={menuItem.label}
+                    >
+                      <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15`, marginRight: spacing.sm }]}> 
+                        <Ionicons name={qa.icon as any} size={18} color={colors.primary} />
+                      </View>
+                      <Text style={{ color: colors.text, fontWeight: '600' }}>{menuItem.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md }}>
                 <TouchableOpacity onPress={() => setAddQaVisible(false)}>
                   <Text style={{ color: colors.muted, fontWeight: '600' }}>{t('common:cancel', { defaultValue: 'Vazgeç' })}</Text>
@@ -592,6 +560,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     borderBottomWidth: 0,
+    gap: spacing.md,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -628,20 +597,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    borderWidth: 2,
-    borderRadius: 16,
+    borderWidth: 1.5,
+    borderRadius: 12,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
+    minHeight: 40,
     ...(Platform.OS === 'web'
       ? { 
-          boxShadow: '0px 4px 12px rgba(0,0,0,0.05)',
+          boxShadow: '0px 2px 8px rgba(0,0,0,0.05)',
         }
       : {
           shadowColor: '#000',
           shadowOpacity: 0.05,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 2 },
-          elevation: 2,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 1 },
+          elevation: 1,
         }),
   },
   searchInput: {
@@ -737,4 +707,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    width: 2
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+

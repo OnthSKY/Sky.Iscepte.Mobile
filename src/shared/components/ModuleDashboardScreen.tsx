@@ -48,6 +48,7 @@ export interface ModuleDashboardConfig<T extends BaseEntity = BaseEntity> {
   relatedModules?: RelatedModule[]; // Related modules for quick navigation
   listRoute?: string; // Route to view all items (deprecated, use listConfig instead)
   createRoute?: string; // Route to create new item
+  description?: string; // Module description/summary (optional, will be translated)
   // List configuration for integrated list tab
   listConfig?: {
     service: BaseEntityService<T>;
@@ -231,6 +232,23 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
       contentInsetAdjustmentBehavior="never"
       scrollEventThrottle={16}
     >
+        {/* Module Description */}
+        {config.description && (
+          <View style={[styles.descriptionSection, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
+            <View style={[styles.descriptionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.descriptionHeader}>
+                <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+                <Text style={[styles.descriptionTitle, { color: colors.text }]}>
+                  {t(`${config.module}:module_overview`, { defaultValue: 'Modül Özeti' })}
+                </Text>
+              </View>
+              <Text style={[styles.descriptionText, { color: colors.muted }]}>
+                {t(config.description, { defaultValue: config.description })}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Summary Stats Cards - Top Section */}
         {finalStats && finalStats.length > 0 && (
           <View style={styles.summarySection}>
@@ -745,6 +763,40 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  descriptionSection: {
+    marginBottom: spacing.md,
+  },
+  descriptionCard: {
+    borderRadius: 12,
+    padding: spacing.md,
+    borderWidth: 1,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+    }),
+  },
+  descriptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  descriptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  descriptionText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
 

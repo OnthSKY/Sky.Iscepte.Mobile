@@ -27,10 +27,8 @@ export const expenseValidator = (data: Partial<Expense>): Record<string, string>
     // Auto-set source to manual if not provided
     (data as any).source = 'manual';
   }
-  // Ensure type is set
-  if (!data.type || (data.type !== 'income' && data.type !== 'expense')) {
-    (data as any).type = 'expense'; // Default to expense
-  }
+  // Ensure type is always expense (income has separate module)
+  (data as any).type = 'expense';
   return errors;
 };
 

@@ -25,6 +25,9 @@ import trReports from './locales/tr/reports.json';
 import enExpenses from './locales/en/expenses.json';
 import trExpenses from './locales/tr/expenses.json';
 
+import enRevenue from './locales/en/revenue.json';
+import trRevenue from './locales/tr/revenue.json';
+
 import enSettings from './locales/en/settings.json';
 import trSettings from './locales/tr/settings.json';
 import enStock from './locales/en/stock.json';
@@ -48,6 +51,7 @@ const resources = {
     customers: enCustomers,
     reports: enReports,
     expenses: enExpenses,
+    revenue: enRevenue,
     settings: enSettings,
     stock: enStock,
     products: enProducts, // Keep for backward compatibility
@@ -64,6 +68,7 @@ const resources = {
     customers: trCustomers,
     reports: trReports,
     expenses: trExpenses,
+    revenue: trRevenue,
     settings: trSettings,
     stock: trStock,
     products: trProducts, // Keep for backward compatibility
@@ -83,7 +88,7 @@ if (!i18n.isInitialized) {
     .init({
       compatibilityJSON: 'v4',
       resources,
-      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'settings', 'stock', 'products', 'employees', 'purchases', 'dynamic-fields'],
+      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'revenue', 'settings', 'stock', 'products', 'employees', 'purchases', 'dynamic-fields'],
       defaultNS: 'common',
       lng: 'tr', // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
       fallbackLng: 'tr',

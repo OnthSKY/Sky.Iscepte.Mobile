@@ -89,6 +89,18 @@ export const expensesEndpoints = {
 } as const;
 
 /**
+ * Revenue module endpoints
+ */
+export const revenueEndpoints = {
+  list: '/revenue',
+  get: (id: string | number) => `/revenue/${id}`,
+  stats: '/revenue/stats',
+  create: '/revenue',
+  update: (id: string | number) => `/revenue/${id}`,
+  remove: (id: string | number) => `/revenue/${id}`,
+} as const;
+
+/**
  * Employees module endpoints
  */
 export const employeesEndpoints = {
@@ -153,6 +165,7 @@ export const apiEndpoints = {
   stock: stockEndpoints,
   purchases: purchasesEndpoints,
   expenses: expensesEndpoints,
+  revenue: revenueEndpoints,
   employees: employeesEndpoints,
   reports: reportsEndpoints,
   modules: modulesEndpoints,

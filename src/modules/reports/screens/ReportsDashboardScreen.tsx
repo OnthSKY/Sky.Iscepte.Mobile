@@ -137,6 +137,7 @@ export default function ReportsDashboardScreen() {
         mainStatKey: 'total-reports',
         relatedModules: relatedModules,
         listRoute: 'ReportsList',
+        description: 'reports:module_description',
       }}
     />
   );

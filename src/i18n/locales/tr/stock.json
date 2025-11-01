@@ -29,6 +29,9 @@
   "dashboard": "Dashboard",
   "list": "Liste",
   "module": "Stok",
-  "stock_item": "Stok Ürünü"
+  "module_name": "Stok Yönetimi",
+  "stock_item": "Stok Ürünü",
+  "module_overview": "Modül Özeti",
+  "module_description": "Stok modülü ile ürün envanterinizi takip edebilirsiniz. Ürün ekleme, stok güncelleme ve düşük stok uyarıları gibi özelliklerle stok yönetimini kolaylaştırın."
 }
 

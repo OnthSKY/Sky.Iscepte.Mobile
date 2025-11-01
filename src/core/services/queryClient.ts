@@ -161,6 +161,16 @@ export const queryKeys = {
     stats: () => [...queryKeys.expenses.all, 'stats'] as const, // Stats are persisted
   },
   
+  // Revenue (NON-CRITICAL - memory only, except stats)
+  revenue: {
+    all: ['revenue'] as const,
+    lists: () => [...queryKeys.revenue.all, 'list'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.revenue.lists(), { filters }] as const,
+    details: () => [...queryKeys.revenue.all, 'detail'] as const,
+    detail: (id: string | number) => [...queryKeys.revenue.details(), id] as const,
+    stats: () => [...queryKeys.revenue.all, 'stats'] as const, // Stats are persisted
+  },
+  
   // Employees (NON-CRITICAL - memory only, except stats)
   employees: {
     all: ['employees'] as const,

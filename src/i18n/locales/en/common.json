@@ -5,6 +5,8 @@
   "reports": "Reports",
   "settings": "Settings",
   "expenses": "Income / Expenses",
+  "revenue": "Revenue",
+  "purchases": "Purchases",
   "fields": "Dynamic Fields",
   "create": "Create",
   "edit": "Edit",

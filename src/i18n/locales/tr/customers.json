@@ -21,6 +21,9 @@
   "related_modules": "İlgili Modüller",
   "dashboard": "Dashboard",
   "list": "Liste",
-  "module": "Müşteriler"
+  "module": "Müşteriler",
+  "module_name": "Müşteri Yönetimi",
+  "module_overview": "Modül Özeti",
+  "module_description": "Müşteri modülü ile müşteri bilgilerinizi, iletişim detaylarını ve sipariş geçmişlerini yönetebilirsiniz. Müşteri ilişkilerinizi düzenli tutarak satış süreçlerinizi optimize edin."
 }
 

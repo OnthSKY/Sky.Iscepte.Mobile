@@ -24,6 +24,7 @@
   "dashboard": "Dashboard",
   "list": "List",
   "module": "Employees",
+  "module_name": "Employee Management",
   "employee": "Employee",
   "basic_information": "Basic Information",
   "user_account": "User Account",
@@ -49,10 +50,13 @@
   "owner_full_access": "Owner has full access to all modules",
   "select_all": "Select All",
   "deselect_all": "Deselect All",
+  "view_all_data_note": "Note: With View permission, this user can view data entered by others as well.",
   "errors": {
     "first_name_required": "First name is required",
     "last_name_required": "Last name is required"
-  }
+  },
+  "module_overview": "Module Overview",
+  "module_description": "Manage employee information, departments, salaries, and permissions with the Employees module. Digitize your human resources management and streamline your business processes."
 }
 
 
