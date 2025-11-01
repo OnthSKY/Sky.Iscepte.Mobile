@@ -20,7 +20,11 @@
   "active_employees": "Aktif Çalışan",
   "total_departments": "Toplam Departman",
   "quick_actions": "Hızlı İşlemler",
-  "preferences": "Tercihler"
+  "preferences": "Tercihler",
+  "personal_info": "Kişisel Bilgiler",
+  "company": "Şirket",
+  "works_for": "Çalıştığı Şirket",
+  "account": "Hesap"
 }
 
 

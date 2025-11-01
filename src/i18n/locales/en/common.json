@@ -94,6 +94,8 @@
   "pending": "Pending",
   "active": "Active",
   "inactive": "Inactive",
-  "customer": "Customer"
+  "customer": "Customer",
+  "guest": "GUEST",
+  "version": "Version {{version}}"
 }
 

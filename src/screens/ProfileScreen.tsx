@@ -43,7 +43,7 @@ export default function ProfileScreen() {
   
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
-    : user?.name || 'User Name';
+    : user?.name || t('common:default_user');
   
   const companyName = user?.company || user?.ownerCompanyName || null;
 
@@ -68,22 +68,22 @@ export default function ProfileScreen() {
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.email}>{user?.email || 'user@example.com'}</Text>
+          <Text style={styles.email}>{user?.email || ''}</Text>
           {companyName && (
             <Text style={styles.company}>{companyName}</Text>
           )}
           <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>{role?.toUpperCase() || 'GUEST'}</Text>
+            <Text style={styles.roleText}>{role?.toUpperCase() || t('common:guest')}</Text>
           </View>
         </LinearGradient>
 
         <View style={styles.settingsGroup}>
-          <Text style={styles.groupTitle}>{t('settings:personal_info', { defaultValue: 'Kişisel Bilgiler' })}</Text>
+          <Text style={styles.groupTitle}>{t('settings:personal_info')}</Text>
           <View style={styles.card}>
             <View style={styles.infoRow}>
               <Ionicons name="person-outline" size={20} color={colors.muted} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>{t('common:name', { defaultValue: 'Ad Soyad' })}</Text>
+                <Text style={styles.infoLabel}>{t('common:name')}</Text>
                 <Text style={styles.infoValue}>{displayName}</Text>
               </View>
             </View>
@@ -91,7 +91,7 @@ export default function ProfileScreen() {
               <View style={[styles.infoRow, styles.infoRowMargin]}>
                 <Ionicons name="call-outline" size={20} color={colors.muted} />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>{t('common:phone', { defaultValue: 'Telefon' })}</Text>
+                  <Text style={styles.infoLabel}>{t('common:phone')}</Text>
                   <Text style={styles.infoValue}>{user.phone}</Text>
                 </View>
               </View>
@@ -102,8 +102,8 @@ export default function ProfileScreen() {
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>
                     {user?.role === 'owner' 
-                      ? t('settings:company', { defaultValue: 'Şirket' })
-                      : t('settings:works_for', { defaultValue: 'Çalıştığı Şirket' })}
+                      ? t('settings:company')
+                      : t('settings:works_for')}
                   </Text>
                   <Text style={styles.infoValue}>{companyName}</Text>
                 </View>
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.versionText}>Version 1.0.0</Text>
+          <Text style={styles.versionText}>{t('common:version', { version: '1.0.0' })}</Text>
         </View>
       </ScrollView>
 

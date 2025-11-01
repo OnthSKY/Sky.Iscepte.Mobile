@@ -94,6 +94,8 @@
   "pending": "Beklemede",
   "active": "Aktif",
   "inactive": "Pasif",
-  "customer": "Müşteri"
+  "customer": "Müşteri",
+  "guest": "MİSAFİR",
+  "version": "Sürüm {{version}}"
 }
 
