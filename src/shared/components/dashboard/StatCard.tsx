@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { DashboardStat } from '../../../core/hooks/useDashboardData';
@@ -90,20 +90,30 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  cardLightShadow: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 2,
-  },
-  cardDarkShadow: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
+  cardLightShadow: Platform.select({
+    web: {
+      boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.05)',
+    },
+    default: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 15,
+      elevation: 2,
+    },
+  }),
+  cardDarkShadow: Platform.select({
+    web: {
+      boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+    },
+    default: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 3,
+    },
+  }),
   content: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -63,21 +63,27 @@ export default function RootNavigator({ role }: Props) {
         onClose={() => setMenuVisible(false)}
         onNavigate={async (routeName: string) => {
           setMenuVisible(false);
-          // Prefer navigating to routes that are actually registered on the current navigator
-          if (availableRouteNames.includes(routeName)) {
-            navigation.navigate(routeName as never);
-            return;
-          }
+          try {
+            // Prefer navigating to routes that are actually registered on the current navigator
+            if (availableRouteNames.includes(routeName)) {
+              navigation.navigate(routeName as never);
+              return;
+            }
 
-          // Fallback: if a create/edit screen isn't registered, try navigating to its corresponding list screen
-          const { getNavigationFallback } = await import('../config/navigationConfig');
-          const fallback = getNavigationFallback(routeName);
-          if (fallback && availableRouteNames.includes(fallback)) {
-            navigation.navigate(fallback as never);
-            return;
-          }
+            // Fallback: if a create/edit screen isn't registered, try navigating to its corresponding list screen
+            const { getNavigationFallback } = await import('../config/navigationConfig');
+            const fallback = getNavigationFallback(routeName);
+            if (fallback && availableRouteNames.includes(fallback)) {
+              navigation.navigate(fallback as never);
+              return;
+            }
 
-          // Route not found - navigation handled by useNavigationHandler
+            // Route not found - silently fail or log warning
+            console.warn(`Route "${routeName}" is not available in the current navigator.`);
+          } catch (error) {
+            // Silently handle navigation errors
+            console.warn(`Failed to navigate to "${routeName}":`, error);
+          }
         }}
         availableRoutes={availableRouteNames}
         role={role}

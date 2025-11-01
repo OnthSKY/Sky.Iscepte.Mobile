@@ -27,6 +27,8 @@ import trExpenses from './locales/tr/expenses.json';
 
 import enSettings from './locales/en/settings.json';
 import trSettings from './locales/tr/settings.json';
+import enProducts from './locales/en/products.json';
+import trProducts from './locales/tr/products.json';
 import enDynamic from './locales/en/dynamic-fields.json';
 import trDynamic from './locales/tr/dynamic-fields.json';
 
@@ -41,6 +43,7 @@ const resources = {
     reports: enReports,
     expenses: enExpenses,
     settings: enSettings,
+    products: enProducts,
     'dynamic-fields': enDynamic,
   },
   tr: {
@@ -53,6 +56,7 @@ const resources = {
     reports: trReports,
     expenses: trExpenses,
     settings: trSettings,
+    products: trProducts,
     'dynamic-fields': trDynamic,
   },
 };
@@ -67,7 +71,7 @@ if (!i18n.isInitialized) {
     .init({
       compatibilityJSON: 'v4',
       resources,
-      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'settings', 'dynamic-fields'],
+      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'settings', 'products', 'dynamic-fields'],
       defaultNS: 'common',
       lng: 'tr', // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
       fallbackLng: 'tr',

@@ -21,7 +21,12 @@ export default function StaffDashboardScreen() {
         <DashboardTopBar variant="staff" />
       </LinearGradient>
       <View style={{ padding: 16, gap: 12 }}>
-        <SummaryCard title={t('sales:sales')} value="₺3.780" trend={{ value: 4, direction: 'up' }} />
+        <SummaryCard 
+          label={t('sales:sales')} 
+          value="₺3.780" 
+          icon="trending-up-outline"
+          style={{ marginBottom: 24 }}
+        />
       </View>
     </ScreenLayout>
   );

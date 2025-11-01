@@ -12,6 +12,7 @@ type SummaryCardProps = {
   color?: string;
   onPress?: () => void;
   hideByDefault?: boolean;
+  style?: any;
 };
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ 
@@ -21,6 +22,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
   color = lightColors.primary, 
   onPress,
   hideByDefault = false,
+  style,
 }) => {
   const { colors, activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
@@ -45,6 +47,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
           styles.container,
           { backgroundColor: color },
           isDark ? styles.cardDarkShadow : styles.cardLightShadow,
+          style,
         ]}
         onPress={handlePress}
         activeOpacity={0.8}
@@ -79,6 +82,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
         styles.container,
         { backgroundColor: color },
         isDark ? styles.cardDarkShadow : styles.cardLightShadow,
+        style,
       ]}
     >
       <View style={styles.content}>

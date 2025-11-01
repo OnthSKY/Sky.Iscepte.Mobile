@@ -1,6 +1,6 @@
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Provider as PaperProvider, Snackbar, MD3LightTheme as PaperDefaultTheme, MD3DarkTheme as PaperDarkTheme } from 'react-native-paper';
+import { Provider as PaperProvider, MD3LightTheme as PaperDefaultTheme, MD3DarkTheme as PaperDarkTheme } from 'react-native-paper';
 import 'react-native-gesture-handler';
 import React from 'react';
 import './src/i18n';
@@ -16,6 +16,7 @@ import notificationService from './src/shared/services/notificationService';
 import authService from './src/shared/services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from './src/core/contexts/ThemeContext';
+import ToastManager from './src/shared/components/ToastManager';
 
 const RootStack = createNativeStackNavigator();
 function MainApp() {
@@ -28,7 +29,6 @@ function AppWrapper() {
   const hydrate = useAppStore(s => s.hydrate);
   const isAuthenticated = useAppStore(s => s.isAuthenticated);
   const isLoading = useAppStore(s => s.isLoading);
-  const [snack, setSnack] = React.useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
   
   useEffect(() => { hydrate(); }, [hydrate]);
   useEffect(() => {
@@ -51,18 +51,14 @@ function AppWrapper() {
             }
           } catch (error) {
             await useAppStore.getState().logout();
-            notificationService.show('Oturum süresi doldu, lütfen tekrar giriş yapın', 'info');
+            notificationService.info('Oturum süresi doldu, lütfen tekrar giriş yapın');
           }
         }
         
         const msg = `İstek başarısız: ${response.status}`;
-        notificationService.show(msg, 'error');
+        notificationService.error(msg);
       }
     });
-    const unsubscribe = notificationService.subscribe(({ message, type }) => {
-      setSnack({ visible: true, message, type });
-    });
-    return unsubscribe;
   }, []);
   
   const isDark = activeTheme === 'dark';
@@ -108,14 +104,7 @@ function AppWrapper() {
           )}
         </RootStack.Navigator>
       </NavigationContainer>
-      <Snackbar
-        visible={snack.visible}
-        onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
-        duration={3000}
-        style={snack.type === 'error' ? { backgroundColor: colors.error } : snack.type === 'success' ? { backgroundColor: colors.success } : undefined}
-      >
-        {snack.message}
-      </Snackbar>
+      <ToastManager />
     </PaperProvider>
   );
 }

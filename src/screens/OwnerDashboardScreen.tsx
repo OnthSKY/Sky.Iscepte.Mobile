@@ -77,7 +77,7 @@ export default function OwnerDashboardScreen() {
       </View>
 
       {/* Compact stats row (hidden by default, tap any to toggle) */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 16, marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           {/* Sales small card */}
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowValues((v) => !v)} activeOpacity={0.8}>

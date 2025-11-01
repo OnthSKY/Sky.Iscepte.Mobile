@@ -29,9 +29,10 @@ const ITEMS: MenuItem[] = [
   { key: 'sales', label: '', icon: 'pricetag-outline', routeName: 'Sales', requiredPermission: 'sales:view' },
   { key: 'customers', label: '', icon: 'people-outline', routeName: 'Customers', requiredPermission: 'customers:view' },
   { key: 'expenses', label: '', icon: 'wallet-outline', routeName: 'Expenses', requiredPermission: 'expenses:view' },
-  { key: 'reports', label: '', icon: 'bar-chart-outline', routeName: 'Reports', requiredPermission: 'reports:view' },
   { key: 'employees', label: '', icon: 'person-outline', routeName: 'Employees', requiredPermission: 'employees:view' },
   { key: 'products', label: '', icon: 'cube-outline', routeName: 'Products', requiredPermission: 'products:view' },
+  { key: 'reports', label: '', icon: 'bar-chart-outline', routeName: 'Reports', requiredPermission: 'reports:view' },
+
 ];
 
 const QUICK_ACTIONS: MenuItem[] = [
@@ -115,32 +116,37 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   
   const processedItems = useMemo(() => {
     const labelByRoute: Record<string, string> = {
-      Sales: t('sales:sales'),
-      Customers: t('customers:customers'),
-      Expenses: t('expenses:expenses'),
-      Reports: t('reports:reports'),
-      Employees: t('employees:employees', { defaultValue: 'Employees' }),
-      Products: t('products:products', { defaultValue: 'Products' }),
+      Sales: t('sales', { ns: 'common' }),
+      Customers: t('customers', { ns: 'common' }),
+      Expenses: t('expenses', { ns: 'common' }),
+      Reports: t('reports', { ns: 'reports' }),
+      Employees: t('employees', { ns: 'common' }),
+      Products: t('products', { ns: 'products' }),
     };
     
     const mapped = ITEMS.map((it) => {
       const hasAccess = !it.requiredPermission || hasPermission(role, it.requiredPermission);
+      const isAvailable = availableRoutes?.includes(it.routeName) ?? false;
       return {
         ...it,
         label: labelByRoute[it.routeName] ?? it.label,
         isLocked: !hasAccess,
+        isAvailable,
       };
     });
+    
+    // Sadece navigator'da mevcut olan route'ları göster
+    const available = mapped.filter(it => it.isAvailable);
     
     // Owner: Tüm öğeleri göster (kilitli olanlar dahil)
     // Staff: Sadece erişim izni olanları göster
     // Admin: Tüm öğeleri göster (hepsi açık)
     if (role === 'staff') {
-      return mapped.filter(it => !it.isLocked);
+      return available.filter(it => !it.isLocked);
     }
     // Owner ve admin için tüm öğeleri göster
-    return mapped;
-  }, [t, role]);
+    return available;
+  }, [t, role, availableRoutes]);
 
   const quickActionLabelByRoute = useMemo(() => ({
     SalesCreate: t('sales:new_sale', { defaultValue: 'Yeni satış' }),
@@ -151,31 +157,65 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   }) as Record<string, string>, [t]);
 
   const processedQuickActions = useMemo(() => {
+    const getFallback = (routeName: string): string | undefined => {
+      const fallbackMap: Record<string, string> = {
+        SalesCreate: 'Sales',
+        CustomerCreate: 'Customers',
+        ExpenseCreate: 'Expenses',
+        EmployeeCreate: 'Employees',
+        ProductCreate: 'Products',
+      };
+      return fallbackMap[routeName];
+    };
+
     const mapped = QUICK_ACTIONS.map((qa) => {
       const hasAccess = !qa.requiredPermission || hasPermission(role, qa.requiredPermission);
+      // Check if the route or its fallback is available
+      const isAvailable = availableRoutes?.includes(qa.routeName) ?? false;
+      const fallback = getFallback(qa.routeName);
+      const fallbackAvailable = fallback && (availableRoutes?.includes(fallback) ?? false);
       return {
         ...qa,
         label: quickActionLabelByRoute[qa.routeName] ?? qa.label,
         isLocked: !hasAccess,
+        isAvailable: isAvailable || fallbackAvailable,
       };
     });
+    // Sadece navigator'da mevcut olan veya fallback'i olan route'ları göster
+    const available = mapped.filter(it => it.isAvailable);
     // Staff: Sadece erişim izni olanları göster
     if (role === 'staff') {
-      return mapped.filter(it => !it.isLocked);
+      return available.filter(it => !it.isLocked);
     }
     // Owner ve admin için tüm öğeleri göster (kilitli olanlar dahil)
-    return mapped;
-  }, [role, quickActionLabelByRoute]);
+    return available;
+  }, [role, quickActionLabelByRoute, availableRoutes]);
 
   const processedCustomQuickActions = useMemo(() => {
+    const getFallback = (routeName: string): string | undefined => {
+      const fallbackMap: Record<string, string> = {
+        SalesCreate: 'Sales',
+        CustomerCreate: 'Customers',
+        ExpenseCreate: 'Expenses',
+        EmployeeCreate: 'Employees',
+        ProductCreate: 'Products',
+      };
+      return fallbackMap[routeName];
+    };
+
     return customQuickActions
       .map((qa) => {
         const hasAccess = !qa.requiredPermission || hasPermission(role, qa.requiredPermission);
-        const label = quickActionLabelByRoute[(qa as any).routeName] ?? qa.label;
-        return { ...qa, label, isLocked: !hasAccess } as any;
+        const routeName = (qa as any).routeName;
+        // Check if the route or its fallback is available
+        const isAvailable = availableRoutes?.includes(routeName) ?? false;
+        const fallback = getFallback(routeName);
+        const fallbackAvailable = fallback && (availableRoutes?.includes(fallback) ?? false);
+        const label = quickActionLabelByRoute[routeName] ?? qa.label;
+        return { ...qa, label, isLocked: !hasAccess, isAvailable: isAvailable || fallbackAvailable } as any;
       })
-      .filter((qa: any) => !qa.isLocked);
-  }, [customQuickActions, role, quickActionLabelByRoute]);
+      .filter((qa: any) => !qa.isLocked && qa.isAvailable);
+  }, [customQuickActions, role, quickActionLabelByRoute, availableRoutes]);
 
   const canAddQuick = useMemo(() => {
     const perms = ['sales:create','customers:create','expenses:create'];
@@ -472,14 +512,19 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                       </View>
                       <Text style={[styles.itemLabel, { color: colors.text, fontSize: itemLabelSize }]} numberOfLines={1}>{item.label}</Text>
                       {canAddQuick && !item.isLocked && !isInCustomQuick(item.routeName) && customQuickActions.length < QUICK_MAX && (
-                        <TouchableOpacity
+                        <View
                           style={[styles.addOnCard, { borderColor: colors.border, backgroundColor: `${colors.primary}10` }]}
-                          onPress={() => tryAddCustomQuickFromItem(item)}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
+                          pointerEvents="box-none"
                         >
-                          <Ionicons name="add" size={14} color={colors.primary} />
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => tryAddCustomQuickFromItem(item)}
+                            style={{ padding: 2 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
+                          >
+                            <Ionicons name="add" size={14} color={colors.primary} />
+                          </TouchableOpacity>
+                        </View>
                       )}
                     </TouchableOpacity>
                   ))}

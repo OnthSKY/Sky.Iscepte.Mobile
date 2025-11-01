@@ -152,6 +152,7 @@ export default function AdminDashboardScreen() {
           icon={data.mainStat.icon}
           color={data.mainStat.color}
           hideByDefault={true}
+          style={{ marginBottom: spacing.xl }}
         />
 
         <View style={styles.statsGrid}>

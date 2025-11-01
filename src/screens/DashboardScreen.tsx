@@ -91,6 +91,7 @@ const DashboardScreen: React.FC = () => {
           icon={data.mainStat.icon}
           color={data.mainStat.color}
           onPress={() => navigate(data.mainStat.route)}
+          style={{ marginBottom: spacing.xl }}
         />
 
         <View style={styles.statsGrid}>

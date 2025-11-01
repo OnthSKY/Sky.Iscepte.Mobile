@@ -2,6 +2,7 @@ import React from 'react';
 import i18n from '../../i18n';
 import { Role } from '../config/permissions';
 import DashboardScreen from '../../screens/DashboardScreen';
+import ProfileScreen from '../../screens/ProfileScreen';
 
 export type RouteConfig = {
   name: string;
@@ -42,8 +43,7 @@ const ExpenseTypeEditScreen = React.lazy(() => import('../../modules/expenses/sc
 const ProductCreateScreen = React.lazy(() => import('../../modules/products/screens/ProductCreateScreen'));
 const ProductEditScreen = React.lazy(() => import('../../modules/products/screens/ProductEditScreen'));
 
-// Other screens
-const ProfileScreen = React.lazy(() => import('../../screens/ProfileScreen'));
+// Other screens - ProfileScreen imported directly to avoid native module loading issues
 const SettingsScreen = React.lazy(() => import('../../screens/SettingsScreen'));
 const NotificationsScreen = React.lazy(() => import('../../screens/NotificationsScreen'));
 
