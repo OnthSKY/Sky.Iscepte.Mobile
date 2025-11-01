@@ -18,6 +18,7 @@ import AddCategoryModal from '../components/AddCategoryModal';
 import spacing from '../../../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LoadingState from '../../../shared/components/LoadingState';
+import notificationService from '../../../shared/services/notificationService';
 
 export default function CategoryManagementScreen() {
   const navigation = useNavigation<any>();
@@ -83,11 +84,12 @@ export default function CategoryManagementScreen() {
 
   const handleDeleteCategory = (categoryName: string) => {
     // TODO: Implement category deletion
-    // For now, we just show an alert
+    // For now, we just show an error toast
     // In a real implementation, this would update all products with this category
-    alert(t('category_delete_not_implemented', { 
-      defaultValue: 'Kategori silme özelliği yakında eklenecek. Bu kategorideki ürünlerin kategorisini kaldırmanız gerekiyor.' 
-    }));
+    const message = t('category_delete_not_implemented', { 
+      defaultValue: 'Bu özellik henüz eklenmedi. Kategorileri ürünlerden kaldırarak silebilirsiniz.' 
+    });
+    notificationService.error(message);
   };
 
   if (isLoading) {

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import Modal from '../../../shared/components/Modal';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
 import spacing from '../../../core/constants/spacing';
+import notificationService from '../../../shared/services/notificationService';
 
 type Props = {
   visible: boolean;
@@ -23,10 +24,7 @@ export default function AddCategoryModal({ visible, onClose, onSuccess, existing
     const trimmed = categoryName.trim();
     
     if (!trimmed) {
-      Alert.alert(
-        t('error', { defaultValue: 'Hata' }),
-        t('category_name_required', { defaultValue: 'Kategori adı gereklidir' })
-      );
+      notificationService.error(t('category_name_required', { defaultValue: 'Kategori adı gereklidir' }));
       return;
     }
 
@@ -36,10 +34,7 @@ export default function AddCategoryModal({ visible, onClose, onSuccess, existing
     );
 
     if (exists) {
-      Alert.alert(
-        t('error', { defaultValue: 'Hata' }),
-        t('category_already_exists', { defaultValue: 'Bu kategori zaten mevcut' })
-      );
+      notificationService.error(t('category_already_exists', { defaultValue: 'Bu kategori zaten mevcut' }));
       return;
     }
 

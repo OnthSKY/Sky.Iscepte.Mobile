@@ -106,6 +106,6 @@
   "no_categories_desc": "You can add categories by clicking the button above.",
   "categories": "Categories",
   "products": "products",
-  "category_delete_not_implemented": "Category deletion feature will be added soon. You need to remove the category from products with this category."
+  "category_delete_not_implemented": "This feature is not yet implemented."
 }
 

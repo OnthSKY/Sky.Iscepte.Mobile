@@ -18,7 +18,6 @@ import { BaseEntity, ListScreenConfig } from '../../core/types/screen.types';
 import { BaseEntityService } from '../../core/services/baseEntityService.types';
 import { useListScreen } from '../../core/hooks/useListScreen';
 import SearchBar from './SearchBar';
-import FiltersEditor from './FiltersEditor';
 import PaginatedList from './PaginatedList';
 import EmptyState from './EmptyState';
 import ConfirmDialog from './ConfirmDialog';
@@ -423,7 +422,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
       }
     };
 
-    // Enhanced renderItem with actions
+    // Enhanced renderItem with card-based design and actions
     const renderItemWithActions = (item: T) => {
       const originalItem = config.listConfig!.renderItem(item);
       
@@ -435,19 +434,22 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
       };
 
       return (
-        <TouchableOpacity 
-          style={{ marginBottom: spacing.sm }}
-          onPress={handleViewDetail}
-          activeOpacity={0.7}
-        >
-          <View style={{ marginBottom: spacing.xs }}>
-            {originalItem}
-          </View>
+        <View style={styles.cardContainer}>
+          <TouchableOpacity 
+            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={handleViewDetail}
+            activeOpacity={0.7}
+          >
+            <View style={styles.cardContent}>
+              {originalItem}
+            </View>
+          </TouchableOpacity>
+          
           {(permissions.canEdit || permissions.canDelete) && (
-            <View style={[styles.itemActions, { paddingHorizontal: spacing.lg, marginTop: spacing.xs }]}>
+            <View style={styles.cardActions}>
               {permissions.canEdit && (
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.primary + '15' }]}
+                  style={[styles.cardActionButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}
                   onPress={(e) => {
                     e.stopPropagation();
                     handleEdit(item);
@@ -455,14 +457,14 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
                   activeOpacity={0.7}
                 >
                   <Ionicons name="create-outline" size={18} color={colors.primary} />
-                  <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+                  <Text style={[styles.cardActionButtonText, { color: colors.primary }]}>
                     {t('common:edit', { defaultValue: 'Düzenle' })}
                   </Text>
                 </TouchableOpacity>
               )}
               {permissions.canDelete && (
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: (colors.error || '#DC2626') + '15' }]}
+                  style={[styles.cardActionButton, { backgroundColor: (colors.error || '#DC2626') + '15', borderColor: (colors.error || '#DC2626') + '30' }]}
                   onPress={(e) => {
                     e.stopPropagation();
                     setDeleteDialog({ visible: true, item });
@@ -470,14 +472,14 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
                   activeOpacity={0.7}
                 >
                   <Ionicons name="trash-outline" size={18} color={colors.error || '#DC2626'} />
-                  <Text style={[styles.actionButtonText, { color: colors.error || '#DC2626' }]}>
+                  <Text style={[styles.cardActionButtonText, { color: colors.error || '#DC2626' }]}>
                     {t('common:delete', { defaultValue: 'Sil' })}
                   </Text>
                 </TouchableOpacity>
               )}
             </View>
           )}
-        </TouchableOpacity>
+        </View>
       );
     };
 
@@ -499,7 +501,6 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
             onChangeText={setQuery}
             placeholder={t('common:search', { defaultValue: 'Ara' }) as string}
           />
-          <FiltersEditor value={filters} onChange={setFilters} />
         </View>
 
         <View style={{ flex: 1 }}>
@@ -518,7 +519,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
             ListEmptyComponent={
               <EmptyState
                 title={t('common:no_results', { defaultValue: 'Sonuç bulunamadı' }) as string}
-                subtitle={t('common:try_adjust_filters', { defaultValue: 'Filtreleri ayarlamayı deneyin' }) as string}
+                subtitle={t('common:try_adjust_filters', { defaultValue: 'Arama kriterlerini değiştirmeyi deneyin' }) as string}
               />
             }
           />
@@ -739,21 +740,49 @@ const styles = StyleSheet.create({
   createButton: {
     alignSelf: 'flex-start',
   },
-  itemActions: {
+  cardContainer: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+    }),
+  },
+  cardContent: {
+    padding: spacing.md,
+  },
+  cardActions: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
-  actionButton: {
+  cardActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    borderRadius: 8,
+    borderRadius: 10,
     gap: spacing.xs,
     flex: 1,
+    borderWidth: 1,
+    minHeight: 44, // Minimum touch target size for mobile
   },
-  actionButtonText: {
+  cardActionButtonText: {
     fontSize: 14,
     fontWeight: '600',
   },

@@ -107,6 +107,6 @@
   "no_categories_desc": "Yukarıdaki butona tıklayarak kategori ekleyebilirsiniz.",
   "categories": "Kategoriler",
   "products": "ürün",
-  "category_delete_not_implemented": "Kategori silme özelliği yakında eklenecek. Bu kategorideki ürünlerin kategorisini kaldırmanız gerekiyor."
+  "category_delete_not_implemented": "Bu özellik henüz eklenmedi."
 }
 
