@@ -6,7 +6,7 @@
  * Open/Closed: Can handle both create and edit modes via props
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,8 @@ import Card from '../../../shared/components/Card';
 import Select from '../../../shared/components/Select';
 import Input from '../../../shared/components/Input';
 import { Role } from '../../../core/config/appConstants';
+import { MODULE_CONFIGS } from '../../../core/config/moduleConfig';
+import { permissionsRegistry } from '../../../core/config/permissions';
 
 interface EmployeeFormScreenProps {
   mode?: 'create' | 'edit';
@@ -61,9 +63,47 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
   const isCreateMode = formMode === 'create';
   
-  // Module definitions
-  const ALL_MODULES = ['sales', 'customers', 'expenses', 'revenue', 'employees', 'reports', 'stock', 'purchases'];
-  const ALL_ACTIONS = ['view', 'create', 'edit', 'delete'];
+  // Get modules from MODULE_CONFIGS (exclude employees, settings, and reports modules)
+  // Reports is handled separately as it only has view permission
+  const availableModules = useMemo(() => {
+    return MODULE_CONFIGS.filter(module => 
+      module.key !== 'employees' && 
+      module.key !== 'settings' &&
+      module.key !== 'reports'
+    );
+  }, []);
+
+  // Get all possible actions from permissions registry
+  const ALL_ACTIONS = useMemo(() => {
+    const actions = new Set<string>();
+    permissionsRegistry.forEach(module => {
+      module.permissions.forEach(permission => {
+        const action = permission.split(':')[1];
+        if (action) actions.add(action);
+      });
+    });
+    // Always include delete action even if not in registry
+    actions.add('delete');
+    return Array.from(actions);
+  }, []);
+
+  // Get module actions from permissions registry
+  const getModuleActions = (moduleKey: string): string[] => {
+    const modulePerms = permissionsRegistry.find(m => m.module === moduleKey);
+    if (!modulePerms) return ['view', 'create', 'edit', 'delete'];
+    
+    const actions = modulePerms.permissions
+      .map(p => p.split(':')[1])
+      .filter((a): a is string => !!a);
+    
+    // Reports only has view
+    if (moduleKey === 'reports') return ['view'];
+    
+    // Always include delete
+    if (!actions.includes('delete')) actions.push('delete');
+    
+    return Array.from(new Set(actions));
+  };
 
   // Role options for select (NO GUEST)
   const roleOptions = [
@@ -247,533 +287,157 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                           </Text>
                         </View>
                         <View style={{ gap: spacing.md }}>
-                            {/* Sales Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, sales: !expandedModules.sales })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:sales', { defaultValue: 'Sales' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const sales = current.sales || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => sales.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        sales: { ...sales, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.sales?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.sales ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.sales && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view', 'create', 'edit', 'delete'].map((action) => (
-                                      <View key={`sales_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.sales?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const sales = current.sales || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(sales.actions || []), action]
-                                              : (sales.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              sales: { ...sales, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
+                          {availableModules.map((module) => {
+                            const moduleKey = module.key;
+                            const moduleActions = getModuleActions(moduleKey);
+                            const isExpanded = expandedModules[moduleKey] || false;
+                            const currentPerms = formData.customPermissions?.[moduleKey] || { actions: [], fields: [], notifications: [] };
+                            const allSelected = moduleActions.every(action => currentPerms.actions?.includes(action));
+                            
+                            return (
+                              <View key={moduleKey} style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
+                                <TouchableOpacity 
+                                  onPress={() => setExpandedModules({ ...expandedModules, [moduleKey]: !isExpanded })}
+                                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
+                                >
+                                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                                    {t(`${module.translationNamespace}:${module.translationKey}`, { defaultValue: module.key })}
+                                  </Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                                    <TouchableOpacity
+                                      onPress={(e) => {
+                                        e.stopPropagation();
+                                        const current = formData.customPermissions || {};
+                                        const modulePerms = current[moduleKey] || { actions: [], fields: [], notifications: [] };
+                                        const newActions = allSelected ? [] : moduleActions;
+                                        updateField('customPermissions', {
+                                          ...current,
+                                          [moduleKey]: { ...modulePerms, actions: newActions },
+                                        });
+                                      }}
+                                      style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
+                                    >
+                                      <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
+                                        {allSelected ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
+                                      </Text>
+                                    </TouchableOpacity>
+                                    <Ionicons 
+                                      name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                                      size={20} 
+                                      color={colors.text} 
+                                    />
                                   </View>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Customers Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, customers: !expandedModules.customers })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:customers', { defaultValue: 'Customers' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const customers = current.customers || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => customers.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        customers: { ...customers, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.customers?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.customers ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.customers && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view', 'create', 'edit', 'delete'].map((action) => (
-                                      <View key={`customers_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.customers?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const customers = current.customers || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(customers.actions || []), action]
-                                              : (customers.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              customers: { ...customers, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
+                                </TouchableOpacity>
+                                {isExpanded && (
+                                  <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
+                                    <View style={{ gap: spacing.xs }}>
+                                      {moduleActions.map((action) => (
+                                        <View key={`${moduleKey}_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
+                                          <Text style={{ flex: 1, color: colors.text }}>
+                                            {t(`common:${action}`, { defaultValue: action })}
+                                          </Text>
+                                          <Switch
+                                            value={currentPerms.actions?.includes(action) || false}
+                                            onValueChange={(value) => {
+                                              const current = formData.customPermissions || {};
+                                              const modulePerms = current[moduleKey] || { actions: [], fields: [], notifications: [] };
+                                              const actions = value
+                                                ? [...(modulePerms.actions || []), action]
+                                                : (modulePerms.actions || []).filter(a => a !== action);
+                                              updateField('customPermissions', {
+                                                ...current,
+                                                [moduleKey]: { ...modulePerms, actions },
+                                              });
+                                            }}
+                                            trackColor={{ false: colors.border, true: colors.primary }}
+                                            thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
+                                          />
+                                        </View>
+                                      ))}
+                                    </View>
                                   </View>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Expenses Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, expenses: !expandedModules.expenses })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:expenses', { defaultValue: 'Expenses' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const expenses = current.expenses || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => expenses.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        expenses: { ...expenses, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.expenses?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.expenses ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.expenses && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view', 'create', 'edit', 'delete'].map((action) => (
-                                      <View key={`expenses_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.expenses?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const expenses = current.expenses || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(expenses.actions || []), action]
-                                              : (expenses.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              expenses: { ...expenses, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
+                                )}
+                              </View>
+                            );
+                          })}
+                          
+                          {/* Reports Module - Special case with only view permission */}
+                          {(() => {
+                            const reportsModule = MODULE_CONFIGS.find(m => m.key === 'reports');
+                            if (!reportsModule) return null;
+                            
+                            const moduleKey = 'reports';
+                            const moduleActions = ['view'];
+                            const isExpanded = expandedModules[moduleKey] || false;
+                            const currentPerms = formData.customPermissions?.[moduleKey] || { actions: [], fields: [], notifications: [] };
+                            const allSelected = moduleActions.every(action => currentPerms.actions?.includes(action));
+                            
+                            return (
+                              <View key={moduleKey} style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
+                                <TouchableOpacity 
+                                  onPress={() => setExpandedModules({ ...expandedModules, [moduleKey]: !isExpanded })}
+                                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
+                                >
+                                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                                    {t(`${reportsModule.translationNamespace}:${reportsModule.translationKey}`, { defaultValue: 'Reports' })}
+                                  </Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                                    <TouchableOpacity
+                                      onPress={(e) => {
+                                        e.stopPropagation();
+                                        const current = formData.customPermissions || {};
+                                        const modulePerms = current[moduleKey] || { actions: [], fields: [], notifications: [] };
+                                        const newActions = allSelected ? [] : moduleActions;
+                                        updateField('customPermissions', {
+                                          ...current,
+                                          [moduleKey]: { ...modulePerms, actions: newActions },
+                                        });
+                                      }}
+                                      style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
+                                    >
+                                      <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
+                                        {allSelected ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
+                                      </Text>
+                                    </TouchableOpacity>
+                                    <Ionicons 
+                                      name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                                      size={20} 
+                                      color={colors.text} 
+                                    />
                                   </View>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Revenue Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, revenue: !expandedModules.revenue })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:revenue', { defaultValue: 'Revenue' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const revenue = current.revenue || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => revenue.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        revenue: { ...revenue, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.revenue?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.revenue ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.revenue && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view', 'create', 'edit', 'delete'].map((action) => (
-                                      <View key={`revenue_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.revenue?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const revenue = current.revenue || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(revenue.actions || []), action]
-                                              : (revenue.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              revenue: { ...revenue, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
+                                </TouchableOpacity>
+                                {isExpanded && (
+                                  <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
+                                    <View style={{ gap: spacing.xs }}>
+                                      {moduleActions.map((action) => (
+                                        <View key={`${moduleKey}_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
+                                          <Text style={{ flex: 1, color: colors.text }}>
+                                            {t(`common:${action}`, { defaultValue: action })}
+                                          </Text>
+                                          <Switch
+                                            value={currentPerms.actions?.includes(action) || false}
+                                            onValueChange={(value) => {
+                                              const current = formData.customPermissions || {};
+                                              const modulePerms = current[moduleKey] || { actions: [], fields: [], notifications: [] };
+                                              const actions = value
+                                                ? [...(modulePerms.actions || []), action]
+                                                : (modulePerms.actions || []).filter(a => a !== action);
+                                              updateField('customPermissions', {
+                                                ...current,
+                                                [moduleKey]: { ...modulePerms, actions },
+                                              });
+                                            }}
+                                            trackColor={{ false: colors.border, true: colors.primary }}
+                                            thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
+                                          />
+                                        </View>
+                                      ))}
+                                    </View>
                                   </View>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Stock Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, stock: !expandedModules.stock })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:stock', { defaultValue: 'Stock' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const stock = current.stock || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => stock.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        stock: { ...stock, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.stock?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.stock ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.stock && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view', 'create', 'edit', 'delete'].map((action) => (
-                                      <View key={`stock_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.stock?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const stock = current.stock || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(stock.actions || []), action]
-                                              : (stock.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              stock: { ...stock, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
-                                  </View>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Reports Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, reports: !expandedModules.reports })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:reports', { defaultValue: 'Reports' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const reports = current.reports || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view'].every(action => reports.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        reports: { ...reports, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view'].every(action => formData.customPermissions?.reports?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.reports ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.reports && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view'].map((action) => (
-                                      <View key={`reports_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.reports?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const reports = current.reports || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(reports.actions || []), action]
-                                              : (reports.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              reports: { ...reports, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
-                                  </View>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Employees Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, employees: !expandedModules.employees })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:employees', { defaultValue: 'Employees' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const employees = current.employees || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => employees.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        employees: { ...employees, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.employees?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.employees ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.employees && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view', 'create', 'edit', 'delete'].map((action) => (
-                                      <View key={`employees_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.employees?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const employees = current.employees || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(employees.actions || []), action]
-                                              : (employees.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              employees: { ...employees, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
-                                  </View>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Purchases Module */}
-                            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
-                              <TouchableOpacity 
-                                onPress={() => setExpandedModules({ ...expandedModules, purchases: !expandedModules.purchases })}
-                                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, backgroundColor: colors.surface }}
-                              >
-                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                  {t('common:purchases', { defaultValue: 'Purchases' })}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                  <TouchableOpacity
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      const current = formData.customPermissions || {};
-                                      const purchases = current.purchases || { actions: [], fields: [], notifications: [] };
-                                      const allSelected = ['view', 'create', 'edit', 'delete'].every(action => purchases.actions?.includes(action));
-                                      const newActions = allSelected ? [] : ['view', 'create', 'edit', 'delete'];
-                                      updateField('customPermissions', {
-                                        ...current,
-                                        purchases: { ...purchases, actions: newActions },
-                                      });
-                                    }}
-                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 4, backgroundColor: colors.primary }}
-                                  >
-                                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
-                                      {['view', 'create', 'edit', 'delete'].every(action => formData.customPermissions?.purchases?.actions?.includes(action)) ? t('deselect_all', { defaultValue: 'Deselect All' }) : t('select_all', { defaultValue: 'Select All' })}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <Ionicons 
-                                    name={expandedModules.purchases ? 'chevron-up' : 'chevron-down'} 
-                                    size={20} 
-                                    color={colors.text} 
-                                  />
-                                </View>
-                              </TouchableOpacity>
-                              {expandedModules.purchases && (
-                                <View style={{ padding: spacing.md, backgroundColor: colors.background }}>
-                                  <View style={{ gap: spacing.xs }}>
-                                    {['view', 'create', 'edit', 'delete'].map((action) => (
-                                      <View key={`purchases_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                                        <Text style={{ flex: 1, color: colors.text }}>
-                                          {t(`common:${action}`, { defaultValue: action })}
-                                        </Text>
-                                        <Switch
-                                          value={formData.customPermissions?.purchases?.actions?.includes(action) || false}
-                                          onValueChange={(value) => {
-                                            const current = formData.customPermissions || {};
-                                            const purchases = current.purchases || { actions: [], fields: [], notifications: [] };
-                                            const actions = value
-                                              ? [...(purchases.actions || []), action]
-                                              : (purchases.actions || []).filter(a => a !== action);
-                                            updateField('customPermissions', {
-                                              ...current,
-                                              purchases: { ...purchases, actions },
-                                            });
-                                          }}
-                                          trackColor={{ false: colors.border, true: colors.primary }}
-                                          thumbColor={activeTheme === 'dark' ? '#FFFFFF' : '#FFFFFF'}
-                                        />
-                                      </View>
-                                    ))}
-                                  </View>
-                                </View>
-                              )}
-                            </View>
+                                )}
+                              </View>
+                            );
+                          })()}
                           </View>
                       </Card>
                     ) : null}

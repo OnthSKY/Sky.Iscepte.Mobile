@@ -149,6 +149,26 @@ export const MODULE_CONFIGS: ModuleConfig[] = [
     ],
   },
   {
+    key: 'income',
+    routeName: 'Income',
+    dashboardRoute: 'IncomeDashboard',
+    icon: 'cash-outline',
+    requiredPermission: 'income:view',
+    translationNamespace: 'income',
+    translationKey: 'module_name',
+    quickActions: [
+      {
+        key: 'qa-income',
+        routeName: 'IncomeCreate',
+        icon: 'cash-outline',
+        requiredPermission: 'income:create',
+        translationNamespace: 'income',
+        translationKey: 'new_income',
+        fallbackRoute: 'Income',
+      },
+    ],
+  },
+  {
     key: 'employees',
     routeName: 'Employees',
     dashboardRoute: 'EmployeesDashboard',
