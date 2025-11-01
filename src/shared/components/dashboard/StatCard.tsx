@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../../core/contexts/ThemeContext';
@@ -15,6 +15,7 @@ interface StatCardProps {
   width?: number;
   marginRight?: number;
   style?: any;
+  hideByDefault?: boolean;
 }
 
 /**
@@ -27,9 +28,23 @@ export const StatCard: React.FC<StatCardProps> = ({
   width,
   marginRight = 0,
   style,
+  hideByDefault = false,
 }) => {
   const { colors, activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
+  const [isVisible, setIsVisible] = useState(!hideByDefault);
+  
+  const maskedValue = '••••';
+  const displayValue = isVisible ? stat.value : maskedValue;
+
+  const handlePress = () => {
+    if (hideByDefault) {
+      setIsVisible(!isVisible);
+    }
+    if (onPress) {
+      onPress();
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -43,7 +58,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         isDark ? styles.cardDarkShadow : styles.cardLightShadow,
         style,
       ]}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.8}
     >
       <View style={styles.content}>
@@ -52,7 +67,17 @@ export const StatCard: React.FC<StatCardProps> = ({
         </View>
         <View style={styles.textContainer}>
           <Text style={[styles.label, { color: colors.muted }]}>{stat.label}</Text>
-          <Text style={[styles.value, { color: colors.text }]}>{stat.value}</Text>
+          <View style={styles.valueRow}>
+            <Text style={[styles.value, { color: colors.text }]}>{displayValue}</Text>
+            {hideByDefault && (
+              <Ionicons 
+                name={isVisible ? 'eye-off-outline' : 'eye-outline'} 
+                size={16} 
+                color={colors.muted} 
+                style={{ marginLeft: 8 }} 
+              />
+            )}
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -97,6 +122,10 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     marginBottom: 2,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   value: {
     fontSize: 18,

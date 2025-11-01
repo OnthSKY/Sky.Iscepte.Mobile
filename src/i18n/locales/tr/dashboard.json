@@ -6,11 +6,26 @@
   "total_customers": "Toplam Müşteriler",
   "total_expenses": "Toplam Giderler",
   "net_profit": "Net Kar",
+  "total_users": "Toplam Kullanıcı",
+  "total_businesses": "Toplam İşletme",
+  "total_data": "Toplam Veri",
+  "manage_users": "Kullanıcı Yönetimi",
   "quick_actions": "Hızlı İşlemler",
   "recent_activity": "Son Aktiviteler",
   "no_recent_activity": "Henüz bir aktivite bulunmuyor.",
   "welcome_back": "Tekrar Hoşgeldin, Güzel",
-  "shop_owner": "Dükkan Sahibi"
+  "shop_owner": "Dükkan Sahibi",
+  "today_sales": "Bugünkü Satış",
+  "today_expenses": "Bugünkü Gider",
+  "today_total": "Bugün Toplam",
+  "tab_today": "Bugün",
+  "tab_all": "Tümü",
+  "total": "Toplam",
+  "employee_overview": "Çalışan Özeti",
+  "all_employees": "Tüm Çalışanlar",
+  "income_desc": "Gelir",
+  "expense_desc": "Gider",
+  "net_desc": "Net"
 }
 
 

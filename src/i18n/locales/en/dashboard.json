@@ -6,11 +6,26 @@
   "total_customers": "Total Customers",
   "total_expenses": "Total Expenses",
   "net_profit": "Net Profit",
+  "total_users": "Total Users",
+  "total_businesses": "Total Businesses",
+  "total_data": "Total Data",
+  "manage_users": "Manage Users",
   "quick_actions": "Quick Actions",
   "recent_activity": "Recent Activity",
   "no_recent_activity": "No recent activity yet.",
   "welcome_back": "Welcome Back,",
-  "shop_owner": "Shop Owner"
+  "shop_owner": "Shop Owner",
+  "today_sales": "Today's Sales",
+  "today_expenses": "Today's Expenses",
+  "today_total": "Today Total",
+  "tab_today": "Today",
+  "tab_all": "All",
+  "total": "Total",
+  "employee_overview": "Employee Overview",
+  "all_employees": "All Employees",
+  "income_desc": "Income",
+  "expense_desc": "Expense",
+  "net_desc": "Net"
 }
 
 

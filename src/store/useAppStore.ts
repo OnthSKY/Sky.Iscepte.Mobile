@@ -15,11 +15,15 @@ type AppState = {
   token: string | null;
   refreshToken: string | null;
   isLoading: boolean;
+  originalRole: 'admin' | 'owner' | 'staff' | 'guest' | null;
+  impersonatedUserId: string | null;
   login: (u: string, p: string) => Promise<boolean>;
   logout: () => void;
   setTheme: (pref: ThemePreference) => Promise<void>;
   setLanguage: (lng: 'tr' | 'en') => Promise<void>;
   setRole: (role: 'admin' | 'owner' | 'staff' | 'guest') => void;
+  impersonateUser: (userId: string, userRole: 'admin' | 'owner' | 'staff' | 'guest') => Promise<void>;
+  stopImpersonating: () => Promise<void>;
   hydrate: () => Promise<void>;
   silentLogin: () => Promise<boolean>;
 };
@@ -32,6 +36,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   token: null,
   refreshToken: null,
   isLoading: true,
+  originalRole: null,
+  impersonatedUserId: null,
   async login(u: string, p: string) {
     const ok = getRoleByUsername(u) !== null && p === '1234';
     if (ok) {
@@ -88,6 +94,38 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setRole(role) {
     set({ role });
+  },
+  async impersonateUser(userId: string, userRole: 'admin' | 'owner' | 'staff' | 'guest') {
+    const currentRole = get().role;
+    // Save original role if not already impersonating
+    if (!get().originalRole) {
+      set({ originalRole: currentRole });
+    }
+    
+    // Set new role and user ID
+    set({ role: userRole, impersonatedUserId: userId });
+    
+    // Load permissions for the impersonated user
+    const userIdNumber = parseInt(userId);
+    if (userIdNumber) {
+      const { usePermissionStore } = await import('./permissionsStore');
+      const permStore = usePermissionStore.getState();
+      permStore.loadPermissions(userIdNumber);
+    }
+  },
+  async stopImpersonating() {
+    const originalRole = get().originalRole;
+    if (originalRole) {
+      set({ role: originalRole, originalRole: null, impersonatedUserId: null });
+      
+      // Reload permissions for the original admin role
+      const userId = getUserIdByRole(originalRole);
+      if (userId) {
+        const { usePermissionStore } = await import('./permissionsStore');
+        const permStore = usePermissionStore.getState();
+        permStore.loadPermissions(userId);
+      }
+    }
   },
   async hydrate() {
     set({ isLoading: true });

@@ -29,6 +29,7 @@ const ITEMS: MenuItem[] = [
   { key: 'sales', label: '', icon: 'pricetag-outline', routeName: 'Sales', requiredPermission: 'sales:view' },
   { key: 'customers', label: '', icon: 'people-outline', routeName: 'Customers', requiredPermission: 'customers:view' },
   { key: 'expenses', label: '', icon: 'wallet-outline', routeName: 'Expenses', requiredPermission: 'expenses:view' },
+  { key: 'reports', label: '', icon: 'bar-chart-outline', routeName: 'Reports', requiredPermission: 'reports:view' },
   { key: 'employees', label: '', icon: 'person-outline', routeName: 'Employees', requiredPermission: 'employees:view' },
   { key: 'products', label: '', icon: 'cube-outline', routeName: 'Products', requiredPermission: 'products:view' },
 ];
@@ -48,6 +49,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     'expenses',
     'employees',
     'products',
+    'reports',
     'settings',
     'common',
   ]);
@@ -63,16 +65,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         : width > 640
           ? 3
           : 2; // small phones default 2
-  // Responsive breakpoints for quick actions row
-  const qaCols = width > 1600
-    ? 6
-    : width > 1280
-      ? 5
-      : width > 980
-        ? 4
-        : width > 560
-          ? 3
-          : 2;
+  // Responsive breakpoints for quick actions row - fixed to 4 columns
+  const qaCols = 4;
   // Icon/label sizes scale with width and slightly reduced to fit more per row
   const itemIconSize = width > 1600 ? 32 : width > 1280 ? 30 : width > 980 ? 28 : width > 640 ? 26 : 22;
   const itemLabelSize = width > 1600 ? 14 : width > 1280 ? 13 : width > 980 ? 12 : width > 640 ? 12 : 11;
@@ -124,6 +118,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       Sales: t('sales:sales'),
       Customers: t('customers:customers'),
       Expenses: t('expenses:expenses'),
+      Reports: t('reports:reports'),
       Employees: t('employees:employees', { defaultValue: 'Employees' }),
       Products: t('products:products', { defaultValue: 'Products' }),
     };
@@ -225,6 +220,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       ExpenseEdit: 'Expenses',
       EmployeeCreate: 'Employees',
       EmployeeEdit: 'Employees',
+      ProductCreate: 'Products',
+      ProductEdit: 'Products',
     };
     const fallback = fallbackMap[routeName];
     if (fallback && availableRoutes?.includes(fallback)) {
@@ -376,6 +373,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                           disabled={role !== 'owner'}
                           accessibilityRole="button"
                           accessibilityLabel={`${qa.label}`}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                           <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}10` }]}>
                             <Ionicons name={qa.icon as any} size={20} color={colors.muted} />
@@ -401,6 +399,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                           delayLongPress={400}
                           accessibilityRole="button"
                           accessibilityLabel={`${qa.label}`}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                           <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}20` }]}>
                             <Ionicons name={qa.icon as any} size={22} color={colors.primary} />
@@ -417,6 +416,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                       activeOpacity={0.85}
                       accessibilityRole="button"
                       accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}10`, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}> 
                         <Ionicons name="add" size={18} color={colors.primary} />
@@ -677,17 +677,17 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
-    rowGap: spacing.md,
   },
   quickItem: {
     alignItems: 'center',
     marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   quickIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.xs,
@@ -705,17 +705,17 @@ const styles = StyleSheet.create({
         }),
   },
   quickLabel: { 
-    fontSize: 11, 
+    fontSize: 12, 
     fontWeight: '600', 
     textAlign: 'center',
     letterSpacing: 0.2,
-    lineHeight: 14,
+    lineHeight: 16,
   },
   itemsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   item: {
     marginVertical: spacing.sm,
@@ -724,7 +724,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     aspectRatio: 1,
     padding: spacing.md,
-    marginHorizontal: spacing.xs,
     ...(Platform.OS === 'web'
       ? { 
           boxShadow: '0px 6px 20px rgba(0,0,0,0.1)',

@@ -1,6 +1,5 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import * as Localization from 'expo-localization';
 
 import enCommon from './locales/en/common.json';
 import trCommon from './locales/tr/common.json';
@@ -59,14 +58,18 @@ const resources = {
 };
 
 if (!i18n.isInitialized) {
+  // Use default language 'tr' - saved language will be restored by useAppStore.hydrate()
+  // This avoids _nativeModule undefined errors from expo-localization
+  // User can change language via LanguagePicker, which is stored in AsyncStorage
+  
   i18n
     .use(initReactI18next)
     .init({
-      compatibilityJSON: 'v3',
+      compatibilityJSON: 'v4',
       resources,
-    ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'settings', 'dynamic-fields'],
+      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'settings', 'dynamic-fields'],
       defaultNS: 'common',
-      lng: (Localization.getLocales?.()[0]?.languageCode as 'tr' | 'en') || 'tr',
+      lng: 'tr', // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
       fallbackLng: 'tr',
       interpolation: { escapeValue: false },
     });

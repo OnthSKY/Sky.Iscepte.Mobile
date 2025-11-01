@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -11,7 +11,6 @@ import LanguagePicker from '../shared/components/LanguagePicker';
 import ThemeGradientToggle from '../shared/components/ThemeGradientToggle';
 import ConfirmDialog from '../shared/components/ConfirmDialog';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 
 export default function ProfileScreen() {
   const { t } = useTranslation(['common', 'settings']);
@@ -25,7 +24,7 @@ export default function ProfileScreen() {
   const initials = user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U';
 
   return (
-    <ScreenLayout title={t('profile')} headerRight={<LanguagePicker showLabel={false} variant="compact" /> }>
+    <ScreenLayout title={t('profile')} headerRight={<LanguagePicker showLabel={false} variant="compact" />}>
       <ScrollView contentContainerStyle={styles.container}>
         <LinearGradient
           colors={colors.gradient}

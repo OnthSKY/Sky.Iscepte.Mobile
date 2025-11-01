@@ -46,7 +46,7 @@ export class AdminDashboardService extends BaseDashboardService {
     // For now, return mock data with translation keys
     return [
       {
-        key: 'users',
+        key: 'total-users',
         translationKey: 'dashboard:total_users',
         value: '1,234',
         icon: 'people-outline',
@@ -54,12 +54,28 @@ export class AdminDashboardService extends BaseDashboardService {
         route: 'Users',
       },
       {
-        key: 'businesses',
+        key: 'total-businesses',
         translationKey: 'dashboard:total_businesses',
         value: '456',
         icon: 'business-outline',
         colorKey: 'info',
         route: 'Businesses',
+      },
+      {
+        key: 'total-sales',
+        translationKey: 'dashboard:total_sales',
+        value: '₺2,450,000',
+        icon: 'trending-up-outline',
+        colorKey: 'success',
+        route: 'Sales',
+      },
+      {
+        key: 'total-data',
+        translationKey: 'dashboard:total_data',
+        value: '12,589',
+        icon: 'server-outline',
+        colorKey: 'primary',
+        route: 'Reports',
       },
     ];
   }

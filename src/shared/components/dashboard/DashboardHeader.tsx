@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../core/contexts/ThemeContext';
+import { useNavigationHandler } from '../../../core/hooks/useNavigationHandler';
 import DashboardTopBar from '../DashboardTopBar';
 import spacing from '../../../core/constants/spacing';
 import { Role } from '../../../core/config/permissions';
@@ -15,7 +16,14 @@ import { Role } from '../../../core/config/permissions';
 interface DashboardHeaderProps {
   role: Role;
   showPills?: boolean;
-  pills?: Array<{ label: string; value: string; icon: string; color: string }>;
+  pills?: Array<{ 
+    label: string; 
+    value: string; 
+    icon: string; 
+    color: string;
+    route?: string;
+    onPress?: () => void;
+  }>;
 }
 
 /**
@@ -30,6 +38,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const { colors, activeTheme } = useTheme();
   const insets = useSafeAreaInsets();
   const isDark = activeTheme === 'dark';
+  const { navigate } = useNavigationHandler();
   
   const headerGradientColors = isDark
     ? ['#0F172A', '#1E3A8A']
@@ -51,21 +60,34 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       {showPills && pills.length > 0 && (
         <>
           <View style={styles.pillsRow}>
-            {pills.map((pill, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.pill,
-                  {
-                    backgroundColor: colors.card || colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.pillText, { color: colors.muted }]}>{pill.label}</Text>
-                <Text style={[styles.pillValue, { color: pill.color }]}>{pill.value}</Text>
-              </View>
-            ))}
+            {pills.map((pill, index) => {
+              const handlePress = () => {
+                if (pill.onPress) {
+                  pill.onPress();
+                } else if (pill.route) {
+                  navigate(pill.route);
+                }
+              };
+              const PillComponent = pill.onPress || pill.route ? TouchableOpacity : View;
+              return (
+                <PillComponent
+                  key={index}
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: colors.card || colors.surface,
+                      borderColor: colors.border,
+                    },
+                    (pill.onPress || pill.route) && styles.pillClickable,
+                  ]}
+                  onPress={handlePress}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.pillText, { color: colors.muted }]}>{pill.label}</Text>
+                  <Text style={[styles.pillValue, { color: pill.color }]}>{pill.value}</Text>
+                </PillComponent>
+              );
+            })}
           </View>
           <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
         </>
@@ -100,6 +122,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
+  },
+  pillClickable: {
+    cursor: 'pointer',
   },
   pillText: {
     fontSize: 12,
