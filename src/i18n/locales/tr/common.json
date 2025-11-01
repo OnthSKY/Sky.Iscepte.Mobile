@@ -56,7 +56,10 @@
   "upgrade_message": "{{feature}} özelliğini kullanmak için bir paket yükseltmesi yapmanız gerekiyor.",
   "add_quick_action": "Hızlı işlem ekle",
   "quick_actions": "Hızlı İşlemler",
-  "open": "Aç"
+  "open": "Aç",
+  "default_user": "Kullanıcı",
+  "default_company": "Şirketiniz",
+  "loading": "Yükleniyor..."
 }
 
 

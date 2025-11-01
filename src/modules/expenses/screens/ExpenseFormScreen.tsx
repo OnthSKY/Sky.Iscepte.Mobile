@@ -45,7 +45,7 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
       const types = await expenseTypeService.list();
       setExpenseTypes(types);
     } catch (err) {
-      console.error('Failed to load expense types:', err);
+      // Failed to load expense types - will use empty list
     } finally {
       setLoadingTypes(false);
     }

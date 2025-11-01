@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { BaseEntityService } from '../services/baseEntityService.types';
 import { FormScreenConfig, BaseEntity } from '../types/screen.types';
 import { useNavigationHandler } from './useNavigationHandler';
+import { useAsyncData } from './useAsyncData';
+import { createError, errorMessages } from '../utils/errorUtils';
+import { log } from '../utils/logger';
 
 /**
  * Single Responsibility: Handles form screen logic (form state, validation, submission)
@@ -26,28 +29,31 @@ export function useFormScreen<T extends BaseEntity>(
   // Form state
   const [formData, setFormData] = useState<Partial<T>>(initialData || {});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load existing data for edit mode
-  useEffect(() => {
-    if (config.mode === 'edit' && entityId) {
-      async function loadData() {
-        try {
-          setLoading(true);
-          const entity = await service.get(entityId);
-          if (entity) {
-            setFormData(entity);
-          }
-        } catch (err) {
-          console.error('Failed to load entity:', err);
-        } finally {
-          setLoading(false);
-        }
+  // Load existing data for edit mode using useAsyncData
+  const { data: loadedData, loading } = useAsyncData<T>(
+    async () => {
+      if (!entityId) {
+        throw createError(errorMessages.required('ID parameter'), 'MISSING_ID');
       }
-      loadData();
+      const entity = await service.get(entityId);
+      if (!entity) {
+        throw createError(errorMessages.notFound(config.entityName), 'NOT_FOUND');
+      }
+      return entity;
+    },
+    [entityId, service, config.entityName],
+    {
+      immediate: config.mode === 'edit' && !!entityId,
+      onSuccess: (data) => {
+        setFormData(data);
+      },
+      onError: (err) => {
+        log.error('Failed to load entity:', err);
+      },
     }
-  }, [config.mode, entityId, service]);
+  );
 
   // Validation
   const validate = useCallback((): boolean => {
@@ -91,7 +97,7 @@ export function useFormScreen<T extends BaseEntity>(
       // Navigate back after successful submit
       navigation.goBack();
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to save');
+      const error = err instanceof Error ? err : createError(errorMessages.failedToSave(config.entityName), 'SAVE_ERROR');
       setErrors({ _general: error.message });
     } finally {
       setSubmitting(false);

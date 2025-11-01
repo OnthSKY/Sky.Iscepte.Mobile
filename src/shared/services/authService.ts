@@ -69,7 +69,7 @@ export const authService = {
         await httpService.post('/auth/logout', { refreshToken });
       } catch (error) {
         // Ignore errors if server is unreachable
-        console.error('Logout API call failed:', error);
+        // Logout API call failed - continue with local cleanup
       }
     }
     

@@ -61,7 +61,7 @@ export default function RootNavigator({ role }: Props) {
       <FullScreenMenu
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        onNavigate={(routeName: string) => {
+        onNavigate={async (routeName: string) => {
           setMenuVisible(false);
           // Prefer navigating to routes that are actually registered on the current navigator
           if (availableRouteNames.includes(routeName)) {
@@ -70,23 +70,14 @@ export default function RootNavigator({ role }: Props) {
           }
 
           // Fallback: if a create/edit screen isn't registered, try navigating to its corresponding list screen
-          const fallbackMap: Record<string, string> = {
-            SalesCreate: 'Sales',
-            SalesEdit: 'Sales',
-            CustomerCreate: 'Customers',
-            CustomerEdit: 'Customers',
-            ExpenseCreate: 'Expenses',
-            ExpenseEdit: 'Expenses',
-            EmployeeCreate: 'Employees',
-            EmployeeEdit: 'Employees',
-          };
-          const fallback = fallbackMap[routeName];
+          const { getNavigationFallback } = await import('../config/navigationConfig');
+          const fallback = getNavigationFallback(routeName);
           if (fallback && availableRouteNames.includes(fallback)) {
             navigation.navigate(fallback as never);
             return;
           }
 
-          console.warn(`Route "${routeName}" is not registered in the current navigator.`);
+          // Route not found - navigation handled by useNavigationHandler
         }}
         availableRoutes={availableRouteNames}
         role={role}
@@ -139,7 +130,7 @@ function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenM
     if (state.routeNames.includes(routeName)) {
       navigation.navigate(routeName as never);
     } else {
-      console.warn(`Route "${routeName}" does not exist for the current user.`);
+      // Route not available for current user - handled by navigation handler
     }
   };
 

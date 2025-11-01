@@ -56,7 +56,10 @@
   "upgrade_message": "You need to upgrade your package to use the {{feature}} feature.",
   "add_quick_action": "Add quick action",
   "quick_actions": "Quick Actions",
-  "open": "Open"
+  "open": "Open",
+  "default_user": "User",
+  "default_company": "Your Company",
+  "loading": "Loading..."
 }
 
 

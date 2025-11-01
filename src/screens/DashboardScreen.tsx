@@ -54,9 +54,7 @@ const DashboardScreen: React.FC = () => {
   if (loading) {
     return (
       <ScreenLayout>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <LoadingState />
       </ScreenLayout>
     );
   }
@@ -64,11 +62,10 @@ const DashboardScreen: React.FC = () => {
   if (error || !data) {
     return (
       <ScreenLayout>
-        <View style={styles.errorContainer}>
-          <Text style={{ color: colors.error }}>
-            {error?.message || 'Failed to load dashboard data'}
-          </Text>
-        </View>
+        <ErrorState
+          error={error || new Error('Failed to load dashboard data')}
+          showRetry={false}
+        />
       </ScreenLayout>
     );
   }
@@ -130,17 +127,6 @@ const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
   },
   statsGrid: {
     flexDirection: 'row',

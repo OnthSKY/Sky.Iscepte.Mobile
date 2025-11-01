@@ -1,4 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
+import { getNavigationFallback } from '../config/navigationConfig';
+import { log } from '../utils/logger';
 
 /**
  * Single Responsibility: Handles navigation logic
@@ -28,20 +30,27 @@ export function useNavigationHandler(
     return routeNames?.includes(route) || false;
   };
 
-  const navigate = (route: string): boolean => {
+  const navigate = (route: string, params?: any): boolean => {
     if (canNavigate(route)) {
-      navigation.navigate(route as never);
+      navigation.navigate(route as never, params);
       return true;
     }
 
-    // Try fallback
-    const fallback = fallbackMap[route];
+    // Try fallback from config
+    const fallback = getNavigationFallback(route);
     if (fallback && canNavigate(fallback)) {
-      navigation.navigate(fallback as never);
+      navigation.navigate(fallback as never, params);
       return true;
     }
 
-    console.warn(`Route "${route}" is not available in the current navigator.`);
+    // Try custom fallback map if provided
+    const customFallback = fallbackMap[route];
+    if (customFallback && canNavigate(customFallback)) {
+      navigation.navigate(customFallback as never, params);
+      return true;
+    }
+
+    log.warn(`Route "${route}" is not available in the current navigator.`);
     return false;
   };
 

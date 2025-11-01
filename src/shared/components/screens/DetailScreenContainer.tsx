@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import ScreenLayout from '../../layouts/ScreenLayout';
 import Button from '../Button';
 import Card from '../Card';
+import LoadingState from '../LoadingState';
+import ErrorState from '../ErrorState';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 import { BaseEntity, DetailScreenConfig } from '../../../core/types/screen.types';
@@ -52,9 +54,7 @@ export function DetailScreenContainer<T extends BaseEntity>({
   if (loading) {
     return (
       <ScreenLayout title={title} showBackButton>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <LoadingState />
       </ScreenLayout>
     );
   }
@@ -62,11 +62,13 @@ export function DetailScreenContainer<T extends BaseEntity>({
   if (error || !data) {
     return (
       <ScreenLayout title={title} showBackButton>
-        <View style={styles.centerContainer}>
-          <Text style={{ color: colors.error }}>
-            {error?.message || t('common:not_found', { defaultValue: 'Not found' })}
-          </Text>
-        </View>
+        <ErrorState
+          error={error || new Error('Not found')}
+          onRetry={data ? undefined : () => {
+            // Retry will be handled by useDetailScreen.refresh
+          }}
+          showRetry={false}
+        />
       </ScreenLayout>
     );
   }
@@ -119,12 +121,6 @@ export function DetailScreenContainer<T extends BaseEntity>({
 }
 
 const styles = StyleSheet.create({
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
   content: {
     gap: spacing.md,
     paddingBottom: spacing.lg,

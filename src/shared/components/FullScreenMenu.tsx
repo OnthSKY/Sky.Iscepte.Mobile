@@ -231,7 +231,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       onNavigate(fallback);
       return;
     }
-    console.warn(`Route "${routeName}" is not registered in the current navigator.`);
+    // Route not registered - navigation handled by parent
   };
 
   const filteredItems = useMemo(() => {

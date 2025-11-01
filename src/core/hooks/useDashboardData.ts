@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { DashboardStatData, QuickActionData } from '../services/dashboardService.types';
+import { useAsyncData } from './useAsyncData';
 
 /**
  * Single Responsibility: Handles dashboard data fetching and state
@@ -48,55 +48,43 @@ export function useDashboardData(
   translate: (key: string, defaultValue?: string) => string,
   getColor: (key: 'primary' | 'success' | 'error' | 'info') => string
 ) {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { data, loading, error } = useAsyncData<DashboardData>(
+    async () => {
+      const [statsData, quickActionsData] = await Promise.all([
+        service.getStats(),
+        service.getQuickActions(),
+      ]);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const [statsData, quickActionsData] = await Promise.all([
-          service.getStats(),
-          service.getQuickActions(),
-        ]);
+      // Transform service data to UI-ready format
+      const stats: DashboardStat[] = statsData.map((stat) => ({
+        key: stat.key,
+        label: translate(stat.translationKey, stat.key),
+        value: stat.value,
+        icon: stat.icon,
+        color: getColor(stat.colorKey),
+        route: stat.route,
+      }));
 
-        // Transform service data to UI-ready format
-        const stats: DashboardStat[] = statsData.map((stat) => ({
-          key: stat.key,
-          label: translate(stat.translationKey, stat.key),
-          value: stat.value,
-          icon: stat.icon,
-          color: getColor(stat.colorKey),
-          route: stat.route,
-        }));
+      const quickActions: QuickAction[] = quickActionsData.map((action) => ({
+        key: action.key,
+        label: translate(action.translationKey, action.key),
+        icon: action.icon,
+        color: getColor(action.colorKey),
+        route: action.route,
+      }));
 
-        const quickActions: QuickAction[] = quickActionsData.map((action) => ({
-          key: action.key,
-          label: translate(action.translationKey, action.key),
-          icon: action.icon,
-          color: getColor(action.colorKey),
-          route: action.route,
-        }));
+      const mainStat = stats[0];
+      const secondaryStats = stats.slice(1);
 
-        const mainStat = stats[0];
-        const secondaryStats = stats.slice(1);
-
-        setData({
-          stats,
-          quickActions,
-          mainStat,
-          secondaryStats,
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load dashboard data'));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [service, translate, getColor]);
+      return {
+        stats,
+        quickActions,
+        mainStat,
+        secondaryStats,
+      };
+    },
+    [service, translate, getColor]
+  );
 
   return { data, loading, error };
 }

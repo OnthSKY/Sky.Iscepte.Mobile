@@ -45,8 +45,8 @@ export function useOwnerDashboard() {
   // User data
   const user: any = useAppStore((s: any) => s.user);
   const role = useAppStore((s: any) => s.role);
-  const ownerName = user?.name || 'Kullanıcı';
-  const companyName = user?.company || 'Şirketiniz';
+  const ownerName = user?.name || t('common:default_user', { defaultValue: 'User' });
+  const companyName = user?.company || t('common:default_company', { defaultValue: 'Your Company' });
   
   // Employee data
   const employees = useEmployeeStore((s: any) => s.items);

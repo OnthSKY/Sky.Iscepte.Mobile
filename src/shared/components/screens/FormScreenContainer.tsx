@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import ScreenLayout from '../../layouts/ScreenLayout';
 import Button from '../Button';
 import Card from '../Card';
+import LoadingState from '../LoadingState';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 import { BaseEntity, FormScreenConfig } from '../../../core/types/screen.types';
@@ -76,9 +77,7 @@ export function FormScreenContainer<T extends BaseEntity>({
   if (loading) {
     return (
       <ScreenLayout title={screenTitle} showBackButton>
-        <View style={styles.loadingContainer}>
-          {/* Loading state can be customized */}
-        </View>
+        <LoadingState />
       </ScreenLayout>
     );
   }
@@ -97,12 +96,6 @@ export function FormScreenContainer<T extends BaseEntity>({
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
   content: {
     gap: spacing.md,
     paddingBottom: spacing.lg,

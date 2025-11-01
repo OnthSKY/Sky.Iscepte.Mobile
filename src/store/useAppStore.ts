@@ -135,7 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         return true;
       } catch (error) {
         // Refresh token expired or invalid, clear storage
-        console.log('Silent login failed, clearing storage:', error);
+        // Silent login failed, clearing storage
         await AsyncStorage.removeItem('access_token');
         await AsyncStorage.removeItem('refresh_token');
         await AsyncStorage.removeItem('user_role');

@@ -108,59 +108,96 @@ SOLID Screen Architecture
   - `useListScreen<T>` – Generic list screen logic (search, filters, pagination, permissions)
   - `useDetailScreen<T>` – Generic detail screen logic (load, edit, delete, permissions)
   - `useFormScreen<T>` – Generic form screen logic (validation, submit, create/edit modes)
+  - `useAsyncData<T>` – Generic async data fetching with loading/error state management ⭐
+  - `useAuth` – Authentication hooks (`useLogin`, `useRegister`)
+  - `useOwnerDashboard` – Owner dashboard specific logic
+  - `useDashboard` – Dashboard orchestration hook
+  - `useDashboardData` – Dashboard data fetching hook
   - `usePermissions` – Generic permission checks
   - `useNavigationHandler` – Generic navigation handling
-  - `useDashboard` – Dashboard orchestration hook
 - Container Components (`src/shared/components/screens/`):
   - `ListScreenContainer<T>` – Generic list UI (search, filters, paginated list, empty state)
   - `DetailScreenContainer<T>` – Generic detail UI (loading, error, edit/delete buttons)
   - `FormScreenContainer<T>` – Generic form UI (validation, submit/cancel buttons)
+- UI Components (`src/shared/components/`):
+  - `LoadingState` – Reusable loading indicator with message ⭐
+  - `ErrorState` – Reusable error display with retry option ⭐
 - Service Layer:
   - `BaseEntityService<T>` interface in `src/core/services/baseEntityService.types.ts`
   - `createBaseServiceAdapter<T>` function adapts existing services to interface
   - Module-specific adapters in `src/modules/{module}/services/{module}ServiceAdapter.ts`
+- Utilities (`src/core/utils/`):
+  - `validators.ts` – Common validation functions (required, minLength, maxLength, isEmail, isNumber, isPositive, range, isPhone, isUrl, combine) ⭐
+  - `errorUtils.ts` – Standardized error message utilities (getErrorMessage, errorMessages, createError, getErrorCode) ⭐
+- Configuration (`src/core/config/`):
+  - `navigationConfig.ts` – Navigation fallback routes configuration ⭐
+  - `permissions.ts` – Permission registry and role mappings
 - Screen Structure:
   ```
   List Screen:
     Screen Component (UI composition) → ListScreenContainer → useListScreen → Service Adapter
   
   Detail Screen:
-    Screen Component (UI composition) → DetailScreenContainer → useDetailScreen → Service Adapter
+    Screen Component (UI composition) → DetailScreenContainer → useDetailScreen → useAsyncData → Service Adapter
   
   Form Screen:
-    Screen Component (UI composition) → FormScreenContainer → useFormScreen → Service Adapter
+    Screen Component (UI composition) → FormScreenContainer → useFormScreen → useAsyncData → Service Adapter
   ```
 - Hook Organization:
   - Generic hooks (used by all modules) → `src/core/hooks/` ✅
   - Module-specific hooks (custom logic) → `src/modules/{module}/hooks/` (when needed)
   - Decision: If hook is used by multiple modules or depends on generic interfaces → Core
   - Decision: If hook contains module-specific business logic → Module
-- SOLID Principles Applied:
-  - Single Responsibility: Each hook/component has one purpose
-  - Open/Closed: Extend via composition, not modification
-  - Liskov Substitution: Service implementations are interchangeable
-  - Interface Segregation: Minimal, focused interfaces
-  - Dependency Inversion: Depend on abstractions (BaseEntityService), not concrete implementations
+- Form Configuration Pattern:
+  - Each module has `src/modules/{module}/config/{module}FormConfig.ts` ⭐
+  - Contains: `{module}FormFields` (DynamicField[]) and `{module}Validator` function
+  - Centralizes form field definitions and validation logic
+  - Used by unified `{Module}FormScreen` component (Create/Edit merged)
+- Unified Form Screens:
+  - Single `{Module}FormScreen` component handles both create and edit modes ⭐
+  - `{Module}CreateScreen` and `{Module}EditScreen` are simple wrappers passing `mode` prop
+  - Reduces code duplication by ~60%
+
+Best Practices & Guidelines (IMPORTANT - Follow These Patterns!)
+- **Always use `useAsyncData` hook for async data fetching** – Eliminates loading/error state boilerplate
+- **Always use `errorUtils` for standardized error messages** – Eliminates hardcoded error strings
+- **Always use `LoadingState` and `ErrorState` components** – Eliminates duplicate loading/error UI
+- **Always create form config file for new modules** – Centralizes form definitions
+- **Always use unified FormScreen pattern** – Create/Edit merged, reduces duplication by 60%
+- **Always use `validators.ts` utilities** – Don't write custom validation logic
+- **Always use `navigationConfig.ts` for navigation fallbacks** – Don't hardcode fallback maps
+- Keep error handling consistent: Use `errorMessages` factory functions or `getErrorMessage` utility
+- Keep async patterns consistent: Use `useAsyncData` for all data fetching operations
+- When adding new validators, add them to `validators.ts` and use i18n for error messages
+- When adding new error patterns, add them to `errorUtils.ts` with proper translation keys
+- When adding new navigation routes, update `navigationConfig.ts` fallback map if needed
 
 How to Refactor a Screen to SOLID Architecture
 1) Create service adapter: `src/modules/{module}/services/{module}ServiceAdapter.ts`
    - Adapt existing service to `BaseEntityService<T>` interface using `createBaseServiceAdapter`
-2) Refactor List Screen:
+2) Create form config: `src/modules/{module}/config/{module}FormConfig.ts`
+   - Define `{module}FormFields` (DynamicField[]) for form fields
+   - Define `{module}Validator` function using validators from `validators.ts`
+3) Refactor List Screen:
    - Replace custom logic with `ListScreenContainer`
    - Pass service adapter and config
    - Provide `renderItem` and `keyExtractor` props
-3) Refactor Detail Screen:
+4) Refactor Detail Screen:
    - Replace custom logic with `DetailScreenContainer`
    - Pass service adapter and config
    - Provide `renderContent` prop for entity-specific UI
-4) Refactor Form Screen:
+   - Uses `useAsyncData` hook internally for data fetching
+5) Refactor Form Screen:
+   - Create unified `{Module}FormScreen` component
    - Replace custom logic with `FormScreenContainer`
-   - Pass service adapter, config, validator, and `renderForm` prop
-   - Validator function handles module-specific validation rules
+   - Pass service adapter, config, validator (from form config), and `renderForm` prop
+   - Use `DynamicForm` with fields from form config
+   - `{Module}CreateScreen` and `{Module}EditScreen` become simple wrappers passing `mode` prop
 
 Notes
 - Replace mock auth and HTTP with real implementations before production.
 - If you introduce a new namespace, ensure it's added to `ns` array during `i18n.init`.
 - Keep generic hooks in `src/core/hooks/`, module-specific hooks in `src/modules/{module}/hooks/`.
+- ⭐ marks recently added/refactored patterns - use these as reference for new development.
 
 

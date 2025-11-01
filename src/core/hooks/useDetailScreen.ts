@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRoute } from '@react-navigation/native';
 import { usePermissions } from './usePermissions';
@@ -6,6 +6,9 @@ import { useAppStore } from '../../store/useAppStore';
 import { BaseEntityService } from '../services/baseEntityService.types';
 import { DetailScreenConfig, BaseEntity } from '../types/screen.types';
 import { useNavigation } from '@react-navigation/native';
+import { useAsyncData } from './useAsyncData';
+import { createError, errorMessages } from '../utils/errorUtils';
+import { log } from '../utils/logger';
 
 /**
  * Single Responsibility: Handles detail screen logic (data fetching, actions)
@@ -24,11 +27,6 @@ export function useDetailScreen<T extends BaseEntity>(
   const idParamKey = config.idParamKey || 'id';
   const entityId = route.params?.[idParamKey];
 
-  // State management
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
   // Permission checks
   const permissions = useMemo(() => ({
     canView: can(`${config.entityName}:view`),
@@ -36,33 +34,26 @@ export function useDetailScreen<T extends BaseEntity>(
     canDelete: can(`${config.entityName}:delete`),
   }), [can, config.entityName]);
 
-  // Fetch entity data
-  useEffect(() => {
-    if (!entityId) {
-      setError(new Error('ID parameter is required'));
-      setLoading(false);
-      return;
-    }
-
-    async function fetchData() {
-      try {
-        setLoading(true);
-        setError(null);
-        const entity = await service.get(entityId);
-        if (entity) {
-          setData(entity);
-        } else {
-          setError(new Error('Entity not found'));
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load data'));
-      } finally {
-        setLoading(false);
+  // Fetch entity data using useAsyncData
+  const { data, loading, error, refetch } = useAsyncData<T | null>(
+    async () => {
+      if (!entityId) {
+        throw createError(errorMessages.required('ID parameter'), 'MISSING_ID');
       }
+      const entity = await service.get(entityId);
+      if (!entity) {
+        throw createError(errorMessages.notFound(config.entityName), 'NOT_FOUND');
+      }
+      return entity;
+    },
+    [entityId, service, config.entityName],
+    {
+      immediate: !!entityId,
+      onError: (err) => {
+        log.error('Failed to load entity:', err);
+      },
     }
-
-    fetchData();
-  }, [entityId, service]);
+  );
 
   // Action handlers
   const handleEdit = useCallback(() => {
@@ -74,13 +65,11 @@ export function useDetailScreen<T extends BaseEntity>(
   const handleDelete = useCallback(async () => {
     if (!entityId) return;
     try {
-      setLoading(true);
       await service.delete(entityId);
       // Navigate back after successful delete - navigation is handled by container
+      // Data will be refreshed by container if needed
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to delete'));
-    } finally {
-      setLoading(false);
+      throw err instanceof Error ? err : new Error('Failed to delete');
     }
   }, [service, entityId]);
 
@@ -97,11 +86,7 @@ export function useDetailScreen<T extends BaseEntity>(
     // Handlers
     handleEdit,
     handleDelete,
-    refresh: () => {
-      if (entityId) {
-        service.get(entityId).then(setData).catch(setError);
-      }
-    },
+    refresh: refetch,
 
     // Translation
     t,
