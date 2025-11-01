@@ -111,14 +111,14 @@ export const queryKeys = {
     language: () => [...queryKeys.settings.all, 'language'] as const,
   },
   
-  // Products (NON-CRITICAL - memory only, except stats)
-  products: {
-    all: ['products'] as const,
-    lists: () => [...queryKeys.products.all, 'list'] as const,
-    list: (filters?: Record<string, any>) => [...queryKeys.products.lists(), { filters }] as const,
-    details: () => [...queryKeys.products.all, 'detail'] as const,
-    detail: (id: string | number) => [...queryKeys.products.details(), id] as const,
-    stats: () => [...queryKeys.products.all, 'stats'] as const, // Stats are persisted (useful for offline)
+  // Stock (NON-CRITICAL - memory only, except stats)
+  stock: {
+    all: ['stock'] as const,
+    lists: () => [...queryKeys.stock.all, 'list'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.stock.lists(), { filters }] as const,
+    details: () => [...queryKeys.stock.all, 'detail'] as const,
+    detail: (id: string | number) => [...queryKeys.stock.details(), id] as const,
+    stats: () => [...queryKeys.stock.all, 'stats'] as const, // Stats are persisted (useful for offline)
   },
   
   // Sales (NON-CRITICAL - memory only, except stats)
@@ -129,6 +129,16 @@ export const queryKeys = {
     details: () => [...queryKeys.sales.all, 'detail'] as const,
     detail: (id: string | number) => [...queryKeys.sales.details(), id] as const,
     stats: () => [...queryKeys.sales.all, 'stats'] as const, // Stats are persisted
+  },
+  
+  // Purchases (NON-CRITICAL - memory only, except stats)
+  purchases: {
+    all: ['purchases'] as const,
+    lists: () => [...queryKeys.purchases.all, 'list'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.purchases.lists(), { filters }] as const,
+    details: () => [...queryKeys.purchases.all, 'detail'] as const,
+    detail: (id: string | number) => [...queryKeys.purchases.details(), id] as const,
+    stats: () => [...queryKeys.purchases.all, 'stats'] as const, // Stats are persisted
   },
   
   // Customers (NON-CRITICAL - memory only, except stats)

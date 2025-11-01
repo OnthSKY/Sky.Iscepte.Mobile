@@ -1,7 +1,7 @@
 [
   { "id": "sales", "name": "Satış Yönetimi" },
   { "id": "customers", "name": "Müşteri Yönetimi" },
-  { "id": "expenses", "name": "Gider Takibi" },
+  { "id": "expenses", "name": "Gelir / Gider Takibi" },
   { "id": "reports", "name": "Raporlama" }
 ]
 

@@ -8,8 +8,10 @@ import { DynamicField } from '../../../shared/components/DynamicForm';
 import { Expense } from '../store/expenseStore';
 
 export const baseExpenseFormFields: DynamicField[] = [
-  { name: 'amount', labelKey: 'amount', type: 'number', required: true },
   { name: 'title', labelKey: 'title', type: 'text', required: true },
+  { name: 'amount', labelKey: 'amount', type: 'number', required: true },
+  { name: 'date', labelKey: 'date', type: 'date' },
+  { name: 'description', labelKey: 'description', type: 'textarea' },
 ];
 
 export const expenseValidator = (data: Partial<Expense>): Record<string, string> => {
@@ -19,6 +21,15 @@ export const expenseValidator = (data: Partial<Expense>): Record<string, string>
   }
   if (!data.amount || Number(data.amount) <= 0) {
     errors.amount = 'Amount must be greater than 0';
+  }
+  // Ensure source is set for manual expenses
+  if (!data.source) {
+    // Auto-set source to manual if not provided
+    (data as any).source = 'manual';
+  }
+  // Ensure type is set
+  if (!data.type || (data.type !== 'income' && data.type !== 'expense')) {
+    (data as any).type = 'expense'; // Default to expense
   }
   return errors;
 };

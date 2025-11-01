@@ -53,15 +53,27 @@ export const customersEndpoints = {
 } as const;
 
 /**
- * Products module endpoints
+ * Stock module endpoints
  */
-export const productsEndpoints = {
-  list: '/products',
-  get: (id: string | number) => `/products/${id}`,
-  stats: '/products/stats',
-  create: '/products',
-  update: (id: string | number) => `/products/${id}`,
-  remove: (id: string | number) => `/products/${id}`,
+export const stockEndpoints = {
+  list: '/stock',
+  get: (id: string | number) => `/stock/${id}`,
+  stats: '/stock/stats',
+  create: '/stock',
+  update: (id: string | number) => `/stock/${id}`,
+  remove: (id: string | number) => `/stock/${id}`,
+} as const;
+
+/**
+ * Purchases module endpoints
+ */
+export const purchasesEndpoints = {
+  list: '/purchases',
+  get: (id: string | number) => `/purchases/${id}`,
+  stats: '/purchases/stats',
+  create: '/purchases',
+  update: (id: string | number) => `/purchases/${id}`,
+  remove: (id: string | number) => `/purchases/${id}`,
 } as const;
 
 /**
@@ -138,7 +150,8 @@ export const apiEndpoints = {
   user: userEndpoints,
   sales: salesEndpoints,
   customers: customersEndpoints,
-  products: productsEndpoints,
+  stock: stockEndpoints,
+  purchases: purchasesEndpoints,
   expenses: expensesEndpoints,
   employees: employeesEndpoints,
   reports: reportsEndpoints,

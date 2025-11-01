@@ -1,0 +1,21 @@
+[
+  { "id": "1", "name": "Kira" },
+  { "id": "2", "name": "Elektrik" },
+  { "id": "3", "name": "Su" },
+  { "id": "4", "name": "İnternet" },
+  { "id": "5", "name": "Telefon" },
+  { "id": "6", "name": "Temizlik" },
+  { "id": "7", "name": "Ekipman" },
+  { "id": "8", "name": "Kırtasiye" },
+  { "id": "9", "name": "Nakliye" },
+  { "id": "10", "name": "Pazarlama" },
+  { "id": "11", "name": "Personel" },
+  { "id": "12", "name": "Vergi" },
+  { "id": "13", "name": "Sigorta" },
+  { "id": "14", "name": "Bakım" },
+  { "id": "15", "name": "Danışmanlık" },
+  { "id": "16", "name": "İşletme Giderleri" },
+  { "id": "17", "name": "Lisans ve Abonelik" },
+  { "id": "18", "name": "Sosyal Medya" }
+]
+

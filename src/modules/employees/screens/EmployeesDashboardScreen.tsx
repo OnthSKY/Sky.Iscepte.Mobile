@@ -70,7 +70,7 @@ export default function EmployeesDashboardScreen() {
       },
       {
         key: 'expenses',
-        label: t('expenses:expenses', { defaultValue: 'Giderler' }),
+        label: t('expenses:expenses', { defaultValue: 'Gelir / Giderler' }),
         icon: 'wallet-outline',
         color: isDark ? '#F87171' : '#DC2626',
         route: 'ExpensesDashboard',

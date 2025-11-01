@@ -32,38 +32,62 @@ export default function ExpensesDashboardScreen() {
       
     return [
       {
-        key: 'total-expenses',
-        label: t('expenses:total_expenses', { defaultValue: 'Toplam Gider' }),
-        value: stats.totalExpenses ?? 0,
-        icon: 'receipt-outline',
-        color: isDark ? '#F87171' : '#DC2626',
-        route: 'ExpensesList',
-      },
-      {
         key: 'total-amount',
-        label: t('expenses:total_amount', { defaultValue: 'Toplam Tutar' }),
+        label: t('expenses:total_amount', { defaultValue: 'Net Tutar' }),
         value: typeof stats.totalAmount === 'number' 
           ? `₺${stats.totalAmount.toLocaleString()}` 
           : stats.totalAmount ?? '₺0',
         icon: 'wallet-outline',
-        color: isDark ? '#F59E0B' : '#D97706',
+        color: isDark ? '#10B981' : '#059669',
+        route: 'ExpensesList',
+      },
+      {
+        key: 'total-income',
+        label: t('expenses:total_income', { defaultValue: 'Toplam Gelir' }),
+        value: typeof stats.totalIncome === 'number' 
+          ? `₺${stats.totalIncome.toLocaleString()}` 
+          : `₺${stats.totalIncome ?? 0}`,
+        icon: 'trending-up-outline',
+        color: isDark ? '#10B981' : '#059669',
+        route: 'ExpensesList',
+      },
+      {
+        key: 'total-expenses',
+        label: t('expenses:total_expenses', { defaultValue: 'Toplam Gider' }),
+        value: typeof stats.totalExpenses === 'number' 
+          ? `₺${stats.totalExpenses.toLocaleString()}` 
+          : `₺${stats.totalExpenses ?? 0}`,
+        icon: 'trending-down-outline',
+        color: isDark ? '#F87171' : '#DC2626',
+        route: 'ExpensesList',
+      },
+      {
+        key: 'monthly-income',
+        label: t('expenses:monthly_income', { defaultValue: 'Aylık Gelir' }),
+        value: typeof stats.monthlyIncome === 'number' 
+          ? `₺${stats.monthlyIncome.toLocaleString()}` 
+          : `₺${stats.monthlyIncome ?? 0}`,
+        icon: 'calendar-outline',
+        color: isDark ? '#34D399' : '#10B981',
         route: 'ExpensesList',
       },
       {
         key: 'monthly-expenses',
         label: t('expenses:monthly_expenses', { defaultValue: 'Aylık Gider' }),
-        value: stats.monthlyExpenses ?? 0,
+        value: typeof stats.monthlyExpenses === 'number' 
+          ? `₺${stats.monthlyExpenses.toLocaleString()}` 
+          : `₺${stats.monthlyExpenses ?? 0}`,
         icon: 'calendar-outline',
         color: isDark ? '#FB7185' : '#E11D48',
         route: 'ExpensesList',
       },
       {
-        key: 'expense-types',
-        label: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
-        value: stats.expenseTypes ?? 0,
-        icon: 'apps-outline',
+        key: 'total-transactions',
+        label: t('expenses:total_transactions', { defaultValue: 'Toplam İşlem' }),
+        value: stats.totalTransactions ?? 0,
+        icon: 'receipt-outline',
         color: isDark ? '#A78BFA' : '#7C3AED',
-        route: 'ExpenseTypes',
+        route: 'ExpensesList',
       },
     ];
   }, [stats, t, isDark]);
@@ -73,12 +97,12 @@ export default function ExpensesDashboardScreen() {
     return [
       {
         key: 'expense-types',
-        label: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
+        label: t('expenses:expense_types', { defaultValue: 'Gelir / Gider Türleri' }),
         icon: 'apps-outline',
         color: isDark ? '#A78BFA' : '#7C3AED',
         route: 'ExpenseTypes',
         stat: stats?.expenseTypes ?? 0,
-        statLabel: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
+        statLabel: t('expenses:expense_types', { defaultValue: 'Gelir / Gider Türleri' }),
       },
     ];
   }, [stats, t, isDark]);
@@ -87,21 +111,21 @@ export default function ExpensesDashboardScreen() {
   const quickActions: ModuleQuickAction[] = React.useMemo(() => [
     {
       key: 'view-expenses',
-      label: t('expenses:expenses', { defaultValue: 'Giderler' }),
+      label: t('expenses:expenses', { defaultValue: 'Gelir / Giderler' }),
       icon: 'list-outline',
       color: isDark ? '#F87171' : '#DC2626',
       route: 'ExpensesList',
     },
     {
       key: 'add-expense',
-      label: t('expenses:new_expense', { defaultValue: 'Yeni Gider' }),
+      label: t('expenses:new_expense', { defaultValue: 'Yeni Gelir / Gider' }),
       icon: 'add-circle-outline',
       color: isDark ? '#F59E0B' : '#D97706',
       route: 'ExpenseCreate',
     },
     {
       key: 'expense-types',
-      label: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
+      label: t('expenses:expense_types', { defaultValue: 'Gelir / Gider Türleri' }),
       icon: 'apps-outline',
       color: isDark ? '#A78BFA' : '#7C3AED',
       route: 'ExpenseTypes',
@@ -154,39 +178,86 @@ export default function ExpensesDashboardScreen() {
           renderItem: (item: Expense) => (
             <Card style={{ marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                  {item.title || t('expenses:expense', { defaultValue: 'Gider' })}
-                </Text>
-                {item.status && (
-                  <View style={{ 
-                    backgroundColor: item.status === 'paid' ? '#10B981' : item.status === 'pending' ? '#F59E0B' : '#6B7280',
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: spacing.xs,
-                    borderRadius: 8
-                  }}>
-                    <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>
-                      {item.status === 'paid' ? t('expenses:paid', { defaultValue: 'Ödendi' }) : 
-                       item.status === 'pending' ? t('common:pending', { defaultValue: 'Beklemede' }) : item.status}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                    {item.title || t('expenses:expense', { defaultValue: 'Gelir / Gider' })}
+                  </Text>
+                  {item.isSystemGenerated && (
+                    <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>
+                      {t('expenses:system_generated', { defaultValue: 'Sistemden' })}
                     </Text>
-                  </View>
-                )}
+                  )}
+                </View>
+                <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
+                  {item.type && (
+                    <View style={{ 
+                      backgroundColor: item.type === 'income' ? '#10B98120' : '#DC262620',
+                      paddingHorizontal: spacing.sm,
+                      paddingVertical: spacing.xs,
+                      borderRadius: 8
+                    }}>
+                      <Text style={{ 
+                        fontSize: 11, 
+                        color: item.type === 'income' ? '#10B981' : '#DC2626', 
+                        fontWeight: '600' 
+                      }}>
+                        {item.type === 'income' ? t('expenses:income', { defaultValue: 'Gelir' }) : 
+                         t('expenses:expense', { defaultValue: 'Gider' })}
+                      </Text>
+                    </View>
+                  )}
+                  {item.status && (
+                    <View style={{ 
+                      backgroundColor: item.status === 'paid' ? '#10B981' : item.status === 'pending' ? '#F59E0B' : '#6B7280',
+                      paddingHorizontal: spacing.sm,
+                      paddingVertical: spacing.xs,
+                      borderRadius: 8
+                    }}>
+                      <Text style={{ fontSize: 12, color: 'white', fontWeight: '600' }}>
+                        {item.status === 'paid' ? t('expenses:paid', { defaultValue: 'Ödendi' }) : 
+                         item.status === 'pending' ? t('common:pending', { defaultValue: 'Beklemede' }) : item.status}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
               
               <View style={{ gap: spacing.xs }}>
                 {item.amount && (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="cash-outline" size={16} color={colors.error || '#DC2626'} />
-                    <Text style={{ marginLeft: spacing.xs, fontSize: 14, fontWeight: '600', color: colors.error || '#DC2626' }}>
-                      ₺{item.amount.toLocaleString()}
+                    <Ionicons 
+                      name={item.type === 'income' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'} 
+                      size={16} 
+                      color={item.type === 'income' ? '#10B981' : (colors.error || '#DC2626')} 
+                    />
+                    <Text style={{ 
+                      marginLeft: spacing.xs, 
+                      fontSize: 14, 
+                      fontWeight: '600', 
+                      color: item.type === 'income' ? '#10B981' : (colors.error || '#DC2626') 
+                    }}>
+                      {item.type === 'income' ? '+' : '-'}₺{item.amount.toLocaleString()}
                     </Text>
                   </View>
                 )}
                 
-                {item.type && (
+                {item.source && (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="pricetag-outline" size={16} color={isDark ? '#94A3B8' : colors.muted} />
+                    <Ionicons 
+                      name={
+                        item.source === 'sales' ? 'pricetag-outline' :
+                        item.source === 'product_purchase' ? 'cube-outline' :
+                        item.source === 'employee_salary' ? 'person-outline' :
+                        'receipt-outline'
+                      } 
+                      size={16} 
+                      color={isDark ? '#94A3B8' : colors.muted} 
+                    />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, color: isDark ? '#E2E8F0' : colors.muted }}>
-                      {item.type}
+                      {item.source === 'sales' ? 'Satış' :
+                       item.source === 'product_purchase' ? 'Ürün Alışı' :
+                       item.source === 'employee_salary' ? 'Maaş' :
+                       item.expenseTypeName || 'Manuel'}
                     </Text>
                   </View>
                 )}

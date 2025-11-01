@@ -27,10 +27,16 @@ import trExpenses from './locales/tr/expenses.json';
 
 import enSettings from './locales/en/settings.json';
 import trSettings from './locales/tr/settings.json';
-import enProducts from './locales/en/products.json';
-import trProducts from './locales/tr/products.json';
+import enStock from './locales/en/stock.json';
+import trStock from './locales/tr/stock.json';
+import enProducts from './locales/en/products.json'; // Keep for backward compatibility
+import trProducts from './locales/tr/products.json'; // Keep for backward compatibility
 import enDynamic from './locales/en/dynamic-fields.json';
 import trDynamic from './locales/tr/dynamic-fields.json';
+import enEmployees from './locales/en/employees.json';
+import trEmployees from './locales/tr/employees.json';
+import enPurchases from './locales/en/purchases.json';
+import trPurchases from './locales/tr/purchases.json';
 
 const resources = {
   en: {
@@ -43,7 +49,10 @@ const resources = {
     reports: enReports,
     expenses: enExpenses,
     settings: enSettings,
-    products: enProducts,
+    stock: enStock,
+    products: enProducts, // Keep for backward compatibility
+    employees: enEmployees,
+    purchases: enPurchases,
     'dynamic-fields': enDynamic,
   },
   tr: {
@@ -56,7 +65,10 @@ const resources = {
     reports: trReports,
     expenses: trExpenses,
     settings: trSettings,
-    products: trProducts,
+    stock: trStock,
+    products: trProducts, // Keep for backward compatibility
+    employees: trEmployees,
+    purchases: trPurchases,
     'dynamic-fields': trDynamic,
   },
 };
@@ -71,7 +83,7 @@ if (!i18n.isInitialized) {
     .init({
       compatibilityJSON: 'v4',
       resources,
-      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'settings', 'products', 'dynamic-fields'],
+      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'settings', 'stock', 'products', 'employees', 'purchases', 'dynamic-fields'],
       defaultNS: 'common',
       lng: 'tr', // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
       fallbackLng: 'tr',

@@ -21,7 +21,7 @@ import spacing from '../../../core/constants/spacing';
  */
 export default function ProductListScreen() {
   const navigation = useNavigation<any>();
-  const { t } = useTranslation(['products', 'common']);
+  const { t } = useTranslation(['stock', 'common']);
   const { activeTheme, colors } = useTheme();
   const isDark = activeTheme === 'dark';
 
@@ -34,28 +34,28 @@ export default function ProductListScreen() {
     
     return [
       {
-        key: 'total-products',
-        label: t('products:total_products', { defaultValue: 'Toplam Ürün' }),
-        value: stats.totalProducts ?? 0,
+        key: 'total-stock-items',
+        label: t('stock:total_stock_items', { defaultValue: 'Toplam Stok Ürünü' }),
+        value: stats.totalStockItems ?? 0,
         icon: 'cube-outline',
         color: isDark ? '#60A5FA' : '#1D4ED8',
-        route: 'ProductsList',
+        route: 'StockList',
       },
       {
         key: 'total-categories',
-        label: t('products:total_categories', { defaultValue: 'Toplam Kategori' }),
+        label: t('stock:total_categories', { defaultValue: 'Toplam Kategori' }),
         value: stats.totalCategories ?? 0,
         icon: 'apps-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'ProductsList',
+        route: 'StockList',
       },
       {
-        key: 'active-products',
-        label: t('products:active_products', { defaultValue: 'Aktif Ürün' }),
-        value: stats.totalActive ?? 0,
-        icon: 'checkmark-circle-outline',
-        color: isDark ? '#F59E0B' : '#D97706',
-        route: 'ProductsList',
+        key: 'low-stock',
+        label: t('stock:low_stock', { defaultValue: 'Düşük Stok' }),
+        value: stats.lowStock ?? 0,
+        icon: 'warning-outline',
+        color: isDark ? '#F87171' : '#DC2626',
+        route: 'StockList',
       },
     ];
   }, [stats, t, isDark]);
@@ -75,8 +75,8 @@ export default function ProductListScreen() {
         ) : (
           <ModuleStatsHeader 
             stats={moduleStats}
-            mainStatKey="total-products"
-            translationNamespace="products"
+            mainStatKey="total-stock-items"
+            translationNamespace="stock"
           />
         )}
 
@@ -86,25 +86,25 @@ export default function ProductListScreen() {
             service={productEntityService}
             config={{
               entityName: 'product',
-              translationNamespace: 'products',
+              translationNamespace: 'stock',
               defaultPageSize: 20,
             }}
             renderItem={(item: Product) => (
               <Card
                 style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('ProductDetail', { id: item.id })}
+                onPress={() => navigation.navigate('StockDetail', { id: item.id })}
               >
                 <View style={{ gap: spacing.sm }}>
                   <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.name}</Text>
                   <Text style={{ fontSize: 14, color: colors.muted }}>
-                    {item.category || t('products:uncategorized', { defaultValue: 'Kategori yok' })}
+                    {item.category || t('stock:uncategorized', { defaultValue: 'Kategori yok' })}
                   </Text>
                   <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs }}>
                     <Text style={{ fontSize: 14, color: colors.text }}>
-                      {t('products:price', { defaultValue: 'Fiyat' })}: {item.price ?? '—'}
+                      {t('stock:price', { defaultValue: 'Fiyat' })}: {item.price ?? '—'}
                     </Text>
                     <Text style={{ fontSize: 14, color: colors.text }}>
-                      {t('products:stock', { defaultValue: 'Stok' })}: {item.stock ?? '—'}
+                      {t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' })}: {item.stock ?? '—'}
                     </Text>
                   </View>
                 </View>

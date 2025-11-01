@@ -103,11 +103,11 @@ export default function OwnerDashboardScreen() {
           {/* Expense small card */}
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowValues((v) => !v)} activeOpacity={0.8}>
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Gider' })}</Text>
+              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Gelir / Gider' })}</Text>
               <Text style={{ color: showValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
                 {showValues ? stats.expenses : masked}
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:expense_desc', { defaultValue: 'Gider' })}</Text>
+              <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:expense_desc', { defaultValue: 'Gelir / Gider' })}</Text>
             </View>
           </TouchableOpacity>
 
@@ -180,7 +180,7 @@ export default function OwnerDashboardScreen() {
               </Text>
             </View>
             <View style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Bugün gider' })}</Text>
+              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Bugünkü Gelir / Gider' })}</Text>
               <Text style={{ color: showEmpValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
                 {showEmpValues ? employeeStats.expenses : '••••••'}
               </Text>

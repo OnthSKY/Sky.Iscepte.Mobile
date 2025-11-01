@@ -19,7 +19,8 @@ export const permissionsRegistry: ModulePermissionConfig[] = [
   { module: 'expenses', permissions: ['expenses:view', 'expenses:create', 'expenses:edit'] },
   { module: 'reports', permissions: ['reports:view'] },
   { module: 'employees', permissions: ['employees:view', 'employees:create', 'employees:edit'] },
-  { module: 'products', permissions: ['products:view', 'products:create', 'products:edit'] },
+  { module: 'stock', permissions: ['stock:view', 'stock:create', 'stock:edit'] },
+  { module: 'purchases', permissions: ['purchases:view', 'purchases:create', 'purchases:edit'] },
   { module: 'settings', permissions: ['settings:view', 'settings:manage'] },
 ];
 
@@ -31,7 +32,8 @@ export const rolePermissions: RolePermissionsMap = {
     'expenses:view', 'expenses:create', 'expenses:edit',
     'employees:view', 'employees:create', 'employees:edit',
     'reports:view',
-    'products:view', 'products:create', 'products:edit',
+    'stock:view', 'stock:create', 'stock:edit',
+    'purchases:view', 'purchases:create', 'purchases:edit',
     'settings:view', 'settings:manage',
   ],
   [Role.STAFF]: [
@@ -39,7 +41,8 @@ export const rolePermissions: RolePermissionsMap = {
     'customers:view', 'customers:create',
     'expenses:view', 'expenses:create',
     'reports:view',
-    'products:view',
+    'stock:view',
+    'purchases:view', 'purchases:create',
   ],
   [Role.GUEST]: [],
 };

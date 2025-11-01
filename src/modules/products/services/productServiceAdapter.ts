@@ -8,7 +8,7 @@ import { productService, Product } from './productService';
 
 // Product service already has all methods, just adapt it
 export const productEntityService = createBaseServiceAdapter<Product>(
-  '/products',
+  '/stock',
   {
     list: productService.list,
     get: productService.get,

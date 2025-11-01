@@ -23,5 +23,20 @@
   { "id": 22, "name": "Şarj Kablosu USB-C", "category": "Aksesuar", "price": 85, "stock": 150, "active": true, "ownerId": 8 },
   { "id": 23, "name": "Telefon Kılıfı", "category": "Aksesuar", "price": 250, "stock": 200, "active": true, "ownerId": 8 },
   { "id": 24, "name": "Power Bank 20000mAh", "category": "Aksesuar", "price": 800, "stock": 45, "active": true, "ownerId": 8 },
-  { "id": 25, "name": "Kablosuz Şarj Standı", "category": "Aksesuar", "price": 1200, "stock": 30, "active": true, "ownerId": 8 }
+  { "id": 25, "name": "Kablosuz Şarj Standı", "category": "Aksesuar", "price": 1200, "stock": 30, "active": true, "ownerId": 8 },
+  { "id": 26, "name": "iPhone 13", "category": "Telefon", "price": 28000, "stock": 18, "active": true, "ownerId": 2 },
+  { "id": 27, "name": "Samsung Galaxy A54", "category": "Telefon", "price": 15000, "stock": 25, "active": true, "ownerId": 2 },
+  { "id": 28, "name": "Xiaomi Redmi Note 12", "category": "Telefon", "price": 12000, "stock": 30, "active": true, "ownerId": 2 },
+  { "id": 29, "name": "iPad Air 5", "category": "Tablet", "price": 28000, "stock": 12, "active": true, "ownerId": 2 },
+  { "id": 30, "name": "MacBook Pro 14", "category": "Laptop", "price": 65000, "stock": 6, "active": true, "ownerId": 2 },
+  { "id": 31, "name": "Samsung Galaxy Tab S9", "category": "Tablet", "price": 32000, "stock": 8, "active": true, "ownerId": 5 },
+  { "id": 32, "name": "Logitech MX Master 3", "category": "Aksesuar", "price": 3500, "stock": 20, "active": true, "ownerId": 5 },
+  { "id": 33, "name": "SteelSeries Apex Pro", "category": "Aksesuar", "price": 5000, "stock": 15, "active": true, "ownerId": 5 },
+  { "id": 34, "name": "Razer DeathAdder V3", "category": "Aksesuar", "price": 2800, "stock": 22, "active": true, "ownerId": 5 },
+  { "id": 35, "name": "Sony WF-1000XM5", "category": "Kulaklık", "price": 10000, "stock": 28, "active": true, "ownerId": 8 },
+  { "id": 36, "name": "Bose QuietComfort 45", "category": "Kulaklık", "price": 15000, "stock": 16, "active": true, "ownerId": 8 },
+  { "id": 37, "name": "JBL Charge 5", "category": "Hoparlör", "price": 6500, "stock": 24, "active": true, "ownerId": 8 },
+  { "id": 38, "name": "Sony WH-1000XM4", "category": "Kulaklık", "price": 10000, "stock": 18, "active": true, "ownerId": 8 },
+  { "id": 39, "name": "Anker Power Bank 26800mAh", "category": "Aksesuar", "price": 1500, "stock": 35, "active": true, "ownerId": 8 },
+  { "id": 40, "name": "USB-C Hub", "category": "Aksesuar", "price": 1200, "stock": 40, "active": true, "ownerId": 8 }
 ]

@@ -4,7 +4,7 @@
   "customers": "Müşteriler",
   "reports": "Raporlar",
   "settings": "Ayarlar",
-  "expenses": "Giderler",
+  "expenses": "Gelir / Giderler",
   "fields": "Dinamik Alanlar",
   "create": "Oluştur",
   "edit": "Düzenle",
@@ -37,7 +37,12 @@
   "all": "Tümü",
   "name": "Ad",
   "email": "E-posta",
-  "phone": "Telefon"
+  "phone": "Telefon",
+  "admin": "Admin",
+  "owner": "Sahip",
+  "staff": "Personel",
+  "yes": "Evet",
+  "no": "Hayır"
   ,
   "errors": {
     "required": "Zorunlu alan",
@@ -85,7 +90,7 @@
   "move_down": "Aşağı taşı",
   "remove": "Kaldır",
   "clear": "Temizle",
-  "products": "Ürünler",
+  "stock": "Stok",
   "list_not_configured": "Liste yapılandırılmamış",
   "confirm_delete_message": "Bu kaydı silmek istediğinize emin misiniz?",
   "list": "Liste",

@@ -17,7 +17,7 @@ import httpService from '../../shared/services/httpService';
  * Configuration for detail prefetching
  */
 interface DetailPrefetchConfig {
-  module: 'products' | 'sales' | 'customers' | 'expenses' | 'employees' | 'reports';
+  module: 'stock' | 'sales' | 'customers' | 'expenses' | 'employees' | 'reports';
   getQueryKey: (id: string | number) => readonly unknown[];
   getDetailUrl: (id: string | number) => string;
   maxPrefetch?: number; // Maximum number of items to prefetch
@@ -27,10 +27,10 @@ interface DetailPrefetchConfig {
  * Detail prefetch configurations
  */
 const DETAIL_PREFETCH_CONFIGS: Record<string, DetailPrefetchConfig> = {
-  products: {
-    module: 'products',
-    getQueryKey: (id) => queryKeys.products.detail(id),
-    getDetailUrl: (id) => apiEndpoints.products.get(id),
+  stock: {
+    module: 'stock',
+    getQueryKey: (id) => queryKeys.stock.detail(id),
+    getDetailUrl: (id) => apiEndpoints.stock.get(id),
     maxPrefetch: 5, // Prefetch first 5 items
   },
   sales: {
@@ -75,11 +75,11 @@ const DETAIL_PREFETCH_CONFIGS: Record<string, DetailPrefetchConfig> = {
  * 
  * @example
  * ```tsx
- * function ProductsListScreen() {
- *   const { items } = useProductsQuery();
+ * function StockListScreen() {
+ *   const { items } = useStockQuery();
  *   const itemIds = items?.map(item => item.id) || [];
  *   
- *   useDetailPrefetch('products', itemIds);
+ *   useDetailPrefetch('stock', itemIds);
  *   // ... rest of component
  * }
  * ```

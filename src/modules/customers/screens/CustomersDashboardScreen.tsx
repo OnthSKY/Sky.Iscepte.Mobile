@@ -71,11 +71,11 @@ export default function CustomersDashboardScreen() {
         statLabel: t('customers:total_orders', { defaultValue: 'Toplam Sipariş' }),
       },
       {
-        key: 'products',
-        label: t('products:products', { defaultValue: 'Ürünler' }),
+        key: 'stock',
+        label: t('stock:stock', { defaultValue: 'Stok' }),
         icon: 'cube-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'ProductsDashboard',
+        route: 'StockDashboard',
       },
     ];
   }, [stats, t, isDark]);

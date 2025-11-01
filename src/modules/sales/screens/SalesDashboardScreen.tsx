@@ -85,11 +85,11 @@ export default function SalesDashboardScreen() {
         statLabel: t('sales:total_sales', { defaultValue: 'Toplam Satış' }),
       },
       {
-        key: 'products',
-        label: t('products:products', { defaultValue: 'Ürünler' }),
+        key: 'stock',
+        label: t('stock:stock', { defaultValue: 'Stok' }),
         icon: 'cube-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'ProductsDashboard',
+        route: 'StockDashboard',
       },
     ];
   }, [stats, t, isDark]);

@@ -1,7 +1,7 @@
 /**
- * Products Module Query Hooks
+ * Stock Module Query Hooks
  * 
- * Single Responsibility: Provides Products-specific query hooks
+ * Single Responsibility: Provides Stock-specific query hooks
  * Dependency Inversion: Uses useApiQuery wrapper, not direct httpService
  */
 
@@ -16,12 +16,12 @@ import { Paginated } from '../../../shared/types/module';
 import { toQueryParams } from '../../../shared/utils/query';
 
 /**
- * Hook for fetching products list
+ * Hook for fetching stock list
  */
 export function useProductsQuery(filters?: Record<string, any>) {
   return useApiQuery<Paginated<Product>>({
-    url: `${apiEndpoints.products.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
-    queryKey: queryKeys.products.list(filters),
+    url: `${apiEndpoints.stock.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
+    queryKey: queryKeys.stock.list(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes for lists (fresher than detail)
     transform: (data) => {
       // Ensure proper paginated structure
@@ -39,35 +39,35 @@ export function useProductsQuery(filters?: Record<string, any>) {
 }
 
 /**
- * Hook for fetching single product
+ * Hook for fetching single stock item
  */
 export function useProductQuery(id: string | number | undefined) {
   return useApiQuery<Product>({
-    url: id ? apiEndpoints.products.get(id) : '',
-    queryKey: queryKeys.products.detail(id!),
+    url: id ? apiEndpoints.stock.get(id) : '',
+    queryKey: queryKeys.stock.detail(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes for details
   });
 }
 
 /**
- * Hook for fetching product stats
+ * Hook for fetching stock stats
  */
 export function useProductStatsQuery() {
   return useApiQuery<ProductStats>({
-    url: apiEndpoints.products.stats,
-    queryKey: queryKeys.products.stats(),
+    url: apiEndpoints.stock.stats,
+    queryKey: queryKeys.stock.stats(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
 /**
- * Hook for infinite products list (pagination)
+ * Hook for infinite stock list (pagination)
  */
 export function useProductsInfiniteQuery(pageSize: number = 20) {
   return useApiInfiniteQuery<Product, number>({
-    url: apiEndpoints.products.list,
-    queryKey: queryKeys.products.lists(),
+    url: apiEndpoints.stock.list,
+    queryKey: queryKeys.stock.lists(),
     pageSize,
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
@@ -78,36 +78,36 @@ export function useProductsInfiniteQuery(pageSize: number = 20) {
 }
 
 /**
- * Hook for creating product
+ * Hook for creating stock item
  */
 export function useCreateProductMutation() {
   return useApiMutation<Product, Partial<Product>>({
-    url: apiEndpoints.products.create,
+    url: apiEndpoints.stock.create,
     method: 'POST',
     invalidateQueries: [
-      queryKeys.products.all,
-      queryKeys.products.stats(),
+      queryKeys.stock.all,
+      queryKeys.stock.stats(),
     ] as ReadonlyArray<readonly unknown[]>,
   });
 }
 
 /**
- * Hook for updating product
+ * Hook for updating stock item
  */
 export function useUpdateProductMutation(id?: string | number) {
   return useApiMutation<Product, { id: string; data: Partial<Product> }>({
-    url: (vars) => apiEndpoints.products.update(vars.id),
+    url: (vars) => apiEndpoints.stock.update(vars.id),
     method: 'PUT',
     bodyExtractor: (vars) => vars.data,
     invalidateQueries: [
-      queryKeys.products.all,
-      queryKeys.products.stats(),
-      ...(id ? [queryKeys.products.detail(id)] : []),
+      queryKeys.stock.all,
+      queryKeys.stock.stats(),
+      ...(id ? [queryKeys.stock.detail(id)] : []),
     ] as ReadonlyArray<readonly unknown[]>,
     optimisticUpdate: {
       queryKeys: [
-        queryKeys.products.all,
-        ...(id ? [queryKeys.products.detail(id)] : []),
+        queryKeys.stock.all,
+        ...(id ? [queryKeys.stock.detail(id)] : []),
       ] as ReadonlyArray<readonly unknown[]>,
       updateFn: (oldData, vars) => {
         // If oldData is paginated list
@@ -131,18 +131,18 @@ export function useUpdateProductMutation(id?: string | number) {
 }
 
 /**
- * Hook for deleting product
+ * Hook for deleting stock item
  */
 export function useDeleteProductMutation() {
   return useApiMutation<void, string>({
-    url: (id) => apiEndpoints.products.remove(id),
+    url: (id) => apiEndpoints.stock.remove(id),
     method: 'DELETE',
     invalidateQueries: [
-      queryKeys.products.all,
-      queryKeys.products.stats(),
+      queryKeys.stock.all,
+      queryKeys.stock.stats(),
     ] as ReadonlyArray<readonly unknown[]>,
     optimisticUpdate: {
-      queryKeys: [queryKeys.products.all] as ReadonlyArray<readonly unknown[]>,
+      queryKeys: [queryKeys.stock.all] as ReadonlyArray<readonly unknown[]>,
       updateFn: (oldData, id) => {
         // Remove product from cache
         if (oldData?.items && Array.isArray(oldData.items)) {

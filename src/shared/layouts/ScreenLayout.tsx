@@ -16,6 +16,7 @@ type Props = {
   titleIcon?: string;
   headerRight?: React.ReactNode;
   showBackButton?: boolean;
+  onBackPress?: () => void;
   footer?: React.ReactNode;
 };
 
@@ -27,19 +28,29 @@ export default function ScreenLayout({
   titleIcon,
   headerRight,
   showBackButton,
+  onBackPress,
   footer,
 }: Props) {
   const { colors } = useTheme();
   const styles = getStyles(colors, !!noPadding);
   const navigation = useNavigation();
   const canGoBack = showBackButton && navigation.canGoBack();
+  
+  const handleBackPress = () => {
+    if (onBackPress) {
+      onBackPress();
+    } else {
+      navigation.goBack();
+    }
+  };
+  
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right', 'top']}>
       <View style={styles.container}>
         {title ? (
           <View style={styles.header}>
             {canGoBack ? (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
                 <Icon name="arrow-left" size={24} color={colors.text} />
               </TouchableOpacity>
             ) : null}
@@ -55,6 +66,12 @@ export default function ScreenLayout({
               </View>
             </View>
             {headerRight ? <View style={{ marginLeft: spacing.md }}>{headerRight}</View> : null}
+          </View>
+        ) : canGoBack ? (
+          <View style={styles.backButtonOnly}>
+            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+              <Icon name="arrow-left" size={24} color={colors.text} />
+            </TouchableOpacity>
           </View>
         ) : null}
         <View style={styles.content}>{children}</View>
@@ -81,9 +98,15 @@ const getStyles = (colors: any, noPadding: boolean) =>
       borderBottomColor: colors.border,
       paddingHorizontal: noPadding ? 0 : spacing.lg,
     },
+    backButtonOnly: {
+      paddingHorizontal: noPadding ? spacing.lg : spacing.lg,
+      paddingBottom: spacing.md,
+      paddingTop: spacing.sm,
+    },
     backButton: {
       marginRight: spacing.md,
       padding: spacing.xs,
+      alignSelf: 'flex-start',
     },
     titleContainer: {
       flexDirection: 'row',

@@ -18,5 +18,20 @@
   { "id": 17, "title": "Vergi Ödemesi", "type": "Vergi", "amount": 15000, "date": "2025-01-31", "status": "pending", "ownerId": 8, "employeeId": null },
   { "id": 18, "title": "Sigorta Ödemesi", "type": "Sigorta", "amount": 2000, "date": "2025-02-01", "status": "pending", "ownerId": 8, "employeeId": null },
   { "id": 19, "title": "Bakım Onarım", "type": "Bakım", "amount": 1500, "date": "2025-01-11", "status": "paid", "ownerId": 8, "employeeId": 9 },
-  { "id": 20, "title": "Danışmanlık Ücreti", "type": "Danışmanlık", "amount": 10000, "date": "2025-01-29", "status": "paid", "ownerId": 8, "employeeId": 10 }
+  { "id": 20, "title": "Danışmanlık Ücreti", "type": "Danışmanlık", "amount": 10000, "date": "2025-01-29", "status": "paid", "ownerId": 8, "employeeId": 10 },
+  { "id": 21, "title": "Maaş Ödemesi - Ocak", "type": "Personel", "amount": 45000, "date": "2025-02-01", "status": "paid", "ownerId": 2, "employeeId": null },
+  { "id": 22, "title": "Doğalgaz Faturası", "type": "Elektrik", "amount": 1200, "date": "2025-02-05", "status": "paid", "ownerId": 2, "employeeId": 3 },
+  { "id": 23, "title": "Pazarlama Kampanyası", "type": "Pazarlama", "amount": 8000, "date": "2025-02-10", "status": "paid", "ownerId": 2, "employeeId": 4 },
+  { "id": 24, "title": "Depo Kiralama", "type": "Kira", "amount": 3500, "date": "2025-02-12", "status": "paid", "ownerId": 2, "employeeId": null },
+  { "id": 25, "title": "Nakliye Gideri", "type": "Nakliye", "amount": 2500, "date": "2025-02-15", "status": "paid", "ownerId": 5, "employeeId": 6 },
+  { "id": 26, "title": "Maaş Ödemesi - Şubat", "type": "Personel", "amount": 52000, "date": "2025-02-20", "status": "pending", "ownerId": 5, "employeeId": null },
+  { "id": 27, "title": "Güvenlik Kamerası", "type": "Ekipman", "amount": 8500, "date": "2025-02-22", "status": "paid", "ownerId": 5, "employeeId": 7 },
+  { "id": 28, "title": "Muhasebe Yazılımı Lisansı", "type": "Ekipman", "amount": 12000, "date": "2025-02-25", "status": "paid", "ownerId": 5, "employeeId": null },
+  { "id": 29, "title": "Temizlik Hizmeti", "type": "Temizlik", "amount": 2000, "date": "2025-02-28", "status": "pending", "ownerId": 8, "employeeId": 9 },
+  { "id": 30, "title": "İnternet Faturası - Şubat", "type": "İnternet", "amount": 450, "date": "2025-02-28", "status": "paid", "ownerId": 8, "employeeId": 10 },
+  { "id": 31, "title": "Elektrik Faturası - Şubat", "type": "Elektrik", "amount": 950, "date": "2025-02-28", "status": "paid", "ownerId": 8, "employeeId": 15 },
+  { "id": 32, "title": "Yakıt Gideri", "type": "Nakliye", "amount": 1800, "date": "2025-03-01", "status": "paid", "ownerId": 2, "employeeId": 5 },
+  { "id": 33, "title": "Ofis Malzemeleri", "type": "Kırtasiye", "amount": 1500, "date": "2025-03-05", "status": "paid", "ownerId": 2, "employeeId": 11 },
+  { "id": 34, "title": "Sosyal Medya Reklamı", "type": "Pazarlama", "amount": 6000, "date": "2025-03-08", "status": "paid", "ownerId": 5, "employeeId": 12 },
+  { "id": 35, "title": "Kargo Ücretleri Toplu", "type": "Nakliye", "amount": 3200, "date": "2025-03-10", "status": "paid", "ownerId": 8, "employeeId": 15 }
 ]

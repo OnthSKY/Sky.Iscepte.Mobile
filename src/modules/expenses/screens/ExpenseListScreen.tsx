@@ -35,37 +35,53 @@ export default function ExpenseListScreen() {
     return [
       {
         key: 'total-amount',
-        label: t('expenses:total_amount', { defaultValue: 'Toplam Tutar' }),
+        label: t('expenses:total_amount', { defaultValue: 'Net Tutar' }),
         value: typeof stats.totalAmount === 'number' 
           ? `₺${stats.totalAmount.toLocaleString()}` 
           : stats.totalAmount ?? '₺0',
         icon: 'wallet-outline',
-        color: isDark ? '#F59E0B' : '#D97706',
+        color: isDark ? '#10B981' : '#059669',
+        route: 'ExpensesList',
+      },
+      {
+        key: 'total-income',
+        label: t('expenses:total_income', { defaultValue: 'Toplam Gelir' }),
+        value: typeof stats.totalIncome === 'number' 
+          ? `₺${stats.totalIncome.toLocaleString()}` 
+          : `₺${stats.totalIncome ?? 0}`,
+        icon: 'trending-up-outline',
+        color: isDark ? '#10B981' : '#059669',
         route: 'ExpensesList',
       },
       {
         key: 'total-expenses',
         label: t('expenses:total_expenses', { defaultValue: 'Toplam Gider' }),
-        value: stats.totalExpenses ?? 0,
-        icon: 'receipt-outline',
+        value: typeof stats.totalExpenses === 'number' 
+          ? `₺${stats.totalExpenses.toLocaleString()}` 
+          : `₺${stats.totalExpenses ?? 0}`,
+        icon: 'trending-down-outline',
         color: isDark ? '#F87171' : '#DC2626',
+        route: 'ExpensesList',
+      },
+      {
+        key: 'monthly-income',
+        label: t('expenses:monthly_income', { defaultValue: 'Aylık Gelir' }),
+        value: typeof stats.monthlyIncome === 'number' 
+          ? `₺${stats.monthlyIncome.toLocaleString()}` 
+          : `₺${stats.monthlyIncome ?? 0}`,
+        icon: 'calendar-outline',
+        color: isDark ? '#34D399' : '#10B981',
         route: 'ExpensesList',
       },
       {
         key: 'monthly-expenses',
         label: t('expenses:monthly_expenses', { defaultValue: 'Aylık Gider' }),
-        value: stats.monthlyExpenses ?? 0,
+        value: typeof stats.monthlyExpenses === 'number' 
+          ? `₺${stats.monthlyExpenses.toLocaleString()}` 
+          : `₺${stats.monthlyExpenses ?? 0}`,
         icon: 'calendar-outline',
         color: isDark ? '#FB7185' : '#E11D48',
         route: 'ExpensesList',
-      },
-      {
-        key: 'expense-types',
-        label: t('expenses:expense_types', { defaultValue: 'Gider Türleri' }),
-        value: stats.expenseTypes ?? 0,
-        icon: 'apps-outline',
-        color: isDark ? '#A78BFA' : '#7C3AED',
-        route: 'ExpenseTypes',
       },
     ];
   }, [stats, t, isDark]);

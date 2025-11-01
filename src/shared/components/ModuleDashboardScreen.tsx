@@ -74,6 +74,22 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
   const { width } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
+  
+  // Get current route name to determine if we should show back button
+  const route = navigation.getState()?.routes[navigation.getState()?.index ?? 0];
+  const currentRouteName = route?.name;
+  // Show back button for all module dashboards (not the main Dashboard)
+  const canGoBack = currentRouteName !== 'Dashboard' && navigation.canGoBack();
+  
+  // Custom back handler: navigate to Dashboard if in Tab Navigator
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // Fallback: navigate to Dashboard if canGoBack doesn't work
+      navigation.navigate('Dashboard' as never);
+    }
+  };
 
   // Fetch stats - handle both sync and async
   const statsResult = React.useMemo(() => {
@@ -185,7 +201,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
 
   if (finalLoading) {
     return (
-      <ScreenLayout>
+      <ScreenLayout showBackButton={canGoBack} onBackPress={handleBackPress}>
         <LoadingState />
       </ScreenLayout>
     );
@@ -196,7 +212,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
     const errorMessage = errorMessages.failedToLoad(t(`${config.module}:module`, { defaultValue: 'Module data' }));
     
     return (
-      <ScreenLayout>
+      <ScreenLayout showBackButton={canGoBack} onBackPress={handleBackPress}>
         <ErrorState
           error={finalError}
           message={getErrorMessage(finalError)}
@@ -509,7 +525,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
   };
 
   return (
-    <ScreenLayout noPadding>
+    <ScreenLayout noPadding showBackButton={canGoBack} onBackPress={handleBackPress}>
       {/* Tab Selector */}
       {config.listConfig && (
         <View style={[styles.tabContainer, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>

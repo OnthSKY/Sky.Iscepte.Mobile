@@ -18,9 +18,10 @@ export interface Product {
 }
 
 export interface ProductStats {
-  totalProducts: number;
+  totalStockItems: number;
   totalCategories: number;
-  totalActive: number;
+  lowStock: number;
+  totalStockValue?: number;
 }
 
 // Internal mock service handler
@@ -54,19 +55,19 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
 
 export const productService = {
   list: (req: GridRequest) =>
-    request<Paginated<Product>>('GET', `${apiEndpoints.products.list}${toQueryParams(req)}`),
+    request<Paginated<Product>>('GET', `${apiEndpoints.stock.list}${toQueryParams(req)}`),
 
-  get: (id: string) => request<Product>('GET', apiEndpoints.products.get(id)),
+  get: (id: string) => request<Product>('GET', apiEndpoints.stock.get(id)),
 
-  stats: () => request<ProductStats>('GET', apiEndpoints.products.stats),
+  stats: () => request<ProductStats>('GET', apiEndpoints.stock.stats),
 
   create: (payload: Partial<Product>) =>
-    request<Product>('POST', apiEndpoints.products.create, payload),
+    request<Product>('POST', apiEndpoints.stock.create, payload),
 
   update: (id: string, payload: Partial<Product>) =>
-    request<Product>('PUT', apiEndpoints.products.update(id), payload),
+    request<Product>('PUT', apiEndpoints.stock.update(id), payload),
 
-  remove: (id: string) => request<void>('DELETE', apiEndpoints.products.remove(id)),
+  remove: (id: string) => request<void>('DELETE', apiEndpoints.stock.remove(id)),
 };
 
 export default productService;

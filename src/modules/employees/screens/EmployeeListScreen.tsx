@@ -92,9 +92,15 @@ export default function EmployeeListScreen() {
             renderItem={(item: Employee) => (
               <Card
                 style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('EmployeeDetail', { id: item.id, name: item.name, role: item.role })}
+                onPress={() => navigation.navigate('EmployeeDetail', { 
+                  id: item.id, 
+                  name: item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim(), 
+                  role: item.role 
+                })}
               >
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.name}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '500' }}>
+                  {item.firstName || item.name} {item.lastName}
+                </Text>
                 <Text>{item.role}</Text>
               </Card>
             )}

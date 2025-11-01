@@ -48,7 +48,7 @@ const DashboardScreen: React.FC = () => {
       color: colors.success,
     },
     {
-      label: t('dashboard:today_expenses', { defaultValue: 'Bugünkü Gider' }),
+      label: t('dashboard:today_expenses', { defaultValue: 'Bugünkü Gelir / Gider' }),
       value: '₺820',
       icon: 'wallet-outline',
       color: colors.error,

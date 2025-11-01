@@ -6,7 +6,7 @@ import Select from './Select';
 import { Form, FormField, FormRow } from './Form';
 import spacing from '../../core/constants/spacing';
 
-export type DynamicFieldType = 'text' | 'number' | 'textarea' | 'select' | 'date';
+export type DynamicFieldType = 'text' | 'number' | 'textarea' | 'select' | 'date' | 'custom';
 
 export type DynamicFieldOption = { label: string; value: string };
 
@@ -18,6 +18,7 @@ export type DynamicField = {
   options?: DynamicFieldOption[]; // for select
   required?: boolean;
   multiline?: boolean; // override for textarea
+  render?: (value: any, onChange: (v: any) => void) => React.ReactNode; // for custom type
 };
 
 type DynamicFormProps<T extends Record<string, any>> = {
@@ -76,6 +77,8 @@ function renderField(
   } as const;
 
   switch (field.type) {
+    case 'custom':
+      return field.render ? field.render(value, onChange) : null;
     case 'number':
       return (
         <Input

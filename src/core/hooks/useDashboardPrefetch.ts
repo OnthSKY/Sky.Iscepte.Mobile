@@ -34,11 +34,11 @@ interface ModulePrefetchConfig {
  */
 const MODULE_PREFETCH_CONFIGS: ModulePrefetchConfig[] = [
   {
-    module: 'products',
+    module: 'stock',
     service: {
-      stats: () => httpService.get<any>(apiEndpoints.products.stats),
+      stats: () => httpService.get<any>(apiEndpoints.stock.stats),
     },
-    queryKey: queryKeys.products.stats(),
+    queryKey: queryKeys.stock.stats(),
   },
   {
     module: 'sales',

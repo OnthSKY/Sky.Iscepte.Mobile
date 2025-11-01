@@ -4,7 +4,7 @@
   "description": "Burası anasayfanız. Aktivitelerinizin bir özetini burada görebilirsiniz.",
   "total_sales": "Toplam Satışlar",
   "total_customers": "Toplam Müşteriler",
-  "total_expenses": "Toplam Giderler",
+  "total_expenses": "Toplam Gelir / Giderler",
   "net_profit": "Net Kar",
   "total_users": "Toplam Kullanıcı",
   "total_businesses": "Toplam İşletme",
@@ -16,7 +16,7 @@
   "welcome_back": "Tekrar Hoşgeldin, Güzel",
   "shop_owner": "Dükkan Sahibi",
   "today_sales": "Bugünkü Satış",
-  "today_expenses": "Bugünkü Gider",
+  "today_expenses": "Bugünkü Gelir / Gider",
   "today_total": "Bugün Toplam",
   "tab_today": "Bugün",
   "tab_all": "Tümü",
@@ -24,7 +24,7 @@
   "employee_overview": "Çalışan Özeti",
   "all_employees": "Tüm Çalışanlar",
   "income_desc": "Gelir",
-  "expense_desc": "Gider",
+  "expense_desc": "Gelir / Gider",
   "net_desc": "Net"
 }
 

@@ -26,14 +26,14 @@ const ROUTE_PREFETCH_MAP: Record<
     prefetchFns: Array<() => Promise<any>>;
   }
 > = {
-  // Products
-  ProductsDashboard: {
-    queryKeys: [queryKeys.products.stats()],
-    prefetchFns: [() => httpService.get(apiEndpoints.products.stats)],
+  // Stock
+  StockDashboard: {
+    queryKeys: [queryKeys.stock.stats()],
+    prefetchFns: [() => httpService.get(apiEndpoints.stock.stats)],
   },
-  ProductsList: {
-    queryKeys: [queryKeys.products.list()],
-    prefetchFns: [() => httpService.get(apiEndpoints.products.list)],
+  StockList: {
+    queryKeys: [queryKeys.stock.list()],
+    prefetchFns: [() => httpService.get(apiEndpoints.stock.list)],
   },
   
   // Sales
@@ -91,13 +91,13 @@ const ROUTE_PREFETCH_MAP: Record<
  * Prefetch detail data when list is navigated
  */
 const LIST_TO_DETAIL_PREFETCH: Record<string, (itemIds: string[]) => void> = {
-  ProductsList: (itemIds: string[]) => {
+  StockList: (itemIds: string[]) => {
     // Prefetch first few items when list loads
     const queryClient = require('../services/queryClient').queryClient;
     itemIds.slice(0, 3).forEach((id) => {
       queryClient.prefetchQuery({
-        queryKey: queryKeys.products.detail(id),
-        queryFn: () => httpService.get(apiEndpoints.products.get(id)),
+        queryKey: queryKeys.stock.detail(id),
+        queryFn: () => httpService.get(apiEndpoints.stock.get(id)),
       });
     });
   },

@@ -1,7 +1,9 @@
 {
   "employees": "Employees",
   "employee_details": "Employee Details",
-  "name": "Name",
+  "name": "Full Name",
+  "first_name": "First Name",
+  "last_name": "Last Name",
   "email": "Email",
   "phone": "Phone",
   "department": "Department",
@@ -22,7 +24,35 @@
   "dashboard": "Dashboard",
   "list": "List",
   "module": "Employees",
-  "employee": "Employee"
+  "employee": "Employee",
+  "basic_information": "Basic Information",
+  "user_account": "User Account",
+  "username": "Username",
+  "password": "Password",
+  "user_role": "User Role",
+  "create_user_account_desc": "Do you want to create a user account for this employee?",
+  "manage_permissions": "Manage Permissions",
+  "select": "Select",
+  "select_role": "Select Role",
+  "employee_name": "Employee",
+  "permissions_saved": "Permissions saved successfully",
+  "permissions_save_error": "Failed to save permissions",
+  "actions": "Actions",
+  "fields": "Fields",
+  "notifications": "Notifications",
+  "suggest": "Suggest",
+  "username_placeholder": "Enter username",
+  "password_placeholder": "Enter password",
+  "permissions": "Permissions",
+  "select_permissions_desc": "Select the permissions this user will have:",
+  "admin_full_access": "Admin has full access to all modules",
+  "owner_full_access": "Owner has full access to all modules",
+  "select_all": "Select All",
+  "deselect_all": "Deselect All",
+  "errors": {
+    "first_name_required": "First name is required",
+    "last_name_required": "Last name is required"
+  }
 }
 
 

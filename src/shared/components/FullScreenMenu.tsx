@@ -27,21 +27,22 @@ type Props = {
 };
 
 const ITEMS: MenuItem[] = [
+  { key: 'stock', label: '', icon: 'cube-outline', routeName: 'Stock', requiredPermission: 'stock:view' },
+  { key: 'purchases', label: '', icon: 'cart-outline', routeName: 'Purchases', requiredPermission: 'purchases:view' },
   { key: 'sales', label: '', icon: 'pricetag-outline', routeName: 'Sales', requiredPermission: 'sales:view' },
   { key: 'customers', label: '', icon: 'people-outline', routeName: 'Customers', requiredPermission: 'customers:view' },
   { key: 'expenses', label: '', icon: 'wallet-outline', routeName: 'Expenses', requiredPermission: 'expenses:view' },
   { key: 'employees', label: '', icon: 'person-outline', routeName: 'Employees', requiredPermission: 'employees:view' },
-  { key: 'products', label: '', icon: 'cube-outline', routeName: 'Products', requiredPermission: 'products:view' },
   { key: 'reports', label: '', icon: 'bar-chart-outline', routeName: 'Reports', requiredPermission: 'reports:view' },
-
 ];
 
 const QUICK_ACTIONS: MenuItem[] = [
-  { key: 'qa-sale', label: '', icon: 'add-circle-outline', routeName: 'SalesCreate', requiredPermission: 'sales:create' },
+  { key: 'qa-purchase', label: '', icon: 'cart-outline', routeName: 'PurchaseCreate', requiredPermission: 'purchases:create' },
+  { key: 'qa-sale', label: '', icon: 'pricetag-outline', routeName: 'SalesCreate', requiredPermission: 'sales:create' },
   { key: 'qa-customer', label: '', icon: 'person-add-outline', routeName: 'CustomerCreate', requiredPermission: 'customers:create' },
-  { key: 'qa-expense', label: '', icon: 'add-circle-outline', routeName: 'ExpenseCreate', requiredPermission: 'expenses:create' },
+  { key: 'qa-expense', label: '', icon: 'wallet-outline', routeName: 'ExpenseCreate', requiredPermission: 'expenses:create' },
   { key: 'qa-employee', label: '', icon: 'briefcase-outline', routeName: 'EmployeeCreate', requiredPermission: 'employees:create' },
-  { key: 'qa-product', label: '', icon: 'add-circle-outline', routeName: 'ProductCreate', requiredPermission: 'products:create' },
+  { key: 'qa-stock', label: '', icon: 'cube-outline', routeName: 'StockCreate', requiredPermission: 'stock:create' },
 ];
 
 export default function FullScreenMenu({ visible, onClose, onNavigate, availableRoutes, role = 'guest' }: Props) {
@@ -50,7 +51,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     'customers',
     'expenses',
     'employees',
-    'products',
+    'stock',
     'reports',
     'settings',
     'common',
@@ -126,7 +127,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       Expenses: t('expenses', { ns: 'common' }),
       Reports: t('reports', { ns: 'reports' }),
       Employees: t('employees', { ns: 'common' }),
-      Products: t('products', { ns: 'products' }),
+      Stock: t('stock', { ns: 'stock' }),
     };
     
     const mapped = ITEMS.map((it) => {
@@ -156,9 +157,9 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   const quickActionLabelByRoute = useMemo(() => ({
     SalesCreate: t('sales:new_sale', { defaultValue: 'Yeni satış' }),
     CustomerCreate: t('customers:new_customer', { defaultValue: 'Yeni müşteri' }),
-    ExpenseCreate: t('expenses:new_expense', { defaultValue: 'Yeni gider' }),
+    ExpenseCreate: t('expenses:new_expense', { defaultValue: 'Yeni gelir / gider' }),
     EmployeeCreate: t('settings:new_employee', { defaultValue: 'Yeni çalışan' }),
-    ProductCreate: t('products:new_product', { defaultValue: 'Yeni ürün' }),
+    StockCreate: t('stock:new_stock', { defaultValue: 'Yeni stok' }),
   }) as Record<string, string>, [t]);
 
   const processedQuickActions = useMemo(() => {
@@ -168,7 +169,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         CustomerCreate: 'Customers',
         ExpenseCreate: 'Expenses',
         EmployeeCreate: 'Employees',
-        ProductCreate: 'Products',
+        StockCreate: 'Stock',
       };
       return fallbackMap[routeName];
     };
@@ -203,7 +204,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         CustomerCreate: 'Customers',
         ExpenseCreate: 'Expenses',
         EmployeeCreate: 'Employees',
-        ProductCreate: 'Products',
+        StockCreate: 'Stock',
       };
       return fallbackMap[routeName];
     };
@@ -265,8 +266,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       ExpenseEdit: 'Expenses',
       EmployeeCreate: 'Employees',
       EmployeeEdit: 'Employees',
-      ProductCreate: 'Products',
-      ProductEdit: 'Products',
+      StockCreate: 'Stock',
+      StockEdit: 'Stock',
     };
     const fallback = fallbackMap[routeName];
     if (fallback && availableRoutes?.includes(fallback)) {
@@ -736,12 +737,4 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
-
-
+    width: 2

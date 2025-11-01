@@ -5,16 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
-
-export interface Employee {
-  id: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  role?: string;
-  department?: string;
-  isActive?: boolean;
-}
+import { Employee } from '../store/employeeStore';
 
 export interface EmployeeStats {
   totalEmployees: number;

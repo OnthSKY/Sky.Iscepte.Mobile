@@ -16,10 +16,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
 
 /**
- * ProductsDashboardScreen - Dashboard for Products module
+ * StockDashboardScreen - Dashboard for Stock module
  */
 export default function ProductsDashboardScreen() {
-  const { t } = useTranslation(['products', 'common']);
+  const { t } = useTranslation(['stock', 'common']);
   const { activeTheme, colors } = useTheme();
   const isDark = activeTheme === 'dark';
   
@@ -32,28 +32,28 @@ export default function ProductsDashboardScreen() {
       
     return [
       {
-        key: 'total-products',
-        label: t('products:total_products', { defaultValue: 'Toplam Ürün' }),
-        value: stats.totalProducts ?? 0,
+        key: 'total-stock-items',
+        label: t('stock:total_stock_items', { defaultValue: 'Toplam Ürün' }),
+        value: stats.totalStockItems ?? 0,
         icon: 'cube-outline',
         color: isDark ? '#60A5FA' : '#1D4ED8',
-        route: 'ProductsList',
+        route: 'StockList',
+      },
+      {
+        key: 'low-stock',
+        label: t('stock:low_stock', { defaultValue: 'Düşük Stok' }),
+        value: stats.lowStock ?? 0,
+        icon: 'warning-outline',
+        color: isDark ? '#F87171' : '#DC2626',
+        route: 'StockList',
       },
       {
         key: 'total-categories',
-        label: t('products:total_categories', { defaultValue: 'Toplam Kategori' }),
+        label: t('stock:total_categories', { defaultValue: 'Toplam Kategori' }),
         value: stats.totalCategories ?? 0,
         icon: 'apps-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'ProductsList',
-      },
-      {
-        key: 'active-products',
-        label: t('products:active_products', { defaultValue: 'Aktif Ürün' }),
-        value: stats.totalActive ?? 0,
-        icon: 'checkmark-circle-outline',
-        color: isDark ? '#F59E0B' : '#D97706',
-        route: 'ProductsList',
+        route: 'StockList',
       },
     ];
   }, [stats, t, isDark]);
@@ -78,21 +78,42 @@ export default function ProductsDashboardScreen() {
     ];
   }, [t, isDark]);
 
-  // Define quick actions
+  // Define quick actions - Stock management focused
   const quickActions: ModuleQuickAction[] = React.useMemo(() => [
     {
-      key: 'view-products',
-      label: t('products:products', { defaultValue: 'Ürünler' }),
-      icon: 'list-outline',
-      color: isDark ? '#60A5FA' : '#1D4ED8',
-      route: 'ProductsList',
-    },
-    {
       key: 'add-product',
-      label: t('products:new_product', { defaultValue: 'Yeni Ürün' }),
+      label: t('stock:new_stock', { defaultValue: 'Ürün Ekle' }),
       icon: 'add-circle-outline',
       color: isDark ? '#34D399' : '#059669',
-      route: 'ProductCreate',
+      route: 'StockCreate',
+    },
+    {
+      key: 'stock-in',
+      label: t('stock:add_stock', { defaultValue: 'Stok Artır' }),
+      icon: 'arrow-up-circle-outline',
+      color: isDark ? '#60A5FA' : '#1D4ED8',
+      route: 'StockList', // Will navigate to list with stock increase option
+    },
+    {
+      key: 'stock-out',
+      label: t('stock:reduce_stock', { defaultValue: 'Stok Düş' }),
+      icon: 'arrow-down-circle-outline',
+      color: isDark ? '#F59E0B' : '#D97706',
+      route: 'StockList', // Will navigate to list with stock decrease option
+    },
+    {
+      key: 'make-sale',
+      label: t('stock:make_sale', { defaultValue: 'Satış Yap' }),
+      icon: 'receipt-outline',
+      color: isDark ? '#A78BFA' : '#7C3AED',
+      route: 'SalesCreate',
+    },
+    {
+      key: 'view-stock-list',
+      label: t('stock:view_stock_list', { defaultValue: 'Stok Listesi' }),
+      icon: 'list-outline',
+      color: isDark ? '#94A3B8' : '#64748B',
+      route: 'StockList',
     },
   ], [t, isDark]);
 
@@ -115,7 +136,7 @@ export default function ProductsDashboardScreen() {
     return (
       <ScreenLayout>
         <ErrorState
-          error={error || new Error(errorMessages.failedToLoad('products'))}
+          error={error || new Error(errorMessages.failedToLoad('stock'))}
           showRetry={false}
         />
       </ScreenLayout>
@@ -125,25 +146,25 @@ export default function ProductsDashboardScreen() {
   return (
     <ModuleDashboardScreen<Product>
       config={{
-        module: 'products',
+        module: 'stock',
         stats: fetchStats,
         quickActions: quickActions,
-        mainStatKey: 'total-products',
+        mainStatKey: 'total-stock-items',
         relatedModules: relatedModules,
-        listRoute: 'ProductsList',
-        createRoute: 'ProductCreate',
+        listRoute: 'StockList',
+        createRoute: 'StockCreate',
         listConfig: {
           service: productEntityService,
           config: {
-            entityName: 'product',
-            translationNamespace: 'products',
+            entityName: 'stock_item',
+            translationNamespace: 'stock',
             defaultPageSize: 10,
           },
           renderItem: (item: Product) => (
             <Card style={{ marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                  {item.name || t('products:product', { defaultValue: 'Ürün' })}
+                  {item.name || t('stock:stock_item', { defaultValue: 'Stok Ürünü' })}
                 </Text>
                 {item.isActive !== undefined && (
                   <View style={{ 
@@ -182,7 +203,7 @@ export default function ProductsDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="cube-outline" size={16} color={item.stock > 10 ? '#10B981' : item.stock > 5 ? '#F59E0B' : '#EF4444'} />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, fontWeight: '600', color: item.stock > 10 ? '#10B981' : item.stock > 5 ? '#F59E0B' : '#EF4444' }}>
-                      {t('products:stock', { defaultValue: 'Stok' })}: {item.stock}
+                      {t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' })}: {item.stock}
                     </Text>
                   </View>
                 )}

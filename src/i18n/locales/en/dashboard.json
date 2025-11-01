@@ -4,7 +4,7 @@
   "description": "This is your dashboard. You can see a summary of your activities here.",
   "total_sales": "Total Sales",
   "total_customers": "Total Customers",
-  "total_expenses": "Total Expenses",
+  "total_expenses": "Total Income / Expenses",
   "net_profit": "Net Profit",
   "total_users": "Total Users",
   "total_businesses": "Total Businesses",
@@ -16,7 +16,7 @@
   "welcome_back": "Welcome Back,",
   "shop_owner": "Shop Owner",
   "today_sales": "Today's Sales",
-  "today_expenses": "Today's Expenses",
+  "today_expenses": "Today's Income / Expenses",
   "today_total": "Today Total",
   "tab_today": "Today",
   "tab_all": "All",
@@ -24,7 +24,7 @@
   "employee_overview": "Employee Overview",
   "all_employees": "All Employees",
   "income_desc": "Income",
-  "expense_desc": "Expense",
+  "expense_desc": "Income / Expense",
   "net_desc": "Net"
 }
 

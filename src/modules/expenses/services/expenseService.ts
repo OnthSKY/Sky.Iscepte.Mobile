@@ -6,20 +6,45 @@ import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
 
+export type ExpenseType = 'income' | 'expense';
+export type ExpenseSource = 'sales' | 'product_purchase' | 'employee_salary' | 'manual';
+
 export interface Expense {
   id: string;
   title?: string;
   amount?: number;
+  type?: ExpenseType; // 'income' or 'expense'
+  source?: ExpenseSource; // 'sales', 'product_purchase', 'employee_salary', 'manual'
   expenseTypeId?: string;
   expenseTypeName?: string;
   date?: string;
   description?: string;
+  // Related entity IDs for system-generated expenses
+  saleId?: string;
+  productId?: string;
+  employeeId?: string;
+  // Metadata
+  isSystemGenerated?: boolean; // true if auto-generated from system
 }
 
 export interface ExpenseStats {
+  // Total counts
+  totalTransactions: number;
+  totalIncomeTransactions: number;
+  totalExpenseTransactions: number;
+  // Amounts
+  totalAmount: number; // Net (income - expenses)
+  totalIncome: number;
   totalExpenses: number;
-  totalAmount: number;
+  // Monthly
+  monthlyIncome: number;
   monthlyExpenses: number;
+  // By source
+  incomeFromSales: number;
+  expensesFromProducts: number;
+  expensesFromSalaries: number;
+  expensesFromManual: number;
+  // Types
   expenseTypes: number;
 }
 

@@ -1,8 +1,9 @@
 import customersSeed from '../../mocks/customers.json';
 import expensesSeed from '../../mocks/expenses.json';
-import productsSeed from '../../mocks/products.json';
+import productsSeed from '../../mocks/products.json'; // Keep import for backward compatibility, but treat as stock
 import salesSeed from '../../mocks/sales.json';
 import employeesSeed from '../../mocks/employees.json';
+import expenseTypesSeed from '../../mocks/expenseTypes.json';
 import modules from '../../mocks/modules.json';
 import roles from '../../mocks/roles.json';
 import usersSeed from '../../mocks/users.json';
@@ -40,9 +41,11 @@ function createStore(seed: Entity[]) {
 const stores = {
   customers: createStore(customersSeed as unknown as Entity[]),
   expenses: createStore(expensesSeed as unknown as Entity[]),
-  products: createStore(productsSeed as unknown as Entity[]),
+  stock: createStore(productsSeed as unknown as Entity[]),
+  products: createStore(productsSeed as unknown as Entity[]), // Keep for backward compatibility
   sales: createStore(salesSeed as unknown as Entity[]),
   employees: createStore(employeesSeed as unknown as Entity[]),
+  expenseTypes: createStore(expenseTypesSeed as unknown as Entity[]),
   modules: { list: () => modules },
   roles: { list: () => roles },
   users: createStore(usersSeed as unknown as Entity[]),
@@ -233,7 +236,8 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
         customers: { totalCustomers: 0, activeCustomers: 0, totalOrders: 0 },
         expenses: { totalExpenses: 0, totalAmount: 0, monthlyExpenses: 0, expenseTypes: 0 },
         employees: { totalEmployees: 0, activeEmployees: 0, totalDepartments: 0 },
-        products: { totalProducts: 0, totalCategories: 0, totalActive: 0 },
+        stock: { totalStockItems: 0, totalCategories: 0, lowStock: 0 },
+        products: { totalProducts: 0, totalCategories: 0, totalActive: 0 }, // Keep for backward compatibility
         reports: { totalReports: 0, monthlyReports: 0 },
       };
       
@@ -260,7 +264,96 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
       if (filtered.length === 0) throw new Error('Not found');
       return filtered[0] as T;
     }
-    let all: any[] = filterByOwner(store.list(), currentOwnerId);
+    
+    // Special handling for expenses: merge system-generated data with manual expenses
+    let all: any[] = [];
+    if (resource === 'expenses') {
+      // Get manual expenses
+      const manualExpenses = filterByOwner(store.list(), currentOwnerId);
+      
+      // Get system-generated data: Sales (income), Product purchases (expense), Employee salaries (expense)
+      const salesStore: any = (stores as any).sales;
+      const productsStore: any = (stores as any).products;
+      const employeesStore: any = (stores as any).employees;
+      
+      // Sales as income
+      let salesData = salesStore ? salesStore.list() : [];
+      salesData = filterByOwner(salesData, currentOwnerId);
+      const incomeFromSales = salesData
+        .filter((s: any) => s.status === 'completed')
+        .map((sale: any) => ({
+          id: `income_sale_${sale.id}`,
+          title: `${sale.title || 'Satış'}`,
+          amount: sale.amount || sale.total || 0,
+          type: 'income' as const,
+          source: 'sales' as const,
+          date: sale.date,
+          saleId: String(sale.id),
+          employeeId: sale.employeeId,
+          ownerId: sale.ownerId,
+          isSystemGenerated: true,
+          expenseTypeName: 'Satış',
+          description: `Satış: ${sale.customerName || sale.customerId || ''}`,
+        }));
+      
+      // Product purchases as expense (assume purchase cost is 70% of sale price)
+      let productsData = productsStore ? productsStore.list() : [];
+      productsData = filterByOwner(productsData, currentOwnerId);
+      const expenseFromProducts = productsData
+        .map((product: any) => {
+          const purchaseCost = Math.round((product.price || 0) * 0.7);
+          return {
+            id: `expense_product_${product.id}`,
+            title: `${product.name} Alış`,
+            amount: purchaseCost,
+            type: 'expense' as const,
+            source: 'product_purchase' as const,
+            date: new Date().toISOString().split('T')[0], // Use current date as default
+            productId: String(product.id),
+            ownerId: product.ownerId,
+            isSystemGenerated: true,
+            expenseTypeName: 'Ürün Alışı',
+            description: `Ürün: ${product.name}`,
+          };
+        });
+      
+      // Employee salaries as expense
+      let employeesData = employeesStore ? employeesStore.list() : [];
+      employeesData = filterByOwner(employeesData, currentOwnerId);
+      const expenseFromSalaries = employeesData
+        .filter((e: any) => e.salary && e.salary > 0)
+        .map((employee: any) => ({
+          id: `expense_salary_${employee.id}`,
+          title: `${employee.name || 'Çalışan'} Maaşı`,
+          amount: employee.salary || 0,
+          type: 'expense' as const,
+          source: 'employee_salary' as const,
+          date: new Date().toISOString().split('T')[0], // Use current date as default
+          employeeId: employee.id,
+          ownerId: employee.ownerId,
+          isSystemGenerated: true,
+          expenseTypeName: 'Maaş',
+          description: `Çalışan: ${employee.name || employee.email || ''}`,
+        }));
+      
+      // Mark manual expenses
+      const manualExpensesMarked = manualExpenses.map((exp: any) => ({
+        ...exp,
+        type: (exp.type && (exp.type === 'income' || exp.type === 'expense')) ? exp.type : 'expense' as const,
+        source: exp.source || 'manual' as const,
+        isSystemGenerated: false,
+      }));
+      
+      // Combine all expenses
+      all = [
+        ...incomeFromSales,
+        ...expenseFromProducts,
+        ...expenseFromSalaries,
+        ...manualExpensesMarked,
+      ];
+    } else {
+      all = filterByOwner(store.list(), currentOwnerId);
+    }
     if (q) {
       all = all.filter((x) => {
         // General search over all primitive fields (string/number/boolean)
@@ -523,22 +616,83 @@ function calculateStats(resource: string, ownerId: number | null): any {
     }
 
     case 'expenses': {
-      const totalExpenses = data.length;
-      const totalAmount = data.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-      const monthlyExpenses = data.filter((e: any) => {
-        if (!e.date) return false;
-        const expenseDate = new Date(e.date);
-        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-      }).length;
+      // Merge system-generated data with manual expenses for stats
+      const salesStore: any = (stores as any).sales;
+      const productsStore: any = (stores as any).products;
+      const employeesStore: any = (stores as any).employees;
       
-      // Count unique expense types
-      const uniqueTypes = new Set(data.map((e: any) => e.type).filter(Boolean));
+      let salesData = salesStore ? salesStore.list() : [];
+      salesData = filterByOwner(salesData, ownerId);
+      
+      let productsData = productsStore ? productsStore.list() : [];
+      productsData = filterByOwner(productsData, ownerId);
+      
+      let employeesData = employeesStore ? employeesStore.list() : [];
+      employeesData = filterByOwner(employeesData, ownerId);
+      
+      // Calculate income from sales
+      const completedSales = salesData.filter((s: any) => s.status === 'completed');
+      const incomeFromSales = completedSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+      const monthlyIncomeFromSales = completedSales
+        .filter((s: any) => {
+          if (!s.date) return false;
+          const saleDate = new Date(s.date);
+          return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+        })
+        .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+      
+      // Calculate expenses from product purchases (70% of price)
+      const expenseFromProducts = productsData.reduce((sum: number, p: any) => 
+        sum + Math.round((p.price || 0) * 0.7), 0);
+      
+      // Calculate expenses from employee salaries
+      const expenseFromSalaries = employeesData
+        .filter((e: any) => e.salary && e.salary > 0)
+        .reduce((sum: number, e: any) => sum + (e.salary || 0), 0);
+      
+      // Calculate manual expenses
+      const manualExpenses = data.filter((e: any) => !e.isSystemGenerated || e.source === 'manual');
+      const expenseFromManual = manualExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      const monthlyExpenseFromManual = manualExpenses
+        .filter((e: any) => {
+          if (!e.date) return false;
+          const expenseDate = new Date(e.date);
+          return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+        })
+        .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      
+      // Totals
+      const totalIncome = incomeFromSales;
+      const totalExpenses = expenseFromProducts + expenseFromSalaries + expenseFromManual;
+      const totalAmount = totalIncome - totalExpenses;
+      
+      const monthlyIncome = monthlyIncomeFromSales;
+      const monthlyExpenses = expenseFromProducts + expenseFromSalaries + monthlyExpenseFromManual;
+      
+      // Counts
+      const totalTransactions = completedSales.length + productsData.length + 
+        employeesData.filter((e: any) => e.salary && e.salary > 0).length + manualExpenses.length;
+      const totalIncomeTransactions = completedSales.length;
+      const totalExpenseTransactions = productsData.length + 
+        employeesData.filter((e: any) => e.salary && e.salary > 0).length + manualExpenses.length;
+      
+      // Count unique expense types from manual expenses
+      const uniqueTypes = new Set(manualExpenses.map((e: any) => e.expenseTypeName || e.type).filter(Boolean));
       const expenseTypes = uniqueTypes.size;
 
       return {
-        totalExpenses,
+        totalTransactions,
+        totalIncomeTransactions,
+        totalExpenseTransactions,
         totalAmount,
+        totalIncome,
+        totalExpenses,
+        monthlyIncome,
         monthlyExpenses,
+        incomeFromSales,
+        expensesFromProducts: expenseFromProducts,
+        expensesFromSalaries: expenseFromSalaries,
+        expensesFromManual: expenseFromManual,
         expenseTypes,
       };
     }
@@ -558,18 +712,19 @@ function calculateStats(resource: string, ownerId: number | null): any {
       };
     }
 
-    case 'products': {
-      const activeProducts = data.filter((p: any) => p.active !== false);
-      const totalProducts = data.length;
+    case 'stock':
+    case 'products': { // Keep 'products' for backward compatibility
+      const lowStockItems = data.filter((p: any) => (p.stock ?? 0) < 10);
+      const totalStockItems = data.length;
       
       // Count unique categories
       const uniqueCategories = new Set(data.map((p: any) => p.category).filter(Boolean));
       const totalCategories = uniqueCategories.size;
 
       return {
-        totalProducts,
+        totalStockItems,
         totalCategories,
-        totalActive: activeProducts.length,
+        lowStock: lowStockItems.length,
       };
     }
 

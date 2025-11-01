@@ -6,13 +6,14 @@
  * Open/Closed: Can handle both create and edit modes via props
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { useWindowDimensions } from 'react-native';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { expenseEntityService } from '../services/expenseServiceAdapter';
 import DynamicForm, { DynamicField } from '../../../shared/components/DynamicForm';
 import { Expense } from '../store/expenseStore';
+import ExpenseTypeSelect from '../components/ExpenseTypeSelect';
 import Select from '../../../shared/components/Select';
 import expenseTypeService from '../services/expenseTypeService';
 import { ExpenseType } from '../services/expenseTypeService';
@@ -56,24 +57,48 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
     [expenseTypes]
   );
 
-  // Build dynamic fields with expense type selector
+  // Refresh expense types list when needed
+  const handleTypeAdded = useCallback(() => {
+    loadExpenseTypes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Build dynamic fields - Gelir/Gider first, then category
   const expenseFields: DynamicField[] = useMemo(() => [
     {
       name: 'type',
-      labelKey: 'type',
+      labelKey: 'transaction_type',
       type: 'custom',
       render: (value, onChange) => (
         <Select
-          options={typeOptions}
-          value={String(value || '')}
+          options={[
+            { label: t('expense', { defaultValue: 'Gider' }), value: 'expense' },
+            { label: t('income', { defaultValue: 'Gelir' }), value: 'income' },
+          ]}
+          value={String(value || 'expense')}
           onChange={onChange}
-          placeholder={loadingTypes ? t('loading', { defaultValue: 'Loading...' }) : undefined}
+          placeholder={t('transaction_type', { defaultValue: 'Gelir veya Gider' })}
         />
       ),
       required: true,
     },
+    {
+      name: 'expenseTypeId',
+      labelKey: 'category',
+      type: 'custom',
+      render: (value, onChange) => (
+        <ExpenseTypeSelect
+          options={typeOptions}
+          value={String(value || '')}
+          onChange={onChange}
+          placeholder={loadingTypes ? t('loading', { defaultValue: 'Yükleniyor...' }) : t('category', { defaultValue: 'Kategori' })}
+          onTypeAdded={handleTypeAdded}
+        />
+      ),
+      required: false,
+    },
     ...baseExpenseFormFields,
-  ], [typeOptions, loadingTypes, t]);
+  ], [typeOptions, loadingTypes, t, handleTypeAdded]);
 
   return (
     <FormScreenContainer
@@ -84,19 +109,28 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
         mode: formMode,
       }}
       validator={expenseValidator}
-      renderForm={(formData, updateField, errors) => (
-        <DynamicForm
-          namespace="expenses"
-          columns={columns}
-          fields={expenseFields}
-          values={formData}
-          onChange={(v) => {
-            Object.keys(v).forEach((key) => {
-              updateField(key as keyof Expense, v[key]);
-            });
-          }}
-        />
-      )}
+      renderForm={(formData, updateField, errors) => {
+        // Ensure default values are set
+        const formDataWithDefaults = {
+          ...formData,
+          type: formData.type || 'expense',
+          source: formData.source || 'manual',
+        };
+        
+        return (
+          <DynamicForm
+            namespace="expenses"
+            columns={columns}
+            fields={expenseFields}
+            values={formDataWithDefaults}
+            onChange={(v) => {
+              Object.keys(v).forEach((key) => {
+                updateField(key as keyof Expense, v[key]);
+              });
+            }}
+          />
+        );
+      }}
       title={formMode === 'create' ? t('new_expense', { defaultValue: 'New Expense' }) : undefined}
     />
   );

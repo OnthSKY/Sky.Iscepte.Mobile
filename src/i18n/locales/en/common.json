@@ -4,7 +4,7 @@
   "customers": "Customers",
   "reports": "Reports",
   "settings": "Settings",
-  "expenses": "Expenses",
+  "expenses": "Income / Expenses",
   "fields": "Dynamic Fields",
   "create": "Create",
   "edit": "Edit",
@@ -36,7 +36,12 @@
   "all": "All",
   "name": "Name",
   "email": "Email",
-  "phone": "Phone"
+  "phone": "Phone",
+  "admin": "Admin",
+  "owner": "Owner",
+  "staff": "Staff",
+  "yes": "Yes",
+  "no": "No"
   ,
   "errors": {
     "required": "This field is required",
@@ -84,7 +89,7 @@
   "move_down": "Move down",
   "remove": "Remove",
   "clear": "Clear",
-  "products": "Products",
+  "stock": "Stock",
   "list_not_configured": "List not configured",
   "confirm_delete": "Confirm Delete",
   "confirm_delete_message": "Are you sure you want to delete this record?",

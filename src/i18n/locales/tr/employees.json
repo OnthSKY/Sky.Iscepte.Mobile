@@ -1,7 +1,9 @@
 {
   "employees": "Çalışanlar",
   "employee_details": "Çalışan Detayları",
-  "name": "Ad",
+  "name": "Ad Soyad",
+  "first_name": "Ad",
+  "last_name": "Soyad",
   "email": "E-posta",
   "phone": "Telefon",
   "department": "Departman",
@@ -22,7 +24,35 @@
   "dashboard": "Dashboard",
   "list": "Liste",
   "module": "Çalışanlar",
-  "employee": "Çalışan"
+  "employee": "Çalışan",
+  "basic_information": "Temel Bilgiler",
+  "user_account": "Kullanıcı Hesabı",
+  "username": "Kullanıcı Adı",
+  "password": "Şifre",
+  "user_role": "Kullanıcı Rolü",
+  "create_user_account_desc": "Bu çalışan için kullanıcı hesabı oluşturmak istiyor musunuz?",
+  "manage_permissions": "Yetkileri Yönet",
+  "select": "Seçiniz",
+  "select_role": "Rol Seçin",
+  "employee_name": "Çalışan",
+  "permissions_saved": "Yetkiler başarıyla kaydedildi",
+  "permissions_save_error": "Yetkiler kaydedilemedi",
+  "actions": "İşlemler",
+  "fields": "Alanlar",
+  "notifications": "Bildirimler",
+  "suggest": "Öner",
+  "username_placeholder": "Kullanıcı adını girin",
+  "password_placeholder": "Şifre girin",
+  "permissions": "Yetkiler",
+  "select_permissions_desc": "Bu kullanıcının hangi yetkilere sahip olacağını seçin:",
+  "admin_full_access": "Admin tüm modüllere tam erişime sahiptir",
+  "owner_full_access": "Owner tüm modüllere tam erişime sahiptir",
+  "select_all": "Tümünü Seç",
+  "deselect_all": "Tümünü Kaldır",
+  "errors": {
+    "first_name_required": "Ad zorunludur",
+    "last_name_required": "Soyad zorunludur"
+  }
 }
 
 

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 import Modal from './Modal';
@@ -23,6 +24,7 @@ export default function Select({ value, options, placeholder = 'Seçiniz', onCha
     <View style={styles.container}>
       <TouchableOpacity style={styles.button} onPress={() => setOpen(true)}>
         <Text style={styles.text} numberOfLines={1}>{selected}</Text>
+        <Ionicons name="chevron-down" size={20} color={colors.muted} />
       </TouchableOpacity>
       <Modal visible={open} onRequestClose={() => setOpen(false)}>
         <FlatList
@@ -56,8 +58,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: spacing.md,
     minHeight: 44,
     backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  text: { color: colors.text, fontSize: 16, lineHeight: 22 },
+  text: { color: colors.text, fontSize: 16, lineHeight: 22, flex: 1 },
 });
 
 
