@@ -42,12 +42,16 @@ export interface HttpClient {
 }
 
 async function request<T>(method: HttpMethod, url: string, body?: any, config: RequestConfig = {}): Promise<T> {
+  for (const i of requestInterceptors) await i({ method, url, body, config });
+
+  // Handle mock mode - extract token from headers and pass to mock service
   if (appConfig.mode === 'mock') {
     const mod = await import('../services/mockService');
-    return mod.mockRequest<T>(method, url, body);
+    // Extract token from Authorization header
+    const authHeader = config.headers?.Authorization || config.headers?.authorization;
+    const token = authHeader?.replace('Bearer ', '') || null;
+    return mod.mockRequest<T>(method, url, body, token);
   }
-
-  for (const i of requestInterceptors) await i({ method, url, body, config });
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? 15000);

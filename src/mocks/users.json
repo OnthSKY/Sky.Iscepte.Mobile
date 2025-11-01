@@ -2,15 +2,19 @@
   {
     "id": 1,
     "name": "System Admin",
+    "username": "admin",
     "role": "admin",
     "package": "gold",
+    "ownerId": null,
     "customPermissions": {}
   },
   {
     "id": 2,
-    "name": "Dükkan Sahibi - Premium",
+    "name": "Ahmet Yılmaz - Dükkan Sahibi",
+    "username": "owner1",
     "role": "owner",
     "package": "gold",
+    "ownerId": 2,
     "customPermissions": {
       "employees": { "actions": ["create", "edit"], "notifications": [] },
       "sales": { "actions": ["edit"], "notifications": ["lowStock"] }
@@ -18,18 +22,76 @@
   },
   {
     "id": 3,
-    "name": "Dükkan Çalışanı",
+    "name": "Mehmet Çalışan - Ahmet Dükkanı",
+    "username": "staff1_owner1",
     "role": "staff",
     "package": "premium",
+    "ownerId": 2,
     "customPermissions": {}
   },
   {
     "id": 4,
-    "name": "Dükkan Sahibi - Free",
+    "name": "Ayşe Çalışan - Ahmet Dükkanı",
+    "username": "staff2_owner1",
+    "role": "staff",
+    "package": "premium",
+    "ownerId": 2,
+    "customPermissions": {}
+  },
+  {
+    "id": 5,
+    "name": "Fatma Demir - Dükkan Sahibi",
+    "username": "owner2",
+    "role": "owner",
+    "package": "premium",
+    "ownerId": 5,
+    "customPermissions": {
+      "employees": { "actions": ["create"], "notifications": [] }
+    }
+  },
+  {
+    "id": 6,
+    "name": "Ali Çalışan - Fatma Dükkanı",
+    "username": "staff1_owner2",
+    "role": "staff",
+    "package": "free",
+    "ownerId": 5,
+    "customPermissions": {}
+  },
+  {
+    "id": 7,
+    "name": "Zeynep Çalışan - Fatma Dükkanı",
+    "username": "staff2_owner2",
+    "role": "staff",
+    "package": "free",
+    "ownerId": 5,
+    "customPermissions": {}
+  },
+  {
+    "id": 8,
+    "name": "Mustafa Kaya - Dükkan Sahibi",
+    "username": "owner3",
     "role": "owner",
     "package": "free",
+    "ownerId": 8,
+    "customPermissions": {}
+  },
+  {
+    "id": 9,
+    "name": "Selin Çalışan - Mustafa Dükkanı",
+    "username": "staff1_owner3",
+    "role": "staff",
+    "package": "free",
+    "ownerId": 8,
+    "customPermissions": {}
+  },
+  {
+    "id": 10,
+    "name": "Can Çalışan - Mustafa Dükkanı",
+    "username": "staff2_owner3",
+    "role": "staff",
+    "package": "free",
+    "ownerId": 8,
     "customPermissions": {}
   }
 ]
-
-

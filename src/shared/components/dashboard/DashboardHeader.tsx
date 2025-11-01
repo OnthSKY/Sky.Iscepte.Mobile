@@ -6,7 +6,7 @@ import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useNavigationHandler } from '../../../core/hooks/useNavigationHandler';
 import DashboardTopBar from '../DashboardTopBar';
 import spacing from '../../../core/constants/spacing';
-import { Role } from '../../../core/config/permissions';
+import { Role } from '../../../core/config/appConstants';
 
 /**
  * Single Responsibility: Renders dashboard header with gradient

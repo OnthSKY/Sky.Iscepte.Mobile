@@ -1,6 +1,7 @@
-export type Permission = string;
+// Import Role for use in this file
+import { Role } from './appConstants';
 
-export type Role = 'admin' | 'owner' | 'staff' | 'guest';
+export type Permission = string;
 
 export interface ModulePermissionConfig {
   module: string;
@@ -23,8 +24,8 @@ export const permissionsRegistry: ModulePermissionConfig[] = [
 ];
 
 export const rolePermissions: RolePermissionsMap = {
-  admin: permissionsRegistry.flatMap((m) => m.permissions),
-  owner: [
+  [Role.ADMIN]: permissionsRegistry.flatMap((m) => m.permissions),
+  [Role.OWNER]: [
     'sales:view', 'sales:create', 'sales:edit',
     'customers:view', 'customers:create', 'customers:edit',
     'expenses:view', 'expenses:create', 'expenses:edit',
@@ -33,19 +34,17 @@ export const rolePermissions: RolePermissionsMap = {
     'products:view', 'products:create', 'products:edit',
     'settings:view', 'settings:manage',
   ],
-  staff: [
+  [Role.STAFF]: [
     'sales:view', 'sales:create',
     'customers:view', 'customers:create',
     'expenses:view', 'expenses:create',
     'reports:view',
     'products:view',
   ],
-  guest: [],
+  [Role.GUEST]: [],
 };
 
 export const hasPermission = (role: Role, permission: Permission): boolean => {
   const list = rolePermissions[role] || [];
   return list.includes(permission);
 };
-
-

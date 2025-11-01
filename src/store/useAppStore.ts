@@ -2,27 +2,25 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n';
 import authService from '../shared/services/authService';
-import { getRoleByUsername, getUserIdByRole } from '../core/utils/roleManager';
-import { Role } from '../core/config/permissions';
-
-type ThemePreference = 'system' | 'light' | 'dark';
+import { getRoleByUsername, getUserIdByRole, getUserIdByUsername } from '../core/utils/roleManager';
+import { Role, Language, ThemePreference } from '../core/config/appConstants';
 
 type AppState = {
   isAuthenticated: boolean;
   themePreference: ThemePreference;
-  language: 'tr' | 'en';
-  role: 'admin' | 'owner' | 'staff' | 'guest';
+  language: Language;
+  role: Role;
   token: string | null;
   refreshToken: string | null;
   isLoading: boolean;
-  originalRole: 'admin' | 'owner' | 'staff' | 'guest' | null;
+  originalRole: Role | null;
   impersonatedUserId: string | null;
   login: (u: string, p: string) => Promise<boolean>;
   logout: () => void;
   setTheme: (pref: ThemePreference) => Promise<void>;
-  setLanguage: (lng: 'tr' | 'en') => Promise<void>;
-  setRole: (role: 'admin' | 'owner' | 'staff' | 'guest') => void;
-  impersonateUser: (userId: string, userRole: 'admin' | 'owner' | 'staff' | 'guest') => Promise<void>;
+  setLanguage: (lng: Language) => Promise<void>;
+  setRole: (role: Role) => void;
+  impersonateUser: (userId: string, userRole: Role) => Promise<void>;
   stopImpersonating: () => Promise<void>;
   hydrate: () => Promise<void>;
   silentLogin: () => Promise<boolean>;
@@ -30,42 +28,44 @@ type AppState = {
 
 export const useAppStore = create<AppState>((set, get) => ({
   isAuthenticated: false,
-  themePreference: 'system',
-  language: 'tr',
-  role: 'guest',
+  themePreference: ThemePreference.SYSTEM,
+  language: Language.TR,
+  role: Role.GUEST,
   token: null,
   refreshToken: null,
   isLoading: true,
   originalRole: null,
   impersonatedUserId: null,
   async login(u: string, p: string) {
-    const ok = getRoleByUsername(u) !== null && p === '1234';
-    if (ok) {
-      const role = getRoleByUsername(u)!;
-      const accessToken = 'mock-access-token';
-      const refreshToken = 'mock-refresh-token';
+    try {
+      // Use authService for proper authentication
+      const response = await authService.login(u, p);
       
-      await AsyncStorage.setItem('access_token', accessToken);
-      await AsyncStorage.setItem('refresh_token', refreshToken);
-      await AsyncStorage.setItem('user_role', role);
-      
-      // Set role and load permissions in one place
-      set({ 
-        isAuthenticated: true, 
-        role, 
-        token: accessToken,
-        refreshToken: refreshToken 
-      });
-      
-      // Load permissions for the role
-      const userId = getUserIdByRole(role);
-      if (userId) {
-        const { usePermissionStore } = await import('./permissionsStore');
-        const permStore = usePermissionStore.getState();
-        permStore.loadPermissions(userId);
+      if (response && response.user) {
+        const role = response.user.role as Role;
+        
+        // Set role and load permissions in one place
+        set({ 
+          isAuthenticated: true, 
+          role, 
+          token: response.accessToken,
+          refreshToken: response.refreshToken 
+        });
+        
+        // Load permissions for the user
+        const userId = getUserIdByUsername(u);
+        if (userId) {
+          const { usePermissionStore } = await import('./permissionsStore');
+          const permStore = usePermissionStore.getState();
+          permStore.loadPermissions(userId);
+        }
+        
+        return true;
       }
+      return false;
+    } catch (error) {
+      return false;
     }
-    return ok;
   },
   async logout() {
     // Invalidate queries before logout
@@ -83,7 +83,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     set({ 
       isAuthenticated: false, 
-      role: 'guest', 
+      role: Role.GUEST, 
       token: null,
       refreshToken: null 
     });
@@ -100,7 +100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRole(role) {
     set({ role });
   },
-  async impersonateUser(userId: string, userRole: 'admin' | 'owner' | 'staff' | 'guest') {
+  async impersonateUser(userId: string, userRole: Role) {
     const currentRole = get().role;
     // Save original role if not already impersonating
     if (!get().originalRole) {
@@ -137,9 +137,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     // Restore preferences
     const pref = (await AsyncStorage.getItem('themePreference')) as ThemePreference | null;
-    const lng = (await AsyncStorage.getItem('lang')) as 'tr' | 'en' | null;
-    if (pref) set({ themePreference: pref });
-    if (lng) {
+    const lng = (await AsyncStorage.getItem('lang')) as Language | null;
+    if (pref && Object.values(ThemePreference).includes(pref)) {
+      set({ themePreference: pref });
+    }
+    if (lng && Object.values(Language).includes(lng)) {
       set({ language: lng });
       i18n.changeLanguage(lng);
     }
@@ -151,14 +153,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   async silentLogin() {
     const refreshToken = await AsyncStorage.getItem('refresh_token');
-    const storedRole = await AsyncStorage.getItem('user_role') as 'admin' | 'owner' | 'staff' | 'guest';
+    const storedRole = (await AsyncStorage.getItem('user_role')) as Role | null;
     
     if (refreshToken) {
       try {
         // Try to refresh the access token
         const response = await authService.refreshToken(refreshToken);
         
-        const role = (storedRole || 'guest') as Role;
+        const role = (storedRole && Object.values(Role).includes(storedRole)) 
+          ? storedRole 
+          : Role.GUEST;
         
         set({ 
           isAuthenticated: true, 

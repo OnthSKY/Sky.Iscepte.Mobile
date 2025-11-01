@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { hasPermission, Role } from '../config/permissions';
+import { hasPermission } from '../config/permissions';
+import { Role } from '../config/appConstants';
 
 export const usePermissions = (role: Role) => {
   return useMemo(

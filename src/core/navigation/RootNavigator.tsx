@@ -1,10 +1,10 @@
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { filterRoutesByRole } from './routes';
-import { hasPermission, Role } from '../config/permissions';
+import { hasPermission } from '../config/permissions';
+import { Role } from '../config/appConstants';
 import { View, ActivityIndicator, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
 import FullScreenMenu from '../../shared/components/FullScreenMenu';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
@@ -17,15 +17,48 @@ type Props = {
 };
 
 export default function RootNavigator({ role }: Props) {
-  const navigation = useNavigation<any>();
   const allRoutes = filterRoutesByRole(role, hasPermission);
   const [menuVisible, setMenuVisible] = useState(false);
+  const tabNavigationRef = useRef<any>(null);
   const { colors } = useTheme();
   
   // Get all available route names based on permissions
   const availableRouteNames = React.useMemo(() => {
     return allRoutes.map(r => r.name);
   }, [allRoutes]);
+
+  // Navigation handler function
+  const handleNavigate = React.useCallback(async (routeName: string) => {
+    setMenuVisible(false);
+    try {
+      // Use Tab Navigator's navigation object if available
+      const nav = tabNavigationRef.current;
+      if (!nav) {
+        console.warn('Tab Navigator navigation not available yet');
+        return;
+      }
+
+      // Prefer navigating to routes that are actually registered on the current navigator
+      if (availableRouteNames.includes(routeName)) {
+        nav.navigate(routeName as never);
+        return;
+      }
+
+      // Fallback: if a create/edit screen isn't registered, try navigating to its corresponding list screen
+      const { getNavigationFallback } = await import('../config/navigationConfig');
+      const fallback = getNavigationFallback(routeName);
+      if (fallback && availableRouteNames.includes(fallback)) {
+        nav.navigate(fallback as never);
+        return;
+      }
+
+      // Route not found - silently fail or log warning
+      console.warn(`Route "${routeName}" is not available in the current navigator.`);
+    } catch (error) {
+      // Silently handle navigation errors
+      console.warn(`Failed to navigate to "${routeName}":`, error);
+    }
+  }, [availableRouteNames]);
 
   return (
     <>
@@ -35,9 +68,13 @@ export default function RootNavigator({ role }: Props) {
           headerShown: false,
         }}
         initialRouteName="Dashboard"
-        tabBar={(tabProps) => (
-          <CustomTabBar {...tabProps} onOpenMenu={() => setMenuVisible(true)} />
-        )}
+        tabBar={(tabProps) => {
+          // Store Tab Navigator's navigation object in ref
+          if (tabProps.navigation) {
+            tabNavigationRef.current = tabProps.navigation;
+          }
+          return <CustomTabBar {...tabProps} onOpenMenu={() => setMenuVisible(true)} />;
+        }}
         >
           {allRoutes.map((r) => {
             const isDashboard = r.name === 'Dashboard';
@@ -61,30 +98,7 @@ export default function RootNavigator({ role }: Props) {
       <FullScreenMenu
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        onNavigate={async (routeName: string) => {
-          setMenuVisible(false);
-          try {
-            // Prefer navigating to routes that are actually registered on the current navigator
-            if (availableRouteNames.includes(routeName)) {
-              navigation.navigate(routeName as never);
-              return;
-            }
-
-            // Fallback: if a create/edit screen isn't registered, try navigating to its corresponding list screen
-            const { getNavigationFallback } = await import('../config/navigationConfig');
-            const fallback = getNavigationFallback(routeName);
-            if (fallback && availableRouteNames.includes(fallback)) {
-              navigation.navigate(fallback as never);
-              return;
-            }
-
-            // Route not found - silently fail or log warning
-            console.warn(`Route "${routeName}" is not available in the current navigator.`);
-          } catch (error) {
-            // Silently handle navigation errors
-            console.warn(`Failed to navigate to "${routeName}":`, error);
-          }
-        }}
+        onNavigate={handleNavigate}
         availableRoutes={availableRouteNames}
         role={role}
       />
@@ -128,7 +142,7 @@ function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenM
 
   const activeName = state.routeNames[state.index];
 
-  const go = (routeName: string) => {
+  const go = React.useCallback((routeName: string) => {
     if (routeName === 'MENU') {
       onOpenMenu();
       return;
@@ -138,7 +152,7 @@ function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenM
     } else {
       // Route not available for current user - handled by navigation handler
     }
-  };
+  }, [navigation, state.routeNames, onOpenMenu]);
 
   const styles = StyleSheet.create({
     container: {

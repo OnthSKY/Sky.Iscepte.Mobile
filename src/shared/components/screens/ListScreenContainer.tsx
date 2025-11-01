@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import ScreenLayout from '../../layouts/ScreenLayout';
 import SearchBar from '../SearchBar';
 import FiltersEditor from '../FiltersEditor';
@@ -10,6 +10,7 @@ import { useTheme } from '../../../core/contexts/ThemeContext';
 import { BaseEntity, ListScreenConfig } from '../../../core/types/screen.types';
 import { BaseEntityService } from '../../../core/services/baseEntityService.types';
 import { useListScreen } from '../../../core/hooks/useListScreen';
+import spacing from '../../../core/constants/spacing';
 
 /**
  * Single Responsibility: Composes list screen UI
@@ -41,6 +42,7 @@ export function ListScreenContainer<T extends BaseEntity>({
   emptyStateSubtitle,
 }: ListScreenContainerProps<T>) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const {
     query,
     setQuery,
@@ -55,16 +57,26 @@ export function ListScreenContainer<T extends BaseEntity>({
 
   const screenTitle = title || t(`${config.translationNamespace}:${config.entityName}`, { defaultValue: config.entityName });
 
+  // Responsive layout for header
+  const headerStyle = React.useMemo(() => {
+    const isSmallScreen = width < 640;
+    return {
+      flexDirection: isSmallScreen ? 'column' : 'row' as 'row' | 'column',
+      alignItems: isSmallScreen ? 'stretch' : 'center' as 'stretch' | 'center',
+      gap: isSmallScreen ? spacing.sm : spacing.md,
+    };
+  }, [width]);
+
   return (
     <ScreenLayout>
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, headerStyle]}>
           <Text style={[styles.title, { color: colors.text }]}>{screenTitle}</Text>
           {permissions.canCreate && (
             <Button
               title={t('common:create', { defaultValue: 'Create' })}
               onPress={handleCreate}
-              style={styles.createButton}
+              style={[styles.createButton, width < 640 && styles.createButtonFullWidth]}
             />
           )}
         </View>
@@ -102,19 +114,22 @@ export function ListScreenContainer<T extends BaseEntity>({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
+    gap: spacing.md,
   },
   header: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
+    flex: 1,
   },
   createButton: {
     minWidth: 100,
+  },
+  createButtonFullWidth: {
+    width: '100%',
+    minWidth: '100%',
   },
 });
 

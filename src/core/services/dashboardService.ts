@@ -1,6 +1,6 @@
 import { DashboardService as IDashboardService } from '../hooks/useDashboardData';
 import { DashboardStatData, QuickActionData } from './dashboardService.types';
-import { Role } from '../config/permissions';
+import { Role } from '../config/appConstants';
 
 /**
  * Theme colors type - avoids direct hook dependency in service layer

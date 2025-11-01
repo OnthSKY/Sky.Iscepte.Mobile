@@ -1,6 +1,22 @@
 [
-  { "id": 1, "type": "Kira", "amount": 5000, "date": "2025-10-01" },
-  { "id": 2, "type": "Elektrik", "amount": 800, "date": "2025-10-15" }
+  { "id": 1, "title": "Ofis Kirası", "type": "Kira", "amount": 5000, "date": "2025-01-01", "status": "paid", "ownerId": 2 },
+  { "id": 2, "title": "Elektrik Faturası", "type": "Elektrik", "amount": 800, "date": "2025-01-15", "status": "paid", "ownerId": 2 },
+  { "id": 3, "title": "Su Faturası", "type": "Su", "amount": 250, "date": "2025-01-20", "status": "paid", "ownerId": 2 },
+  { "id": 4, "title": "İnternet Faturası", "type": "İnternet", "amount": 450, "date": "2025-01-25", "status": "paid", "ownerId": 2 },
+  { "id": 5, "title": "Telefon Faturası", "type": "Telefon", "amount": 350, "date": "2025-01-28", "status": "paid", "ownerId": 2 },
+  { "id": 6, "title": "Temizlik Malzemeleri", "type": "Temizlik", "amount": 600, "date": "2025-01-10", "status": "paid", "ownerId": 2 },
+  { "id": 7, "title": "Ofis Mobilyası", "type": "Ekipman", "amount": 15000, "date": "2025-01-05", "status": "paid", "ownerId": 2 },
+  { "id": 8, "title": "Bilgisayar Alımı", "type": "Ekipman", "amount": 25000, "date": "2025-01-12", "status": "paid", "ownerId": 5 },
+  { "id": 9, "title": "Yazıcı Alımı", "type": "Ekipman", "amount": 5000, "date": "2025-01-18", "status": "paid", "ownerId": 5 },
+  { "id": 10, "title": "Kırtasiye Malzemeleri", "type": "Kırtasiye", "amount": 800, "date": "2025-01-22", "status": "paid", "ownerId": 5 },
+  { "id": 11, "title": "Yakıt Gideri", "type": "Nakliye", "amount": 1200, "date": "2025-01-08", "status": "paid", "ownerId": 5 },
+  { "id": 12, "title": "Kargo Ücreti", "type": "Nakliye", "amount": 450, "date": "2025-01-14", "status": "paid", "ownerId": 5 },
+  { "id": 13, "title": "Pazarlama Harcaması", "type": "Pazarlama", "amount": 3000, "date": "2025-01-16", "status": "paid", "ownerId": 5 },
+  { "id": 14, "title": "Reklam Harcaması", "type": "Pazarlama", "amount": 5000, "date": "2025-01-24", "status": "paid", "ownerId": 5 },
+  { "id": 15, "title": "Yemek Zammı", "type": "Personel", "amount": 2500, "date": "2025-01-26", "status": "paid", "ownerId": 8 },
+  { "id": 16, "title": "Prim Ödemesi", "type": "Personel", "amount": 8000, "date": "2025-01-30", "status": "pending", "ownerId": 8 },
+  { "id": 17, "title": "Vergi Ödemesi", "type": "Vergi", "amount": 15000, "date": "2025-01-31", "status": "pending", "ownerId": 8 },
+  { "id": 18, "title": "Sigorta Ödemesi", "type": "Sigorta", "amount": 2000, "date": "2025-02-01", "status": "pending", "ownerId": 8 },
+  { "id": 19, "title": "Bakım Onarım", "type": "Bakım", "amount": 1500, "date": "2025-01-11", "status": "paid", "ownerId": 8 },
+  { "id": 20, "title": "Danışmanlık Ücreti", "type": "Danışmanlık", "amount": 10000, "date": "2025-01-29", "status": "paid", "ownerId": 8 }
 ]
-
-

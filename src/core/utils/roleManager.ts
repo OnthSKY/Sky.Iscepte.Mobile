@@ -1,4 +1,4 @@
-import { Role } from '../config/permissions';
+import { Role } from '../config/appConstants';
 import users from '../../mocks/users.json';
 
 /**
@@ -36,16 +36,36 @@ export const getUserByRole = (role: Role): typeof users[0] | null => {
  * Validates if a username is allowed for login
  */
 export const isAllowedUsername = (username: string): boolean => {
-  return ['admin', 'owner', 'staff'].includes(username);
+  // Find user in users.json by username
+  const user = users.find((u: any) => 
+    u.username && u.username.toLowerCase() === username.toLowerCase()
+  );
+  return !!user;
 };
 
 /**
  * Maps username to role
  */
 export const getRoleByUsername = (username: string): Role | null => {
-  if (!isAllowedUsername(username)) {
+  // Find user in users.json by username
+  const user = users.find((u: any) => 
+    u.username && u.username.toLowerCase() === username.toLowerCase()
+  );
+  
+  if (!user || !user.role) {
     return null;
   }
-  return username as Role;
+  
+  return user.role as Role;
+};
+
+/**
+ * Gets user ID by username
+ */
+export const getUserIdByUsername = (username: string): number | null => {
+  const user = users.find((u: any) => 
+    u.username && u.username.toLowerCase() === username.toLowerCase()
+  );
+  return user ? user.id : null;
 };
 

@@ -1,0 +1,8 @@
+[
+  { "id": 3, "name": "Mehmet Yılmaz", "email": "mehmet@example.com", "phone": "0532 123 4567", "role": "Manager", "department": "Sales", "status": "active", "hireDate": "2023-01-15", "salary": 25000, "ownerId": 2 },
+  { "id": 4, "name": "Ayşe Demir", "email": "ayse@example.com", "phone": "0533 234 5678", "role": "Sales Associate", "department": "Sales", "status": "active", "hireDate": "2023-03-20", "salary": 18000, "ownerId": 2 },
+  { "id": 6, "name": "Ali Çelik", "email": "ali@example.com", "phone": "0535 456 7890", "role": "Technician", "department": "Technical", "status": "active", "hireDate": "2023-05-05", "salary": 20000, "ownerId": 5 },
+  { "id": 7, "name": "Zeynep Arslan", "email": "zeynep@example.com", "phone": "0536 567 8901", "role": "Customer Service", "department": "Support", "status": "active", "hireDate": "2023-06-12", "salary": 16000, "ownerId": 5 },
+  { "id": 9, "name": "Elif Doğan", "email": "elif@example.com", "phone": "0540 901 2345", "role": "Sales Associate", "department": "Sales", "status": "active", "hireDate": "2023-08-10", "salary": 17500, "ownerId": 8 },
+  { "id": 10, "name": "Burak Aydın", "email": "burak@example.com", "phone": "0541 012 3456", "role": "Technician", "department": "Technical", "status": "active", "hireDate": "2023-09-05", "salary": 19500, "ownerId": 8 }
+]

@@ -1,4 +1,5 @@
 import httpService from './httpService';
+import appConfig from '../../core/config/appConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface LoginResponse {
@@ -30,11 +31,14 @@ export const authService = {
       password,
     });
     
-    // Store tokens
+    // Store tokens and user info
     await AsyncStorage.setItem('access_token', response.accessToken);
     await AsyncStorage.setItem('refresh_token', response.refreshToken);
     await AsyncStorage.setItem('user_role', response.user.role);
     await AsyncStorage.setItem('user_id', response.user.id.toString());
+    
+    // Owner ID will be extracted from token when needed
+    // No need to store separately
     
     return response;
   },
@@ -46,9 +50,16 @@ export const authService = {
    */
   async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
     // TODO: Replace with actual API call
+    // For refresh token endpoint, we pass refreshToken as Authorization header in mock mode
+    const config = appConfig.mode === 'mock' ? {
+      headers: {
+        Authorization: `Bearer ${refreshToken}`,
+      },
+    } : undefined;
+    
     const response = await httpService.post<RefreshTokenResponse>('/auth/refresh', {
       refreshToken,
-    });
+    }, config);
     
     // Update stored tokens
     await AsyncStorage.setItem('access_token', response.accessToken);

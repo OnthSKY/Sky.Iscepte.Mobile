@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useDashboardData } from './useDashboardData';
 import { useNavigationHandler } from './useNavigationHandler';
 import { DashboardServiceFactory, ThemeColors } from '../services/dashboardService';
-import { Role } from '../config/permissions';
+import { Role } from '../config/appConstants';
 
 /**
  * Main dashboard hook that combines all dashboard concerns

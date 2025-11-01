@@ -1,4 +1,4 @@
-import type { Role } from '../../core/config/permissions';
+import type { Role } from '../../core/config/appConstants';
 
 export interface UserProfile {
   id: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import i18n from '../../i18n';
-import { Role } from '../config/permissions';
+import { Role } from '../config/appConstants';
 import DashboardScreen from '../../screens/DashboardScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
 

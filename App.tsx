@@ -10,7 +10,7 @@ import { useAppStore } from './src/store/useAppStore';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import RootNavigator from './src/core/navigation/RootNavigator';
-import { Role } from './src/core/config/permissions';
+import { Role } from './src/core/config/appConstants';
 import { httpInterceptors } from './src/shared/services/httpService';
 import notificationService from './src/shared/services/notificationService';
 import authService from './src/shared/services/authService';
@@ -21,6 +21,13 @@ import { PersistQueryClientProvider, queryClient, asyncStoragePersister } from '
 import { useNavigationPrefetch } from './src/core/hooks/useNavigationPrefetch';
 
 const RootStack = createNativeStackNavigator();
+
+// Component that uses navigation prefetch inside NavigationContainer
+function NavigationPrefetchWrapper() {
+  useNavigationPrefetch();
+  return null;
+}
+
 function MainApp() {
   const role = useAppStore(s => s.role) as Role;
   return <RootNavigator role={role} />;
@@ -33,9 +40,6 @@ function AppWrapper() {
   const isLoading = useAppStore(s => s.isLoading);
   
   useEffect(() => { hydrate(); }, [hydrate]);
-  
-  // Enable navigation-based prefetching globally
-  useNavigationPrefetch();
   useEffect(() => {
     httpInterceptors.useRequest(({ config }: any) => {
       const token = useAppStore.getState().token;
@@ -98,6 +102,7 @@ function AppWrapper() {
   return (
     <PaperProvider theme={mergedPaperTheme}>
       <NavigationContainer theme={navigationTheme}>
+        <NavigationPrefetchWrapper />
         <RootStack.Navigator screenOptions={{ headerShown: false }}>
           {!isAuthenticated ? (
             <>

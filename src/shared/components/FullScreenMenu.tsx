@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions, ScrollView, TextInput, Animated, StatusBar } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Pressable, StyleSheet, Platform, useWindowDimensions, ScrollView, TextInput, Animated, StatusBar } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../core/constants/spacing';
 import { useTranslation } from 'react-i18next';
-import { Role, hasPermission } from '../../core/config/permissions';
+import { hasPermission } from '../../core/config/permissions';
+import { Role } from '../../core/config/appConstants';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import ConfirmDialog from './ConfirmDialog';
 import AppModal from './Modal';
@@ -88,23 +89,24 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
 
   useEffect(() => {
     if (visible) {
+      const useNative = Platform.OS !== 'web';
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: useNative,
         }),
         Animated.spring(slideAnim, {
           toValue: 0,
           tension: 50,
           friction: 8,
-          useNativeDriver: true,
+          useNativeDriver: useNative,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
           tension: 50,
           friction: 7,
-          useNativeDriver: true,
+          useNativeDriver: useNative,
         }),
       ]).start();
     } else {
@@ -513,17 +515,23 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                       <Text style={[styles.itemLabel, { color: colors.text, fontSize: itemLabelSize }]} numberOfLines={1}>{item.label}</Text>
                       {canAddQuick && !item.isLocked && !isInCustomQuick(item.routeName) && customQuickActions.length < QUICK_MAX && (
                         <View
-                          style={[styles.addOnCard, { borderColor: colors.border, backgroundColor: `${colors.primary}10` }]}
-                          pointerEvents="box-none"
+                          style={[
+                            styles.addOnCard, 
+                            { 
+                              borderColor: colors.border, 
+                              backgroundColor: `${colors.primary}10`,
+                              pointerEvents: 'box-none' as any,
+                            }
+                          ]}
                         >
-                          <TouchableOpacity
+                          <Pressable
                             onPress={() => tryAddCustomQuickFromItem(item)}
                             style={{ padding: 2 }}
                             accessibilityRole="button"
                             accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
                           >
                             <Ionicons name="add" size={14} color={colors.primary} />
-                          </TouchableOpacity>
+                          </Pressable>
                         </View>
                       )}
                     </TouchableOpacity>
