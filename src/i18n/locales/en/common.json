@@ -64,8 +64,71 @@
     "failed_to_save_generic": "Failed to save.",
     "failed_to_delete": "Failed to delete {{entity}}.",
     "failed_to_delete_generic": "Failed to delete.",
-    "parameter_required": "{{param}} parameter is required."
+    "parameter_required": "{{param}} parameter is required.",
+    "categories": {
+      "api": "API",
+      "system": "System",
+      "validation": "Validation",
+      "permission": "Permission",
+      "business": "Business Logic",
+      "unknown": "Unknown"
+    },
+    "api": {
+      "network": "Network error. Please check your connection.",
+      "timeout": "Request timeout.",
+      "connection_failed": "Connection failed.",
+      "request_failed": "Request failed."
+    },
+    "system": {
+      "server_error": "Server error. Please try again later.",
+      "database_error": "Database error.",
+      "internal_error": "Internal error occurred."
+    },
+    "validation": {
+      "required": "Required field missing.",
+      "invalid_format": "Invalid format.",
+      "invalid_value": "Invalid value.",
+      "min_length": "Must be at least {{min}} characters.",
+      "max_length": "Must be at most {{max}} characters."
+    },
+    "permission": {
+      "unauthorized": "You are not authorized to perform this action.",
+      "forbidden": "Access forbidden.",
+      "insufficient_permissions": "Insufficient permissions."
+    },
+    "business": {
+      "invalid_operation": "Invalid operation.",
+      "business_rule_violation": "Business rule violation.",
+      "state_error": "Invalid state."
+    },
+    "categories": {
+      "admin": "Admin",
+      "owner": "Owner"
+    }
   },
+  "report_error": "Report Error",
+  "report_to": "Report To",
+  "error_category": "Error Category",
+  "error_message": "Error Message",
+  "description": "Description",
+  "error_description_hint": "Please describe how the error occurred and what you were doing. Technical details are automatically added.",
+  "error_description_placeholder": "Describe the error...",
+  "auto_details_note": "The following technical details are automatically added:",
+  "error_context": "Error Context",
+  "timestamp": "Timestamp",
+  "user_info": "User Info",
+  "api_status": "API Status Code",
+  "error_code": "Error Code",
+  "send_report": "Send Report",
+  "error_report_sent": "Error report sent",
+  "error_report_failed": "Failed to send error report",
+  "contact_us": "Contact Us",
+  "contact_us_desc": "Reach out to us for questions, suggestions, or issues",
+  "contact_form": "Contact Form",
+  "contact_description_hint": "Write your message for questions, suggestions, issues, or feedback.",
+  "contact_description_placeholder": "Write your message...",
+  "auto_details_note_contact": "The following information is automatically added:",
+  "send_message": "Send",
   "are_you_sure": "Are you sure?",
   "this_action_cannot_be_undone": "This action cannot be undone.",
   "all_changes_will_be_lost": "All unsaved changes will be lost.",

@@ -17,6 +17,7 @@ import {
   ServerError,
   isApiError,
 } from '../types/apiErrors';
+import notificationService, { ErrorCategory, ErrorOptions } from '../../shared/services/notificationService';
 
 /**
  * Get standard error message for common error scenarios
@@ -294,5 +295,78 @@ export function getErrorStatus(error: Error | unknown): number | undefined {
     return (error as any).status;
   }
   return undefined;
+}
+
+/**
+ * Get error category from ApiError
+ */
+export function getErrorCategory(error: Error | unknown): ErrorCategory {
+  if (isApiError(error)) {
+    if (error instanceof NetworkError || error instanceof TimeoutError) {
+      return 'api';
+    }
+    if (error instanceof UnauthorizedError || error instanceof ForbiddenError) {
+      return 'permission';
+    }
+    if (error instanceof ValidationError) {
+      return 'validation';
+    }
+    if (error instanceof ServerError) {
+      return 'system';
+    }
+    // Other API errors
+    return 'api';
+  }
+  
+  // Unknown errors
+  return 'unknown';
+}
+
+/**
+ * Show error notification with proper category and deduplication
+ */
+export function showErrorNotification(
+  error: Error | string | unknown,
+  context?: string,
+  options?: Omit<ErrorOptions, 'category' | 'key'>
+) {
+  const message = getErrorMessage(error, context);
+  const category = typeof error === 'string' ? 'unknown' : getErrorCategory(error);
+  
+  // Generate deduplication key from error message and context
+  const key = typeof error === 'string' 
+    ? `${context || 'error'}:${message}`
+    : isApiError(error) && error.code
+    ? `${context || 'error'}:${error.code}`
+    : `${context || 'error'}:${message}`;
+  
+  notificationService.error(message, {
+    ...options,
+    category,
+    key,
+    details: isApiError(error) ? error.details : undefined,
+  });
+}
+
+/**
+ * Show API error notification (convenience function)
+ */
+export function showApiErrorNotification(
+  error: Error | string | unknown,
+  details?: any,
+  options?: Omit<ErrorOptions, 'category'>
+) {
+  const message = getErrorMessage(error);
+  const category = typeof error === 'string' ? 'api' : getErrorCategory(error);
+  
+  // Use error code or message as key for deduplication
+  const key = isApiError(error) && error.code
+    ? `api:${error.code}`
+    : `api:${message}`;
+  
+  notificationService.apiError(message, details || (isApiError(error) ? error.details : undefined), {
+    ...options,
+    key,
+  });
 }
 

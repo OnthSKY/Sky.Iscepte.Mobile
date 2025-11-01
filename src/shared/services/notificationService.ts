@@ -103,9 +103,9 @@ const markAsShown = (errorKey: string) => {
 const show = (message: string, type: NotificationType = 'info', options?: ToastOptions & { category?: ErrorCategory; details?: any; key?: string }) => {
   const id = `toast-${++toastIdCounter}-${Date.now()}`;
   
-  // For errors, check deduplication
-  if (type === 'error' && options?.key !== undefined) {
-    const errorKey = generateErrorKey(message, options.key, options.category);
+  // For errors, check deduplication (always check, key is optional)
+  if (type === 'error') {
+    const errorKey = generateErrorKey(message, options?.key, options?.category);
     if (wasRecentlyShown(errorKey)) {
       return; // Skip duplicate error
     }
@@ -117,8 +117,8 @@ const show = (message: string, type: NotificationType = 'info', options?: ToastO
       duration: options?.duration || 3000,
       priority: options?.priority || 0,
       timestamp: Date.now(),
-      category: options.category,
-      details: options.details,
+      category: options?.category,
+      details: options?.details,
       errorKey,
     };
 
@@ -133,7 +133,7 @@ const show = (message: string, type: NotificationType = 'info', options?: ToastO
     // Mark as shown for deduplication
     markAsShown(errorKey);
   } else {
-    // Non-error or no deduplication key
+    // Non-error (success, info)
     const toast: QueuedToast = {
       id,
       message,

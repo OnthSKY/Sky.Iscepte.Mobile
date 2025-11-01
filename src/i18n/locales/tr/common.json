@@ -65,8 +65,71 @@
     "failed_to_save_generic": "Kaydetme başarısız.",
     "failed_to_delete": "{{entity}} silinemedi.",
     "failed_to_delete_generic": "Silme başarısız.",
-    "parameter_required": "{{param}} parametresi gereklidir."
+    "parameter_required": "{{param}} parametresi gereklidir.",
+    "categories": {
+      "api": "API",
+      "system": "Sistem",
+      "validation": "Doğrulama",
+      "permission": "Yetki",
+      "business": "İş Mantığı",
+      "unknown": "Bilinmeyen"
+    },
+    "api": {
+      "network": "Ağ hatası. Bağlantınızı kontrol edin.",
+      "timeout": "İstek zaman aşımına uğradı.",
+      "connection_failed": "Bağlantı kurulamadı.",
+      "request_failed": "İstek başarısız oldu."
+    },
+    "system": {
+      "server_error": "Sunucu hatası. Lütfen daha sonra tekrar deneyin.",
+      "database_error": "Veritabanı hatası.",
+      "internal_error": "İç hata oluştu."
+    },
+    "validation": {
+      "required": "Zorunlu alan eksik.",
+      "invalid_format": "Geçersiz format.",
+      "invalid_value": "Geçersiz değer.",
+      "min_length": "Minimum {{min}} karakter olmalı.",
+      "max_length": "Maksimum {{max}} karakter olmalı."
+    },
+    "permission": {
+      "unauthorized": "Bu işlemi yapmaya yetkiniz yok.",
+      "forbidden": "Erişim reddedildi.",
+      "insufficient_permissions": "Yetersiz yetki."
+    },
+    "business": {
+      "invalid_operation": "Geçersiz işlem.",
+      "business_rule_violation": "İş kuralı ihlali.",
+      "state_error": "Geçersiz durum."
+    },
+    "categories": {
+      "admin": "Admin",
+      "owner": "Owner"
+    }
   },
+  "report_error": "Hata Bildir",
+  "report_to": "Bildirilecek Kişi",
+  "error_category": "Hata Kategorisi",
+  "error_message": "Hata Mesajı",
+  "description": "Açıklama",
+  "error_description_hint": "Lütfen hatanın nasıl oluştuğunu ve neler yaptığınızı açıklayın. Teknik detaylar otomatik olarak eklenir.",
+  "error_description_placeholder": "Hata hakkında açıklama yazın...",
+  "auto_details_note": "Aşağıdaki teknik detaylar otomatik olarak eklenir:",
+  "error_context": "Hata konteksti",
+  "timestamp": "Zaman damgası",
+  "user_info": "Kullanıcı bilgileri",
+  "api_status": "API durum kodu",
+  "error_code": "Hata kodu",
+  "send_report": "Bildir",
+  "error_report_sent": "Hata bildirimi gönderildi",
+  "error_report_failed": "Hata bildirimi gönderilemedi",
+  "contact_us": "Bizimle İletişime Geç",
+  "contact_us_desc": "Sorularınız, önerileriniz veya sorunlarınız için bize ulaşın",
+  "contact_form": "İletişim Formu",
+  "contact_description_hint": "Sorularınız, önerileriniz, sorunlarınız veya geri bildirimleriniz için mesajınızı yazın.",
+  "contact_description_placeholder": "Mesajınızı yazın...",
+  "auto_details_note_contact": "Aşağıdaki bilgiler otomatik olarak eklenir:",
+  "send_message": "Gönder",
   "are_you_sure": "Emin misiniz?",
   "this_action_cannot_be_undone": "Bu işlem geri alınamaz.",
   "all_changes_will_be_lost": "Kaydedilmemiş tüm değişiklikler kaybolacak.",

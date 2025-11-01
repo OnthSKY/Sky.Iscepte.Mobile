@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -6,11 +6,13 @@ import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme, AppTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import ErrorReportModal from '../shared/components/ErrorReportModal';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { t, i18n } = useTranslation(['settings', 'common', 'stock']);
   const { colors, theme, setTheme, activeTheme } = useTheme();
+  const [contactModalVisible, setContactModalVisible] = useState(false);
 
   const languageOptions = [
     { key: 'tr', label: t('turkish'), icon: '🇹🇷' },
@@ -99,11 +101,42 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Contact Us */}
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => setContactModalVisible(true)}
+          >
+            <View style={styles.settingItemLeft}>
+              <Ionicons name="mail-outline" size={22} color={colors.primary} />
+              <View style={styles.settingItemContent}>
+                <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                  {t('common:contact_us', { defaultValue: 'Bizimle İletişime Geç' })}
+                </Text>
+                <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                  {t('common:contact_us_desc', { defaultValue: 'Sorularınız, önerileriniz veya sorunlarınız için bize ulaşın' })}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+          </TouchableOpacity>
+        </View>
+
         {/* App Info */}
         <View style={{ marginTop: spacing.lg, alignItems: 'center' }}>
           <Text style={{ color: colors.muted, fontSize: 12 }}>Version 1.0.0</Text>
         </View>
       </ScrollView>
+
+      {/* Contact Modal */}
+      <ErrorReportModal
+        visible={contactModalVisible}
+        onClose={() => setContactModalVisible(false)}
+        errorCategory="business"
+        errorMessage={t('common:contact_form', { defaultValue: 'İletişim Formu' })}
+        context="settings-contact"
+        mode="contact"
+      />
     </ScreenLayout>
   );
 }
