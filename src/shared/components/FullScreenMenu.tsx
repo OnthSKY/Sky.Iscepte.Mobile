@@ -40,7 +40,7 @@ const QUICK_ACTIONS: MenuItem[] = [
   { key: 'qa-sale', label: '', icon: 'add-circle-outline', routeName: 'SalesCreate', requiredPermission: 'sales:create' },
   { key: 'qa-customer', label: '', icon: 'person-add-outline', routeName: 'CustomerCreate', requiredPermission: 'customers:create' },
   { key: 'qa-expense', label: '', icon: 'add-circle-outline', routeName: 'ExpenseCreate', requiredPermission: 'expenses:create' },
-  { key: 'qa-employee', label: '', icon: 'person-add-outline', routeName: 'EmployeeCreate', requiredPermission: 'employees:create' },
+  { key: 'qa-employee', label: '', icon: 'briefcase-outline', routeName: 'EmployeeCreate', requiredPermission: 'employees:create' },
   { key: 'qa-product', label: '', icon: 'add-circle-outline', routeName: 'ProductCreate', requiredPermission: 'products:create' },
 ];
 
@@ -58,29 +58,32 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   const { width, height } = useWindowDimensions();
   // Responsive breakpoints for grid columns (items)
   // phones: 2-3, tablets: 3-4, large tablets/desktop: 4-5 (max 6 for very wide)
-  const numColumns = width > 1600
-    ? 6
-    : width > 1280
-      ? 5
-      : width > 980
-        ? 4
-        : width > 640
-          ? 3
-          : 2; // small phones default 2
-  // Responsive breakpoints for quick actions row - fixed to 4 columns
-  const qaCols = 4;
-  // Icon/label sizes scale with width and slightly reduced to fit more per row
-  const itemIconSize = width > 1600 ? 32 : width > 1280 ? 30 : width > 980 ? 28 : width > 640 ? 26 : 22;
-  const itemLabelSize = width > 1600 ? 14 : width > 1280 ? 13 : width > 980 ? 12 : width > 640 ? 12 : 11;
-  const iconWrapSize = width > 1600 ? 56 : width > 1280 ? 52 : width > 980 ? 50 : width > 640 ? 48 : 44;
-  const { colors } = useTheme();
-  const QUICK_MAX = 4;
+  const numColumns = width > 1200
+  ? 4
+  : width > 900
+    ? 3
+    : width > 600
+      ? 2
+      : 1;
+
+  // Responsive breakpoints for quick actions row - single row with more items
+  const qaCols = width > 1600 ? 8 : width > 1280 ? 7 : width > 980 ? 6 : width > 640 ? 5 : 4;
+  // Icon/label sizes scale with width - icon wrapper smaller, icons larger
+  const itemIconSize = width > 1200 ? 28 : width > 900 ? 24 : 22;
+  const iconWrapSize = width > 1200 ? 60 : width > 900 ? 54 : 36;
+  const itemLabelSize = width > 1200 ? 12 : 11;
+  
+  
+  // Quick action sizes - smaller wrappers, larger icons for single row
+  const quickIconSize = width > 1600 ? 20 : width > 1280 ? 18 : width > 980 ? 17 : width > 640 ? 16 : 14;
+  const quickIconWrapSize = width > 640 ? 36 : 32;
+  const { colors, activeTheme } = useTheme();
+  const QUICK_MAX = qaCols; // Allow as many quick actions as columns in single row
   const [purchaseVisible, setPurchaseVisible] = useState(false);
   const [purchaseTarget, setPurchaseTarget] = useState<string | null>(null);
   const [addQaVisible, setAddQaVisible] = useState(false);
   const [customQuickActions, setCustomQuickActions] = useState<MenuItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [manageQaVisible, setManageQaVisible] = useState(false);
   
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -292,34 +295,6 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     setCustomQuickActions(prev => prev.filter(q => q.key !== key));
   }, []);
 
-  const isInCustomQuick = useCallback((routeName: string) => {
-    return customQuickActions.some(q => (q as any).routeName === routeName);
-  }, [customQuickActions]);
-
-  const tryAddCustomQuickFromItem = useCallback((item: MenuItem & { requiredPermission?: string }) => {
-    if (totalQuickCount >= QUICK_MAX) return;
-    if (isInCustomQuick(item.routeName)) return;
-    const newQa: MenuItem = {
-      key: `qa-custom-${item.routeName}`,
-      label: item.label,
-      icon: item.icon,
-      routeName: item.routeName,
-      requiredPermission: item.requiredPermission,
-    };
-    setCustomQuickActions(prev => [...prev, newQa]);
-  }, [totalQuickCount, isInCustomQuick]);
-
-  const moveCustomQuick = useCallback((index: number, dir: -1 | 1) => {
-    setCustomQuickActions(prev => {
-      const next = [...prev];
-      const newIndex = index + dir;
-      if (newIndex < 0 || newIndex >= next.length) return prev;
-      const tmp = next[index];
-      next[index] = next[newIndex];
-      next[newIndex] = tmp;
-      return next;
-    });
-  }, []);
 
   return (
     <Modal visible={visible} animationType="none" transparent onRequestClose={onClose}>
@@ -368,6 +343,80 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
             </TouchableOpacity>
           </View>
           
+          {/* Fixed Quick Actions */}
+          <View style={{ padding: spacing.lg, paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
+            <View style={[styles.quickHeader]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('common:quick_actions', { defaultValue: 'Quick Actions' })}</Text>
+            </View>
+            <View style={styles.quickRow}>
+              {filteredQuickActions.map((qa) => (
+                <View
+                  key={qa.key}
+                  style={[styles.quickItem, { width: `${100 / qaCols}%` }]}
+                >
+                  {qa.isLocked ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (role === 'owner') {
+                          setPurchaseTarget(qa.label);
+                          setPurchaseVisible(true);
+                        }
+                      }}
+                      activeOpacity={role === 'owner' ? 0.85 : 1}
+                      disabled={role !== 'owner'}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${qa.label}`}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15`, width: quickIconWrapSize, height: quickIconWrapSize, borderRadius: quickIconWrapSize / 2 }]}>
+                        <Ionicons name={qa.icon as any} size={quickIconSize} color={colors.muted} />
+                        <View style={[styles.lockBadge, { backgroundColor: colors.muted }]}>
+                          <Ionicons name="lock-closed" size={10} color={colors.surface} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        onClose();
+                        safeNavigate(qa.routeName);
+                      }}
+                      activeOpacity={0.85}
+                      onLongPress={() => {
+                        // Sadece custom eklenmiş QA'lar kaldırılabilir
+                        if (processedCustomQuickActions.find(c => c.key === qa.key)) {
+                          handleRemoveCustomQuick(qa.key);
+                        }
+                      }}
+                      delayLongPress={400}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${qa.label}`}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}25`, width: quickIconWrapSize, height: quickIconWrapSize, borderRadius: quickIconWrapSize / 2 }]}>
+                        <Ionicons name={qa.icon as any} size={quickIconSize} color={colors.primary} />
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              {canAddQuick && totalQuickCount < QUICK_MAX && (
+                <TouchableOpacity
+                  style={[styles.quickItem, { width: `${100 / qaCols}%` }]}
+                  onPress={() => setAddQaVisible(true)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15`, borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed', width: quickIconWrapSize, height: quickIconWrapSize, borderRadius: quickIconWrapSize / 2 }]}> 
+                    <Ionicons name="add" size={quickIconSize} color={colors.primary} />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={{ padding: spacing.lg, gap: spacing.lg }}>
               <View style={{ paddingHorizontal: spacing.md }}>
@@ -388,99 +437,33 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                   )}
                 </View>
               </View>
-              <View>
-                <View style={[styles.quickHeader]}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('common:quick_actions', { defaultValue: 'Quick Actions' })}</Text>
-                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                    <TouchableOpacity onPress={() => setManageQaVisible(true)} accessibilityRole="button" accessibilityLabel={t('common:edit', { defaultValue: 'Düzenle' }) as string}>
-                      <Ionicons name="settings-outline" size={18} color={colors.text} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <View style={styles.quickRow}>
-                  {filteredQuickActions.map((qa) => (
-                    <View
-                      key={qa.key}
-                      style={[styles.quickItem, { width: `${100 / qaCols}%` }]}
-                    >
-                      {qa.isLocked ? (
-                        <TouchableOpacity
-                          onPress={() => {
-                            if (role === 'owner') {
-                              setPurchaseTarget(qa.label);
-                              setPurchaseVisible(true);
-                            }
-                          }}
-                          activeOpacity={role === 'owner' ? 0.85 : 1}
-                          disabled={role !== 'owner'}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${qa.label}`}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}10` }]}>
-                            <Ionicons name={qa.icon as any} size={20} color={colors.muted} />
-                            <View style={[styles.lockBadge, { backgroundColor: colors.muted }]}>
-                              <Ionicons name="lock-closed" size={10} color={colors.surface} />
-                            </View>
-                          </View>
-                          <Text style={[styles.quickLabel, { color: colors.muted }]} numberOfLines={1}>{qa.label}</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => {
-                            onClose();
-                            safeNavigate(qa.routeName);
-                          }}
-                          activeOpacity={0.85}
-                          onLongPress={() => {
-                            // Sadece custom eklenmiş QA'lar kaldırılabilir
-                            if (processedCustomQuickActions.find(c => c.key === qa.key)) {
-                              handleRemoveCustomQuick(qa.key);
-                            }
-                          }}
-                          delayLongPress={400}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${qa.label}`}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}20` }]}>
-                            <Ionicons name={qa.icon as any} size={22} color={colors.primary} />
-                          </View>
-                          <Text style={[styles.quickLabel, { color: colors.text }]} numberOfLines={2}>{qa.label}</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ))}
-                  {canAddQuick && totalQuickCount < QUICK_MAX && (
-                    <TouchableOpacity
-                      style={[styles.quickItem, { width: `${100 / qaCols}%` }]}
-                      onPress={() => setAddQaVisible(true)}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}10`, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}> 
-                        <Ionicons name="add" size={18} color={colors.primary} />
-                      </View>
-                      <Text style={[styles.quickLabel, { color: colors.primary }]} numberOfLines={1}>{t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' })}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
 
               <View>
                 <View style={styles.itemsGrid}>
-                  {filteredItems.map((item) => (
-                    <TouchableOpacity
-                      key={item.key}
-                      style={[
-                        styles.item,
-                        { backgroundColor: colors.surface, width: `${100 / numColumns}%` },
-                        // On very small screens, use a non-square card for better readability
-                        width <= 560 ? { aspectRatio: undefined, minHeight: 96, paddingVertical: spacing.lg } : null,
-                        item.isLocked && styles.locked,
-                      ]}
+                  {filteredItems.map((item) => {
+                    // Calculate item width as percentage - gap will handle spacing
+                    const itemWidthPercent = 100 / numColumns;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        style={[
+                          styles.item,
+                          { 
+                            backgroundColor: colors.surface,
+                            width: `${itemWidthPercent}%`,
+                            borderWidth: 1,
+                            borderColor: activeTheme === 'dark' ? colors.border : `${colors.border}40`,
+                            ...(Platform.OS === 'web' ? {} : {
+                              // For native, ensure proper wrapping
+                              flex: 0,
+                              minWidth: 0,
+                            }),
+                          },
+                          // On very small screens, use a non-square card for better readability
+                          width <= 560 ? { aspectRatio: undefined, minHeight: 96, paddingVertical: spacing.lg } : null,
+                          item.isLocked && styles.locked,
+                        ]}
                       onPress={() => {
                         if (item.isLocked) {
                           if (role === 'owner') {
@@ -513,32 +496,9 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                         )}
                       </View>
                       <Text style={[styles.itemLabel, { color: colors.text, fontSize: itemLabelSize }]} numberOfLines={1}>{item.label}</Text>
-                      {canAddQuick && !item.isLocked && !isInCustomQuick(item.routeName) && customQuickActions.length < QUICK_MAX && (
-                        <View
-                          onTouchEnd={(e) => {
-                            e.stopPropagation();
-                            tryAddCustomQuickFromItem(item);
-                          }}
-                          onClick={(e: any) => {
-                            e.stopPropagation();
-                            tryAddCustomQuickFromItem(item);
-                          }}
-                          style={[
-                            styles.addOnCard, 
-                            { 
-                              borderColor: colors.border, 
-                              backgroundColor: `${colors.primary}10`,
-                              cursor: 'pointer',
-                            }
-                          ]}
-                          role="button"
-                          aria-label={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
-                        >
-                          <Ionicons name="add" size={14} color={colors.primary} />
-                        </View>
-                      )}
                     </TouchableOpacity>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             </View>
@@ -574,43 +534,6 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md }}>
                 <TouchableOpacity onPress={() => setAddQaVisible(false)}>
                   <Text style={{ color: colors.muted, fontWeight: '600' }}>{t('common:cancel', { defaultValue: 'Vazgeç' })}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </AppModal>
-
-          {/* Manage Quick Actions Modal */}
-          <AppModal visible={manageQaVisible} onRequestClose={() => setManageQaVisible(false)}>
-            <View style={{ gap: spacing.md }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: spacing.xs }}>{t('common:edit_quick_actions', { defaultValue: 'Hızlı işlemleri düzenle' })}</Text>
-              {customQuickActions.length === 0 ? (
-                <Text style={{ color: colors.muted }}>{t('common:no_items', { defaultValue: 'Öğe yok' })}</Text>
-              ) : (
-                customQuickActions.map((qa, index) => (
-                  <View key={qa.key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                      <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15` }]}> 
-                        <Ionicons name={qa.icon as any} size={18} color={colors.primary} />
-                      </View>
-                      <Text style={{ color: colors.text, fontWeight: '600' }}>{qa.label}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                      <TouchableOpacity onPress={() => moveCustomQuick(index, -1)} disabled={index === 0} accessibilityRole="button" accessibilityLabel={t('common:move_up', { defaultValue: 'Yukarı taşı' }) as string}>
-                        <Ionicons name="chevron-up" size={18} color={index === 0 ? colors.muted : colors.text} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => moveCustomQuick(index, 1)} disabled={index === customQuickActions.length - 1} accessibilityRole="button" accessibilityLabel={t('common:move_down', { defaultValue: 'Aşağı taşı' }) as string}>
-                        <Ionicons name="chevron-down" size={18} color={index === customQuickActions.length - 1 ? colors.muted : colors.text} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleRemoveCustomQuick(qa.key)} accessibilityRole="button" accessibilityLabel={t('common:remove', { defaultValue: 'Kaldır' }) as string}>
-                        <Ionicons name="trash-outline" size={18} color={colors.text} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))
-              )}
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md }}>
-                <TouchableOpacity onPress={() => setManageQaVisible(false)}>
-                  <Text style={{ color: colors.muted, fontWeight: '600' }}>{t('common:done', { defaultValue: 'Bitti' })}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -728,38 +651,32 @@ const styles = StyleSheet.create({
   },
   quickRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+    flexWrap: 'nowrap',      
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    overflow: 'hidden',
   },
   quickItem: {
     alignItems: 'center',
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
+  
   quickIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 12,
+    width: 44,
+    height: 44,
     ...(Platform.OS === 'web'
-      ? { 
-          boxShadow: '0px 4px 12px rgba(0,0,0,0.08)',
-          transition: 'all 0.2s ease',
-        }
-      : {
-          shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 2 },
-          elevation: 3,
-        }),
+      ? { transition: 'all 0.2s ease' }
+      : {}),
   },
+  
   quickLabel: { 
     fontSize: 12, 
     fontWeight: '600', 
@@ -771,28 +688,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    gap: spacing.xs, // Reduced gap for tighter spacing
   },
   item: {
-    marginVertical: spacing.sm,
-    borderRadius: 18,
+    marginVertical: spacing.xs,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    aspectRatio: 1,
-    padding: spacing.md,
+    aspectRatio: 0.7, 
+    paddingVertical: spacing.xs,  
+    paddingHorizontal: spacing.xs,
+    minHeight: 75,  
     ...(Platform.OS === 'web'
       ? { 
-          boxShadow: '0px 6px 20px rgba(0,0,0,0.1)',
+          boxShadow: '0px 4px 12px rgba(0,0,0,0.08)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }
       : {
           shadowColor: '#000',
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 4,
         }),
-    borderWidth: 0,
   },
   iconWrap: {
     width: 52,
@@ -805,10 +724,10 @@ const styles = StyleSheet.create({
   itemLabel: {
     fontSize: 12,
     fontWeight: '700',
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     textAlign: 'center',
-    letterSpacing: 0.3,
-    lineHeight: 16,
+    letterSpacing: 0.2,
+    lineHeight: 14,
   },
   locked: {
     opacity: 0.6,
@@ -823,17 +742,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addOnCard: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-  }
 });
 
 
