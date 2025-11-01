@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useReportStatsQuery } from '../hooks/useReportsQuery';
 import { ModuleDashboardScreen, ModuleStat, ModuleQuickAction } from '../../../shared/components/ModuleDashboardScreen';
+import { RelatedModule } from '../../../shared/components/dashboard/RelatedModuleCard';
 import { errorMessages, createError } from '../../../core/utils/errorUtils';
 import LoadingState from '../../../shared/components/LoadingState';
 import ErrorState from '../../../shared/components/ErrorState';
@@ -30,7 +31,7 @@ export default function ReportsDashboardScreen() {
         value: stats.totalReports ?? 0,
         icon: 'document-text-outline',
         color: isDark ? '#60A5FA' : '#1D4ED8',
-        route: 'Reports',
+        route: 'ReportsList',
       },
       {
         key: 'monthly-reports',
@@ -38,7 +39,7 @@ export default function ReportsDashboardScreen() {
         value: stats.monthlyReports ?? 0,
         icon: 'calendar-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'Reports',
+        route: 'ReportsList',
       },
       {
         key: 'completed-reports',
@@ -46,7 +47,7 @@ export default function ReportsDashboardScreen() {
         value: stats.completedReports ?? 0,
         icon: 'checkmark-circle-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'Reports',
+        route: 'ReportsList',
       },
       {
         key: 'pending-reports',
@@ -54,10 +55,48 @@ export default function ReportsDashboardScreen() {
         value: stats.pendingReports ?? 0,
         icon: 'time-outline',
         color: isDark ? '#F59E0B' : '#D97706',
-        route: 'Reports',
+        route: 'ReportsList',
       },
     ];
   }, [stats, t, isDark]);
+
+  // Define related modules - Reports can link to all other modules
+  const relatedModules: RelatedModule[] = React.useMemo(() => {
+    return [
+      {
+        key: 'sales',
+        label: t('sales:sales', { defaultValue: 'Satışlar' }),
+        icon: 'receipt-outline',
+        color: isDark ? '#60A5FA' : '#1D4ED8',
+        route: 'SalesDashboard',
+      },
+      {
+        key: 'expenses',
+        label: t('expenses:expenses', { defaultValue: 'Giderler' }),
+        icon: 'wallet-outline',
+        color: isDark ? '#F87171' : '#DC2626',
+        route: 'ExpensesDashboard',
+      },
+      {
+        key: 'customers',
+        label: t('customers:customers', { defaultValue: 'Müşteriler' }),
+        icon: 'people-outline',
+        color: isDark ? '#34D399' : '#059669',
+        route: 'CustomersDashboard',
+      },
+    ];
+  }, [t, isDark]);
+
+  // Define quick actions
+  const quickActions: ModuleQuickAction[] = React.useMemo(() => [
+    {
+      key: 'view-reports',
+      label: t('reports:reports', { defaultValue: 'Raporlar' }),
+      icon: 'list-outline',
+      color: isDark ? '#60A5FA' : '#1D4ED8',
+      route: 'ReportsList',
+    },
+  ], [t, isDark]);
 
   // Fetch stats function (for ModuleDashboardScreen compatibility)
   const fetchStats = React.useCallback(async (): Promise<ModuleStat[]> => {
@@ -89,17 +128,6 @@ export default function ReportsDashboardScreen() {
     );
   }
 
-  // Define quick actions
-  const quickActions: ModuleQuickAction[] = [
-    {
-      key: 'view-reports',
-      label: t('reports:reports', { defaultValue: 'Raporlar' }),
-      icon: 'list-outline',
-      color: isDark ? '#60A5FA' : '#1D4ED8',
-      route: 'Reports',
-    },
-  ];
-
   return (
     <ModuleDashboardScreen
       config={{
@@ -107,6 +135,8 @@ export default function ReportsDashboardScreen() {
         stats: fetchStats,
         quickActions: quickActions,
         mainStatKey: 'total-reports',
+        relatedModules: relatedModules,
+        listRoute: 'ReportsList',
       }}
     />
   );

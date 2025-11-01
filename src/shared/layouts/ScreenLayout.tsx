@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../core/constants/spacing';
 import { useTheme } from '../../core/contexts/ThemeContext';
  
@@ -12,6 +13,7 @@ type Props = {
   noPadding?: boolean;
   title?: string;
   subtitle?: string;
+  titleIcon?: string;
   headerRight?: React.ReactNode;
   showBackButton?: boolean;
   footer?: React.ReactNode;
@@ -22,6 +24,7 @@ export default function ScreenLayout({
   noPadding,
   title,
   subtitle,
+  titleIcon,
   headerRight,
   showBackButton,
   footer,
@@ -40,9 +43,16 @@ export default function ScreenLayout({
                 <Icon name="arrow-left" size={24} color={colors.text} />
               </TouchableOpacity>
             ) : null}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title} numberOfLines={1}>{title}</Text>
-              {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+            <View style={styles.titleContainer}>
+              {titleIcon && (
+                <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}15` }]}>
+                  <Ionicons name={titleIcon as any} size={22} color={colors.primary} />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+              </View>
             </View>
             {headerRight ? <View style={{ marginLeft: spacing.md }}>{headerRight}</View> : null}
           </View>
@@ -75,10 +85,24 @@ const getStyles = (colors: any, noPadding: boolean) =>
       marginRight: spacing.md,
       padding: spacing.xs,
     },
+    titleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      gap: spacing.sm,
+    },
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     title: {
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: '700',
       color: colors.text,
+      letterSpacing: -0.5,
     },
     subtitle: {
       marginTop: 2,

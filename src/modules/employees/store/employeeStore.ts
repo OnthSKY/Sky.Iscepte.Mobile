@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 
-export interface Employee { id: string; name: string; role: string }
+export interface Employee { 
+  id: string | number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  department?: string;
+  isActive?: boolean;
+  status?: string;
+  hireDate?: string;
+  salary?: number;
+  ownerId?: string | number;
+}
 
 interface EmployeeState {
   items: Employee[];

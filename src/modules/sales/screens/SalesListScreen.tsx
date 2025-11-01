@@ -41,7 +41,7 @@ export default function SalesListScreen() {
           : stats.totalRevenue ?? '₺0',
         icon: 'cash-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'Sales',
+        route: 'SalesList',
       },
       {
         key: 'total-sales',
@@ -49,7 +49,7 @@ export default function SalesListScreen() {
         value: stats.totalSales ?? 0,
         icon: 'receipt-outline',
         color: isDark ? '#60A5FA' : '#1D4ED8',
-        route: 'Sales',
+        route: 'SalesList',
       },
       {
         key: 'monthly-sales',
@@ -57,7 +57,7 @@ export default function SalesListScreen() {
         value: stats.monthlySales ?? 0,
         icon: 'calendar-outline',
         color: isDark ? '#F59E0B' : '#D97706',
-        route: 'Sales',
+        route: 'SalesList',
       },
       {
         key: 'average-order',
@@ -67,13 +67,17 @@ export default function SalesListScreen() {
           : stats.averageOrderValue ?? '₺0',
         icon: 'stats-chart-outline',
         color: isDark ? '#A78BFA' : '#7C3AED',
-        route: 'Sales',
+        route: 'SalesList',
       },
     ];
   }, [stats, t, isDark]);
 
   return (
-    <ScreenLayout noPadding>
+    <ScreenLayout 
+      noPadding
+      title={t('sales:sales', { defaultValue: 'Satışlar' })}
+      titleIcon="receipt-outline"
+    >
       <ScrollView 
         style={{ flex: 1, backgroundColor: colors.page }}
         showsVerticalScrollIndicator={false}
@@ -97,10 +101,11 @@ export default function SalesListScreen() {
           <ListScreenContainer
             service={salesEntityService}
             config={{
-              entityName: 'sale',
+              entityName: 'sales',
               translationNamespace: 'sales',
               defaultPageSize: 10,
             }}
+            title={t('sales:sales', { defaultValue: 'Satışlar' })}
             renderItem={(item: Sale) => (
               <Card
                 style={{ marginBottom: 12 }}

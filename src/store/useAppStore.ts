@@ -48,7 +48,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ user: profile });
     } catch (error) {
       // Profile fetch failed, but don't block login
-      console.error('Failed to fetch profile:', error);
     }
   },
   async login(u: string, p: string) {
@@ -174,9 +173,38 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: false });
   },
   async silentLogin() {
+    const accessToken = await AsyncStorage.getItem('access_token');
     const refreshToken = await AsyncStorage.getItem('refresh_token');
     const storedRole = (await AsyncStorage.getItem('user_role')) as Role | null;
     
+    // If we have both tokens, load them directly
+    if (accessToken && refreshToken) {
+      const role = (storedRole && Object.values(Role).includes(storedRole)) 
+        ? storedRole 
+        : Role.GUEST;
+      
+      set({ 
+        isAuthenticated: true, 
+        token: accessToken,
+        refreshToken: refreshToken,
+        role
+      });
+      
+      // Fetch user profile
+      await get().fetchProfile();
+      
+      // Load permissions for the restored role using centralized helper
+      const userId = getUserIdByRole(role);
+      if (userId) {
+        const { usePermissionStore } = await import('./permissionsStore');
+        const permStore = usePermissionStore.getState();
+        permStore.loadPermissions(userId);
+      }
+      
+      return true;
+    }
+    
+    // If we only have refresh token, try to refresh
     if (refreshToken) {
       try {
         // Try to refresh the access token

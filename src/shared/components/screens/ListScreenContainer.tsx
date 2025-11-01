@@ -68,8 +68,8 @@ export function ListScreenContainer<T extends BaseEntity>({
   }, [width]);
 
   return (
-    <ScreenLayout>
-      <View style={styles.container}>
+    <View style={styles.container}>
+      {title && (
         <View style={[styles.header, headerStyle]}>
           <Text style={[styles.title, { color: colors.text }]}>{screenTitle}</Text>
           {permissions.canCreate && (
@@ -80,6 +80,7 @@ export function ListScreenContainer<T extends BaseEntity>({
             />
           )}
         </View>
+      )}
 
         <SearchBar
           value={query}
@@ -107,8 +108,7 @@ export function ListScreenContainer<T extends BaseEntity>({
             />
           }
         />
-      </View>
-    </ScreenLayout>
+    </View>
   );
 }
 

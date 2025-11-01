@@ -78,7 +78,9 @@ async function getCurrentOwnerIdFromToken(token: string | null | undefined): Pro
   
   // Find user by ID
   const user = (usersSeed as any[]).find((u: any) => u.id === userId);
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
   
   // Admin sees all data
   if (user.role === 'admin') {
@@ -86,7 +88,8 @@ async function getCurrentOwnerIdFromToken(token: string | null | undefined): Pro
   }
   
   // If user is owner, use their own ID; if staff, use their ownerId
-  return user.role === 'owner' ? user.id : (user.ownerId || null);
+  const ownerId = user.role === 'owner' ? user.id : (user.ownerId || null);
+  return ownerId;
 }
 
 // Auth mock handler
@@ -193,6 +196,11 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   // Get current owner ID from token
   const currentOwnerId = await getCurrentOwnerIdFromToken(authToken || null);
 
+  // Handle dashboard endpoints
+  if (url.startsWith('/dashboard/owner/')) {
+    return calculateOwnerDashboardSummary(url, currentOwnerId) as T;
+  }
+
   // Supports: /resource?page=1&pageSize=20, /resource/:id
   const withoutLeading = url.replace(/^\//, '');
   const [pathOnly, queryString] = withoutLeading.split('?');
@@ -207,15 +215,41 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
     const match = key.match(/^Filters\[(.+)\]$/);
     if (match) filters[match[1]] = value;
   });
-  const [resource, id, subResource] = pathOnly.split('/');
+  const parts = pathOnly.split('/');
+  const resource = parts[0];
+  const id = parts[1];
+  const subResource = parts[2];
   
-  // Handle /resource/stats endpoints
-  if (subResource === 'stats') {
-    return calculateStats(resource, currentOwnerId) as T;
+  // Handle /resource/stats endpoints (where stats is the second part, not third)
+  if (id === 'stats') {
+    try {
+      const stats = calculateStats(resource, currentOwnerId);
+      return stats as T;
+    } catch (error: any) {
+      // If stats calculation fails, return default empty stats instead of throwing
+      // Return default empty stats structure based on resource
+      const defaultStats: any = {
+        sales: { totalSales: 0, totalRevenue: 0, monthlySales: 0, averageOrderValue: 0 },
+        customers: { totalCustomers: 0, activeCustomers: 0, totalOrders: 0 },
+        expenses: { totalExpenses: 0, totalAmount: 0, monthlyExpenses: 0, expenseTypes: 0 },
+        employees: { totalEmployees: 0, activeEmployees: 0, totalDepartments: 0 },
+        products: { totalProducts: 0, totalCategories: 0, totalActive: 0 },
+        reports: { totalReports: 0, monthlyReports: 0 },
+      };
+      
+      const fallbackStats = defaultStats[resource] || { total: 0 };
+      return fallbackStats as T;
+    }
   }
   
   const store: any = (stores as any)[resource];
-  if (!store) throw new Error(`Mock not found for ${url}`);
+  if (!store) {
+    // Instead of throwing, return empty array for list endpoints or null for detail endpoints
+    if (!id) {
+      return [] as T;
+    }
+    throw new Error(`Mock not found for ${url}`);
+  }
 
   if (method === 'GET') {
     if (id) {
@@ -305,14 +339,146 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   throw new Error('Unsupported method');
 }
 
+// Calculate owner dashboard summary
+function calculateOwnerDashboardSummary(url: string, ownerId: number | null): any {
+  // Get today's date in YYYY-MM-DD format
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  // Get all sales and expenses filtered by owner
+  const salesStore: any = (stores as any).sales;
+  const expensesStore: any = (stores as any).expenses;
+  
+  let allSales: any[] = salesStore ? salesStore.list() : [];
+  let allExpenses: any[] = expensesStore ? expensesStore.list() : [];
+  
+  // Filter by owner ID
+  allSales = filterByOwner(allSales, ownerId);
+  allExpenses = filterByOwner(allExpenses, ownerId);
+
+  // Parse URL to determine which summary to return
+  const urlParts = url.replace(/^\//, '').split('/');
+  const endpoint = urlParts[urlParts.length - 1].split('?')[0]; // Remove query string
+
+  if (endpoint === 'today-summary') {
+    // Calculate today's summary
+    const todaySales = allSales
+      .filter((s: any) => s.date === today && s.status === 'completed')
+      .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+    
+    const todayExpenses = allExpenses
+      .filter((e: any) => e.date === today)
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+    
+    const todayTotal = todaySales - todayExpenses;
+
+    return {
+      sales: todaySales,
+      expenses: todayExpenses,
+      total: todayTotal,
+    };
+  }
+
+  if (endpoint === 'total-summary') {
+    // Calculate total summary
+    const totalSales = allSales
+      .filter((s: any) => s.status === 'completed')
+      .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+    
+    const totalExpenses = allExpenses
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+    
+    const totalTotal = totalSales - totalExpenses;
+
+    return {
+      sales: totalSales,
+      expenses: totalExpenses,
+      total: totalTotal,
+    };
+  }
+
+  if (endpoint === 'employee-summary') {
+    // Parse employeeId and period from query string
+    const urlParts2 = url.split('?');
+    const queryParams = new URLSearchParams(urlParts2[1] || '');
+    const employeeIdParam = queryParams.get('employeeId');
+    const period = queryParams.get('period') || 'today';
+    const employeeId = employeeIdParam ? parseInt(employeeIdParam, 10) : null;
+
+    let employeeSales = 0;
+    let employeeExpenses = 0;
+
+    if (employeeId) {
+      // Filter by specific employee
+      const filteredSales = allSales.filter((s: any) => {
+        const saleEmployeeId = s.employeeId ? parseInt(String(s.employeeId), 10) : null;
+        const matchesEmployee = saleEmployeeId === employeeId;
+        const matchesDate = period === 'today' ? s.date === today : true;
+        const matchesStatus = s.status === 'completed';
+        return matchesEmployee && matchesDate && matchesStatus;
+      });
+      
+      employeeSales = filteredSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+      
+      const filteredExpenses = allExpenses.filter((e: any) => {
+        const expEmployeeId = e.employeeId ? parseInt(String(e.employeeId), 10) : null;
+        const matchesEmployee = expEmployeeId === employeeId;
+        const matchesDate = period === 'today' ? e.date === today : true;
+        return matchesEmployee && matchesDate;
+      });
+      
+      employeeExpenses = filteredExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+    } else {
+      // All employees summary
+      if (period === 'today') {
+        employeeSales = allSales
+          .filter((s: any) => s.date === today && s.status === 'completed')
+          .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+        
+        employeeExpenses = allExpenses
+          .filter((e: any) => e.date === today)
+          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      } else {
+        // All time
+        employeeSales = allSales
+          .filter((s: any) => s.status === 'completed')
+          .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+        
+        employeeExpenses = allExpenses
+          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      }
+    }
+
+    const employeeTotal = employeeSales - employeeExpenses;
+
+    return {
+      sales: employeeSales,
+      expenses: employeeExpenses,
+      total: employeeTotal,
+      employeeId: employeeId || undefined,
+    };
+  }
+
+  throw new Error(`Unknown dashboard endpoint: ${endpoint}`);
+}
+
 // Calculate stats for modules
 function calculateStats(resource: string, ownerId: number | null): any {
   const store: any = (stores as any)[resource];
   if (!store) {
-    throw new Error(`Stats not found for ${resource}`);
+    // Return default empty stats instead of throwing
+    const defaultStats: any = {
+      sales: { totalSales: 0, totalRevenue: 0, monthlySales: 0, averageOrderValue: 0 },
+      customers: { totalCustomers: 0, activeCustomers: 0, totalOrders: 0 },
+      expenses: { totalExpenses: 0, totalAmount: 0, monthlyExpenses: 0, expenseTypes: 0 },
+      employees: { totalEmployees: 0, activeEmployees: 0, totalDepartments: 0 },
+      products: { totalProducts: 0, totalCategories: 0, totalActive: 0 },
+      reports: { totalReports: 0, monthlyReports: 0 },
+    };
+    return defaultStats[resource] || { total: 0 };
   }
 
-  let data: Entity[] = store.list();
+  let data: Entity[] = store.list() || [];
   // Filter by owner ID
   data = filterByOwner(data, ownerId);
   const now = new Date();

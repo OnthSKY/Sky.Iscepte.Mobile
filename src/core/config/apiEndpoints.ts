@@ -109,6 +109,22 @@ export const modulesEndpoints = {
 } as const;
 
 /**
+ * Dashboard endpoints
+ */
+export const dashboardEndpoints = {
+  owner: {
+    todaySummary: '/dashboard/owner/today-summary',
+    totalSummary: '/dashboard/owner/total-summary',
+    employeeSummary: (employeeId?: string | number, period: 'today' | 'all' = 'today') => {
+      const params = new URLSearchParams();
+      if (employeeId) params.append('employeeId', String(employeeId));
+      params.append('period', period);
+      return `/dashboard/owner/employee-summary?${params.toString()}`;
+    },
+  },
+} as const;
+
+/**
  * All endpoints grouped by module
  * 
  * Usage:
@@ -127,6 +143,7 @@ export const apiEndpoints = {
   employees: employeesEndpoints,
   reports: reportsEndpoints,
   modules: modulesEndpoints,
+  dashboard: dashboardEndpoints,
 } as const;
 
 /**

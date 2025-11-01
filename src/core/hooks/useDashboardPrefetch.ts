@@ -102,7 +102,6 @@ export function useDashboardPrefetch() {
             return await config.service.stats();
           } catch (error) {
             // Silently fail - prefetch errors shouldn't break the app
-            console.warn(`Failed to prefetch ${config.module} stats:`, error);
             throw error;
           }
         },

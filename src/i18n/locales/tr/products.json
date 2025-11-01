@@ -14,7 +14,14 @@
   "create_form_placeholder": "Ürün oluşturma formu buraya gelecek.",
   "edit_form_placeholder": "Ürün düzenleme formu buraya gelecek.",
   "details_placeholder": "Ürün detay içeriği buraya gelecek.",
-  "quick_actions": "Hızlı İşlemler"
+  "quick_actions": "Hızlı İşlemler",
+  "view_all": "Tümünü Görüntüle",
+  "create_new": "Yeni Ekle",
+  "statistics": "İstatistikler",
+  "related_modules": "İlgili Modüller",
+  "dashboard": "Dashboard",
+  "list": "Liste",
+  "module": "Ürünler",
+  "product": "Ürün"
 }
-
 

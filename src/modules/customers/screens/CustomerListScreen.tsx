@@ -39,7 +39,7 @@ export default function CustomerListScreen() {
         value: stats.totalCustomers ?? 0,
         icon: 'people-outline',
         color: isDark ? '#60A5FA' : '#1D4ED8',
-        route: 'Customers',
+        route: 'CustomersList',
       },
       {
         key: 'active-customers',
@@ -47,7 +47,7 @@ export default function CustomerListScreen() {
         value: stats.activeCustomers ?? 0,
         icon: 'checkmark-circle-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'Customers',
+        route: 'CustomersList',
       },
       {
         key: 'total-orders',
@@ -55,7 +55,7 @@ export default function CustomerListScreen() {
         value: stats.totalOrders ?? 0,
         icon: 'receipt-outline',
         color: isDark ? '#F59E0B' : '#D97706',
-        route: 'Sales',
+        route: 'SalesList',
       },
     ];
   }, [stats, t, isDark]);

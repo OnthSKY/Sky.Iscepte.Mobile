@@ -9,10 +9,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../store/useAppStore';
 import { useEmployeesQuery } from '../../modules/employees/hooks/useEmployeesQuery';
-import { useSaleStatsQuery } from '../../modules/sales/hooks/useSalesQuery';
-import { useExpenseStatsQuery } from '../../modules/expenses/hooks/useExpensesQuery';
-import { useSalesQuery } from '../../modules/sales/hooks/useSalesQuery';
-import { useExpensesQuery } from '../../modules/expenses/hooks/useExpensesQuery';
+import { useOwnerTodaySummary, useOwnerTotalSummary, useOwnerEmployeeSummary } from './useOwnerDashboardSummary';
 
 export interface OwnerDashboardStats {
   todaySales: string;
@@ -53,13 +50,15 @@ export function useOwnerDashboard() {
   // Fetch employees list
   const { data: employeesData, isLoading: employeesLoading } = useEmployeesQuery();
   
-  // Fetch sales and expenses stats
-  const { data: salesStats, isLoading: salesStatsLoading } = useSaleStatsQuery();
-  const { data: expenseStats, isLoading: expenseStatsLoading } = useExpenseStatsQuery();
+  // Fetch dashboard summaries
+  const { data: todaySummary, isLoading: todaySummaryLoading } = useOwnerTodaySummary();
+  const { data: totalSummary, isLoading: totalSummaryLoading } = useOwnerTotalSummary();
   
-  // Fetch all sales and expenses for calculations
-  const { data: salesData } = useSalesQuery();
-  const { data: expensesData } = useExpensesQuery();
+  // Fetch employee summary (with employeeId or total, based on activeTab)
+  const { data: employeeSummary, isLoading: employeeSummaryLoading } = useOwnerEmployeeSummary(
+    selectedEmployeeId !== 'total' ? selectedEmployeeId : undefined,
+    activeTab
+  );
   
   // Get owner name from token (extracted from token in mock service)
   const ownerName = useMemo(() => {
@@ -83,38 +82,15 @@ export function useOwnerDashboard() {
     return [];
   }, [employeesData, t]);
   
-  // Calculate today's date
-  const today = useMemo(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`; // YYYY-MM-DD format
-  }, []);
-  
   // Calculate stats from API data
   const stats: OwnerDashboardStats = useMemo(() => {
-    const allSalesAmount = salesStats?.totalRevenue || 0;
-    const allExpensesAmount = expenseStats?.totalAmount || 0;
-    const allTotalAmount = allSalesAmount - allExpensesAmount;
+    const todaySalesAmount = todaySummary?.sales || 0;
+    const todayExpensesAmount = todaySummary?.expenses || 0;
+    const todayTotalAmount = todaySummary?.total || 0;
     
-    // Calculate today's sales and expenses
-    let todaySalesAmount = 0;
-    let todayExpensesAmount = 0;
-    
-    if (salesData?.items) {
-      todaySalesAmount = salesData.items
-        .filter((sale: any) => sale.date === today && sale.status === 'completed')
-        .reduce((sum: number, sale: any) => sum + (sale.amount || sale.total || 0), 0);
-    }
-    
-    if (expensesData?.items) {
-      todayExpensesAmount = expensesData.items
-        .filter((exp: any) => exp.date === today)
-        .reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-    }
-    
-    const todayTotalAmount = todaySalesAmount - todayExpensesAmount;
+    const allSalesAmount = totalSummary?.sales || 0;
+    const allExpensesAmount = totalSummary?.expenses || 0;
+    const allTotalAmount = totalSummary?.total || 0;
     
     return {
       todaySales: `₺${todaySalesAmount.toLocaleString('tr-TR')}`,
@@ -124,87 +100,20 @@ export function useOwnerDashboard() {
       allExpenses: `₺${allExpensesAmount.toLocaleString('tr-TR')}`,
       allTotal: `₺${allTotalAmount.toLocaleString('tr-TR')}`,
     };
-  }, [salesStats, expenseStats, salesData, expensesData, today]);
+  }, [todaySummary, totalSummary]);
   
-  // Employee stats - calculate from sales and expenses filtered by employee
+  // Employee stats - from API
   const employeeStats = useMemo(() => {
-    if (selectedEmployeeId === 'total') {
-      // Total for all employees (today's data)
-      let totalSales = 0;
-      let totalExpenses = 0;
-      
-      if (salesData?.items && activeTab === 'today') {
-        totalSales = salesData.items
-          .filter((sale: any) => sale.date === today && sale.status === 'completed')
-          .reduce((sum: number, sale: any) => sum + (sale.amount || sale.total || 0), 0);
-      } else if (salesStats && activeTab === 'all') {
-        totalSales = salesStats.totalRevenue || 0;
-      }
-      
-      if (expensesData?.items && activeTab === 'today') {
-        totalExpenses = expensesData.items
-          .filter((exp: any) => exp.date === today)
-          .reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-      } else if (expenseStats && activeTab === 'all') {
-        totalExpenses = expenseStats.totalAmount || 0;
-      }
-      
-      const total = totalSales - totalExpenses;
-      
-      return {
-        sales: `₺${totalSales.toLocaleString('tr-TR')}`,
-        expenses: `₺${totalExpenses.toLocaleString('tr-TR')}`,
-        total: `₺${total.toLocaleString('tr-TR')}`,
-      };
-    }
-    
-    // Individual employee stats - filter by employeeId
-    const selectedEmployee = employeeCards.find((e) => e.id === selectedEmployeeId);
-    if (!selectedEmployee) {
-      return {
-        sales: '₺0',
-        expenses: '₺0',
-        total: '₺0',
-      };
-    }
-    
-    const employeeId = parseInt(selectedEmployeeId, 10);
-    
-    // Calculate sales for selected employee
-    let empSales = 0;
-    let empExpenses = 0;
-    
-    if (salesData?.items) {
-      const filteredSales = salesData.items.filter((sale: any) => {
-        const saleEmployeeId = sale.employeeId ? parseInt(String(sale.employeeId), 10) : null;
-        const matchesEmployee = saleEmployeeId === employeeId;
-        const matchesDate = activeTab === 'today' ? sale.date === today : true;
-        const matchesStatus = activeTab === 'today' ? sale.status === 'completed' : true;
-        return matchesEmployee && matchesDate && matchesStatus;
-      });
-      
-      empSales = filteredSales.reduce((sum: number, sale: any) => sum + (sale.amount || sale.total || 0), 0);
-    }
-    
-    if (expensesData?.items) {
-      const filteredExpenses = expensesData.items.filter((exp: any) => {
-        const expEmployeeId = exp.employeeId ? parseInt(String(exp.employeeId), 10) : null;
-        const matchesEmployee = expEmployeeId === employeeId;
-        const matchesDate = activeTab === 'today' ? exp.date === today : true;
-        return matchesEmployee && matchesDate;
-      });
-      
-      empExpenses = filteredExpenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-    }
-    
-    const empTotal = empSales - empExpenses;
+    const empSales = employeeSummary?.sales || 0;
+    const empExpenses = employeeSummary?.expenses || 0;
+    const empTotal = employeeSummary?.total || 0;
     
     return {
       sales: `₺${empSales.toLocaleString('tr-TR')}`,
       expenses: `₺${empExpenses.toLocaleString('tr-TR')}`,
       total: `₺${empTotal.toLocaleString('tr-TR')}`,
     };
-  }, [selectedEmployeeId, employeeCards, salesData, expensesData, salesStats, expenseStats, activeTab, today]);
+  }, [employeeSummary]);
   
   // Get current stats based on active tab
   const currentStats = useMemo(() => {
@@ -222,7 +131,7 @@ export function useOwnerDashboard() {
     };
   }, [activeTab, stats]);
   
-  const isLoading = employeesLoading || salesStatsLoading || expenseStatsLoading;
+  const isLoading = employeesLoading || todaySummaryLoading || totalSummaryLoading || employeeSummaryLoading;
   
   return {
     // State

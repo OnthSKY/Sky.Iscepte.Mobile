@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, KeyboardAvoidingView, Platform } from 'react-native';
-import { Button, TextInput, Text, Surface, Checkbox } from 'react-native-paper';
+import { Button, TextInput, Text, Checkbox } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -45,17 +45,23 @@ export default function LoginScreen({ navigation }: Props) {
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, justifyContent: 'center', padding: 20 }}
       >
-        <Surface style={{
+        <View style={{
           padding: 24,
           borderRadius: 16,
-          elevation: 5,
           backgroundColor: colors.surface,
-          shadowColor: '#000',
+          ...(Platform.OS === 'web' ? {
+            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+          } : {
+            elevation: 5,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+          }),
         }}>
           <View style={{ alignItems: 'center', marginBottom: 24 }}>
             <Text variant="headlineMedium" style={{ color: colors.primaryDark, fontWeight: '700' }}>
@@ -123,7 +129,7 @@ export default function LoginScreen({ navigation }: Props) {
           <View style={{ marginTop: 20 }}>
             <LanguagePicker centeredLabel />
           </View>
-        </Surface>
+        </View>
 
         <View style={{ marginTop: 20 }}>
           <ThemeGradientToggle />

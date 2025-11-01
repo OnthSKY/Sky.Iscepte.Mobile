@@ -57,6 +57,7 @@ export default function ErrorState({
   const errorMessage = message || getErrorMessage(error);
   const displayTitle = title || t('error_occurred', { defaultValue: 'An error occurred' });
   const shouldShowRetry = showRetry !== false && !!onRetry;
+  
 
   return (
     <View style={styles.container}>

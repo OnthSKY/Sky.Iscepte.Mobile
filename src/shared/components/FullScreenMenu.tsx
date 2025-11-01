@@ -515,23 +515,26 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                       <Text style={[styles.itemLabel, { color: colors.text, fontSize: itemLabelSize }]} numberOfLines={1}>{item.label}</Text>
                       {canAddQuick && !item.isLocked && !isInCustomQuick(item.routeName) && customQuickActions.length < QUICK_MAX && (
                         <View
+                          onTouchEnd={(e) => {
+                            e.stopPropagation();
+                            tryAddCustomQuickFromItem(item);
+                          }}
+                          onClick={(e: any) => {
+                            e.stopPropagation();
+                            tryAddCustomQuickFromItem(item);
+                          }}
                           style={[
                             styles.addOnCard, 
                             { 
                               borderColor: colors.border, 
                               backgroundColor: `${colors.primary}10`,
-                              pointerEvents: 'box-none' as any,
+                              cursor: 'pointer',
                             }
                           ]}
+                          role="button"
+                          aria-label={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
                         >
-                          <Pressable
-                            onPress={() => tryAddCustomQuickFromItem(item)}
-                            style={{ padding: 2 }}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' }) as string}
-                          >
-                            <Ionicons name="add" size={14} color={colors.primary} />
-                          </Pressable>
+                          <Ionicons name="add" size={14} color={colors.primary} />
                         </View>
                       )}
                     </TouchableOpacity>

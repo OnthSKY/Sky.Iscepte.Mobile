@@ -17,7 +17,15 @@
   "total_expenses": "Total Expenses",
   "total_amount": "Total Amount",
   "monthly_expenses": "Monthly Expenses",
-  "quick_actions": "Quick Actions"
+  "quick_actions": "Quick Actions",
+  "view_all": "View All",
+  "create_new": "Create New",
+  "statistics": "Statistics",
+  "related_modules": "Related Modules",
+  "dashboard": "Dashboard",
+  "list": "List",
+  "module": "Expenses",
+  "expense": "Expense",
+  "paid": "Paid"
 }
-
 

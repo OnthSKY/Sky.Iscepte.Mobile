@@ -4,7 +4,7 @@ import { Provider as PaperProvider, MD3LightTheme as PaperDefaultTheme, MD3DarkT
 import 'react-native-gesture-handler';
 import React from 'react';
 import './src/i18n';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from './src/store/useAppStore';
 
 import LoginScreen from './src/screens/LoginScreen';
@@ -19,6 +19,7 @@ import { ThemeProvider, useTheme } from './src/core/contexts/ThemeContext';
 import ToastManager from './src/shared/components/ToastManager';
 import { PersistQueryClientProvider, queryClient, asyncStoragePersister } from './src/core/services/queryClient';
 import { useNavigationPrefetch } from './src/core/hooks/useNavigationPrefetch';
+import SplashScreen from './src/shared/components/SplashScreen';
 
 const RootStack = createNativeStackNavigator();
 
@@ -38,6 +39,7 @@ function AppWrapper() {
   const hydrate = useAppStore(s => s.hydrate);
   const isAuthenticated = useAppStore(s => s.isAuthenticated);
   const isLoading = useAppStore(s => s.isLoading);
+  const [showSplash, setShowSplash] = useState(true);
   
   useEffect(() => { hydrate(); }, [hydrate]);
   useEffect(() => {
@@ -94,6 +96,13 @@ function AppWrapper() {
       error: colors.error,
     },
   };
+  
+  // Show splash screen on app start
+  if (showSplash) {
+    return (
+      <SplashScreen onFinish={() => setShowSplash(false)} />
+    );
+  }
   
   if (isLoading) {
     return null; // Or return a loading screen component

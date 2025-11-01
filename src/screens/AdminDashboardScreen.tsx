@@ -53,7 +53,7 @@ export default function AdminDashboardScreen() {
       });
       setUsers(response.items || []);
     } catch (err) {
-      console.error('Failed to load users:', err);
+      // Failed to load users
     } finally {
       setLoadingUsers(false);
     }

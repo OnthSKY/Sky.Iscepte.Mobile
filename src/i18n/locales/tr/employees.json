@@ -1,0 +1,28 @@
+{
+  "employees": "Çalışanlar",
+  "employee_details": "Çalışan Detayları",
+  "name": "Ad",
+  "email": "E-posta",
+  "phone": "Telefon",
+  "department": "Departman",
+  "position": "Pozisyon",
+  "salary": "Maaş",
+  "hire_date": "İşe Başlama Tarihi",
+  "status": "Durum",
+  "new_employee": "Yeni Çalışan",
+  "edit_employee": "Çalışan Düzenle",
+  "total_employees": "Toplam Çalışan",
+  "active_employees": "Aktif Çalışan",
+  "total_departments": "Toplam Departman",
+  "quick_actions": "Hızlı İşlemler",
+  "view_all": "Tümünü Görüntüle",
+  "create_new": "Yeni Ekle",
+  "statistics": "İstatistikler",
+  "related_modules": "İlgili Modüller",
+  "dashboard": "Dashboard",
+  "list": "Liste",
+  "module": "Çalışanlar",
+  "employee": "Çalışan"
+}
+
+

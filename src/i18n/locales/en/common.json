@@ -20,7 +20,6 @@
   "view": "View",
   "close": "Close",
   "confirm": "Confirm",
-  "confirm_delete": "Are you sure you want to delete this record?",
   "generate_report": "Generate Report",
   "sale": "Sale",
   "report": "Report",
@@ -75,7 +74,26 @@
   "open": "Open",
   "default_user": "User",
   "default_company": "Your Company",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "error_occurred": "An error occurred",
+  "retry": "Retry",
+  "edit_quick_actions": "Edit quick actions",
+  "no_items": "No items",
+  "done": "Done",
+  "move_up": "Move up",
+  "move_down": "Move down",
+  "remove": "Remove",
+  "clear": "Clear",
+  "products": "Products",
+  "list_not_configured": "List not configured",
+  "confirm_delete": "Confirm Delete",
+  "confirm_delete_message": "Are you sure you want to delete this record?",
+  "list": "List",
+  "module": "Module",
+  "completed": "Completed",
+  "pending": "Pending",
+  "active": "Active",
+  "inactive": "Inactive",
+  "customer": "Customer"
 }
-
 

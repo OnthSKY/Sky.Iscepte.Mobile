@@ -19,7 +19,13 @@
   "total_revenue": "Total Revenue",
   "monthly_sales": "Monthly Sales",
   "average_order_value": "Average Order Value",
-  "quick_actions": "Quick Actions"
+  "quick_actions": "Quick Actions",
+  "view_all": "View All",
+  "create_new": "Create New",
+  "statistics": "Statistics",
+  "related_modules": "Related Modules",
+  "dashboard": "Dashboard",
+  "list": "List",
+  "module": "Sales"
 }
-
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, StyleSheet, TextInputProps } from 'react-native';
+import { TextInput, StyleSheet, TextInputProps, Platform } from 'react-native';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 
@@ -37,7 +37,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surface,
   },
-  inputFocused: { borderColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.08, shadowRadius: 6 },
+  inputFocused: {
+    borderColor: colors.primary,
+    ...Platform.select({
+      web: {
+        boxShadow: `0px 0px 6px ${colors.primary}14`,
+      },
+      default: {
+        shadowColor: colors.primary,
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+    }),
+  },
   multiline: { minHeight: 100 },
 });
 

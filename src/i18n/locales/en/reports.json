@@ -9,7 +9,12 @@
   "monthly_reports": "Monthly Reports",
   "completed_reports": "Completed Reports",
   "pending_reports": "Pending Reports",
-  "quick_actions": "Quick Actions"
+  "quick_actions": "Quick Actions",
+  "view_all": "View All",
+  "create_new": "Create New",
+  "related_modules": "Related Modules",
+  "dashboard": "Dashboard",
+  "list": "List",
+  "module": "Reports"
 }
-
 

@@ -14,7 +14,14 @@
   "create_form_placeholder": "Product creation form will be here.",
   "edit_form_placeholder": "Product edit form will be here.",
   "details_placeholder": "Product details content will be here.",
-  "quick_actions": "Quick Actions"
+  "quick_actions": "Quick Actions",
+  "view_all": "View All",
+  "create_new": "Create New",
+  "statistics": "Statistics",
+  "related_modules": "Related Modules",
+  "dashboard": "Dashboard",
+  "list": "List",
+  "module": "Products",
+  "product": "Product"
 }
-
 

@@ -107,7 +107,6 @@ export function useDetailPrefetch(
             return await httpService.get(config.getDetailUrl(id));
           } catch (error) {
             // Silently fail - prefetch errors shouldn't break the app
-            console.warn(`Failed to prefetch ${module} detail ${id}:`, error);
             throw error;
           }
         },

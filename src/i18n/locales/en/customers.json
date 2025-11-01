@@ -14,7 +14,13 @@
   "total_customers": "Total Customers",
   "active_customers": "Active Customers",
   "total_orders": "Total Orders",
-  "quick_actions": "Quick Actions"
+  "quick_actions": "Quick Actions",
+  "view_all": "View All",
+  "create_new": "Create New",
+  "statistics": "Statistics",
+  "related_modules": "Related Modules",
+  "dashboard": "Dashboard",
+  "list": "List",
+  "module": "Customers"
 }
-
 

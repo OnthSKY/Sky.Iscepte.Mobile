@@ -14,7 +14,13 @@
   "total_customers": "Toplam Müşteri",
   "active_customers": "Aktif Müşteri",
   "total_orders": "Toplam Sipariş",
-  "quick_actions": "Hızlı İşlemler"
+  "quick_actions": "Hızlı İşlemler",
+  "view_all": "Tümünü Görüntüle",
+  "create_new": "Yeni Ekle",
+  "statistics": "İstatistikler",
+  "related_modules": "İlgili Modüller",
+  "dashboard": "Dashboard",
+  "list": "Liste",
+  "module": "Müşteriler"
 }
-
 

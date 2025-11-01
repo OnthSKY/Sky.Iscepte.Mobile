@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Snackbar } from 'react-native-paper';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import notificationService, { NotificationEvent, NotificationType } from '../services/notificationService';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Merkezi Toast Yönetim Bileşeni
@@ -9,6 +10,7 @@ import notificationService, { NotificationEvent, NotificationType } from '../ser
  */
 export default function ToastManager() {
   const { colors } = useTheme();
+  const { t } = useTranslation('common');
   const [currentToast, setCurrentToast] = useState<NotificationEvent | null>(null);
   const [visible, setVisible] = useState(false);
 
@@ -50,7 +52,7 @@ export default function ToastManager() {
       duration={currentToast.duration || 3000}
       style={{ backgroundColor: getBackgroundColor(currentToast.type) }}
       action={{
-        label: 'Tamam',
+        label: t('confirm', { defaultValue: 'OK' }),
         onPress: handleDismiss,
         textColor: '#fff',
       }}

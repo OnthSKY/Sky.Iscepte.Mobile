@@ -9,7 +9,12 @@
   "monthly_reports": "Aylık Rapor",
   "completed_reports": "Tamamlanan Rapor",
   "pending_reports": "Bekleyen Rapor",
-  "quick_actions": "Hızlı İşlemler"
+  "quick_actions": "Hızlı İşlemler",
+  "view_all": "Tümünü Görüntüle",
+  "create_new": "Yeni Ekle",
+  "related_modules": "İlgili Modüller",
+  "dashboard": "Dashboard",
+  "list": "Liste",
+  "module": "Raporlar"
 }
-
 

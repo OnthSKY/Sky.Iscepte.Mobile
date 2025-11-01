@@ -11,6 +11,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import AdminDashboardScreen from '../../screens/AdminDashboardScreen';
 import OwnerDashboardScreen from '../../screens/OwnerDashboardScreen';
 import StaffDashboardScreen from '../../screens/StaffDashboardScreen';
+import notificationService from '../../shared/services/notificationService';
+import { getErrorMessage } from '../utils/errorUtils';
 
 type Props = {
   role: Role;
@@ -21,6 +23,7 @@ export default function RootNavigator({ role }: Props) {
   const [menuVisible, setMenuVisible] = useState(false);
   const tabNavigationRef = useRef<any>(null);
   const { colors } = useTheme();
+  const { t } = useTranslation('common');
   
   // Get all available route names based on permissions
   const availableRouteNames = React.useMemo(() => {
@@ -34,13 +37,19 @@ export default function RootNavigator({ role }: Props) {
       // Use Tab Navigator's navigation object if available
       const nav = tabNavigationRef.current;
       if (!nav) {
-        console.warn('Tab Navigator navigation not available yet');
+        const errorMsg = t('errors.failed_to_load', { defaultValue: 'Failed to load page' });
+        notificationService.error(errorMsg);
         return;
       }
 
       // Prefer navigating to routes that are actually registered on the current navigator
       if (availableRouteNames.includes(routeName)) {
-        nav.navigate(routeName as never);
+        try {
+          nav.navigate(routeName as never);
+        } catch (navError) {
+          const errorMsg = getErrorMessage(navError);
+          notificationService.error(errorMsg);
+        }
         return;
       }
 
@@ -48,17 +57,24 @@ export default function RootNavigator({ role }: Props) {
       const { getNavigationFallback } = await import('../config/navigationConfig');
       const fallback = getNavigationFallback(routeName);
       if (fallback && availableRouteNames.includes(fallback)) {
-        nav.navigate(fallback as never);
+        try {
+          nav.navigate(fallback as never);
+        } catch (navError) {
+          const errorMsg = getErrorMessage(navError);
+          notificationService.error(errorMsg);
+        }
         return;
       }
 
-      // Route not found - silently fail or log warning
-      console.warn(`Route "${routeName}" is not available in the current navigator.`);
+      // Route not found - show error to user
+      const errorMsg = t('errors.not_found', { defaultValue: 'Page not found' });
+      notificationService.error(errorMsg);
     } catch (error) {
-      // Silently handle navigation errors
-      console.warn(`Failed to navigate to "${routeName}":`, error);
+      // Show navigation errors to user
+      const errorMsg = getErrorMessage(error);
+      notificationService.error(errorMsg);
     }
-  }, [availableRouteNames]);
+  }, [availableRouteNames, t]);
 
   return (
     <>

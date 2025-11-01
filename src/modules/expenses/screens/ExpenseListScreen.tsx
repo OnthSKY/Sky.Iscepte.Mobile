@@ -41,7 +41,7 @@ export default function ExpenseListScreen() {
           : stats.totalAmount ?? '₺0',
         icon: 'wallet-outline',
         color: isDark ? '#F59E0B' : '#D97706',
-        route: 'Expenses',
+        route: 'ExpensesList',
       },
       {
         key: 'total-expenses',
@@ -49,7 +49,7 @@ export default function ExpenseListScreen() {
         value: stats.totalExpenses ?? 0,
         icon: 'receipt-outline',
         color: isDark ? '#F87171' : '#DC2626',
-        route: 'Expenses',
+        route: 'ExpensesList',
       },
       {
         key: 'monthly-expenses',
@@ -57,7 +57,7 @@ export default function ExpenseListScreen() {
         value: stats.monthlyExpenses ?? 0,
         icon: 'calendar-outline',
         color: isDark ? '#FB7185' : '#E11D48',
-        route: 'Expenses',
+        route: 'ExpensesList',
       },
       {
         key: 'expense-types',

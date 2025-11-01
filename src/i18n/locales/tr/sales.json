@@ -19,7 +19,13 @@
   "total_revenue": "Toplam Gelir",
   "monthly_sales": "Aylık Satış",
   "average_order_value": "Ortalama Sipariş Tutarı",
-  "quick_actions": "Hızlı İşlemler"
+  "quick_actions": "Hızlı İşlemler",
+  "view_all": "Tümünü Görüntüle",
+  "create_new": "Yeni Ekle",
+  "statistics": "İstatistikler",
+  "related_modules": "İlgili Modüller",
+  "dashboard": "Dashboard",
+  "list": "Liste",
+  "module": "Satışlar"
 }
-
 

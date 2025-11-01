@@ -50,7 +50,12 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
     // Extract token from Authorization header
     const authHeader = config.headers?.Authorization || config.headers?.authorization;
     const token = authHeader?.replace('Bearer ', '') || null;
-    return mod.mockRequest<T>(method, url, body, token);
+    try {
+      const result = await mod.mockRequest<T>(method, url, body, token);
+      return result;
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   const controller = new AbortController();

@@ -75,7 +75,25 @@
   "open": "Aç",
   "default_user": "Kullanıcı",
   "default_company": "Şirketiniz",
-  "loading": "Yükleniyor..."
+  "loading": "Yükleniyor...",
+  "error_occurred": "Bir hata oluştu",
+  "retry": "Tekrar dene",
+  "edit_quick_actions": "Hızlı işlemleri düzenle",
+  "no_items": "Öğe yok",
+  "done": "Bitti",
+  "move_up": "Yukarı taşı",
+  "move_down": "Aşağı taşı",
+  "remove": "Kaldır",
+  "clear": "Temizle",
+  "products": "Ürünler",
+  "list_not_configured": "Liste yapılandırılmamış",
+  "confirm_delete_message": "Bu kaydı silmek istediğinize emin misiniz?",
+  "list": "Liste",
+  "module": "Modül",
+  "completed": "Tamamlandı",
+  "pending": "Beklemede",
+  "active": "Aktif",
+  "inactive": "Pasif",
+  "customer": "Müşteri"
 }
-
 

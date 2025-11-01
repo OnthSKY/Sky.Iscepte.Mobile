@@ -39,7 +39,7 @@ export default function ProductListScreen() {
         value: stats.totalProducts ?? 0,
         icon: 'cube-outline',
         color: isDark ? '#60A5FA' : '#1D4ED8',
-        route: 'Products',
+        route: 'ProductsList',
       },
       {
         key: 'total-categories',
@@ -47,7 +47,7 @@ export default function ProductListScreen() {
         value: stats.totalCategories ?? 0,
         icon: 'apps-outline',
         color: isDark ? '#34D399' : '#059669',
-        route: 'Products',
+        route: 'ProductsList',
       },
       {
         key: 'active-products',
@@ -55,7 +55,7 @@ export default function ProductListScreen() {
         value: stats.totalActive ?? 0,
         icon: 'checkmark-circle-outline',
         color: isDark ? '#F59E0B' : '#D97706',
-        route: 'Products',
+        route: 'ProductsList',
       },
     ];
   }, [stats, t, isDark]);

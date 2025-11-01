@@ -17,7 +17,15 @@
   "total_expenses": "Toplam Gider",
   "total_amount": "Toplam Tutar",
   "monthly_expenses": "Aylık Gider",
-  "quick_actions": "Hızlı İşlemler"
+  "quick_actions": "Hızlı İşlemler",
+  "view_all": "Tümünü Görüntüle",
+  "create_new": "Yeni Ekle",
+  "statistics": "İstatistikler",
+  "related_modules": "İlgili Modüller",
+  "dashboard": "Dashboard",
+  "list": "Liste",
+  "module": "Giderler",
+  "expense": "Gider",
+  "paid": "Ödendi"
 }
-
 
