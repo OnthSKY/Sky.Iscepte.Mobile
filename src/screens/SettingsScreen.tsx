@@ -32,94 +32,103 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{t('common:settings')}</Text>
 
-        {/* Language Settings */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('language')}</Text>
-          <View style={styles.segmentControl}>
-            {languageOptions.map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[
-                  styles.segmentButton,
-                  i18n.language === opt.key && styles.segmentButtonActive,
-                ]}
-                onPress={() => i18n.changeLanguage(opt.key)}
-              >
-                <Text style={[styles.segmentButtonText, { color: i18n.language === opt.key ? colors.primary : colors.muted }]}>
-                  {`${opt.icon} ${opt.label}`}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {/* Preferences Section */}
+        <View style={styles.settingsGroup}>
+          <Text style={styles.groupTitle}>{t('preferences', { defaultValue: 'Tercihler' })}</Text>
+          
+          {/* Language Settings */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('language')}</Text>
+            <View style={styles.segmentControl}>
+              {languageOptions.map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.segmentButton,
+                    i18n.language === opt.key && styles.segmentButtonActive,
+                  ]}
+                  onPress={() => i18n.changeLanguage(opt.key)}
+                >
+                  <Text style={[styles.segmentButtonText, { color: i18n.language === opt.key ? colors.primary : colors.muted }]}>
+                    {`${opt.icon} ${opt.label}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Theme Settings */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('theme')}</Text>
+            <View style={styles.segmentControl}>
+              {themeOptions.map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.segmentButton,
+                    theme === opt.key && styles.segmentButtonActive,
+                  ]}
+                  onPress={() => setTheme(opt.key as AppTheme)}
+                >
+                  <Ionicons 
+                    name={opt.icon as any} 
+                    size={20} 
+                    color={theme === opt.key ? colors.primary : colors.muted} 
+                  />
+                  <Text style={[styles.segmentButtonText, { color: theme === opt.key ? colors.primary : colors.muted }]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
 
-        {/* Theme Settings */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('theme')}</Text>
-          <View style={styles.segmentControl}>
-            {themeOptions.map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[
-                  styles.segmentButton,
-                  theme === opt.key && styles.segmentButtonActive,
-                ]}
-                onPress={() => setTheme(opt.key as AppTheme)}
-              >
-                <Ionicons 
-                  name={opt.icon as any} 
-                  size={20} 
-                  color={theme === opt.key ? colors.primary : colors.muted} 
-                />
-                <Text style={[styles.segmentButtonText, { color: theme === opt.key ? colors.primary : colors.muted }]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {/* Admin Settings Section */}
+        <View style={styles.settingsGroup}>
+          <Text style={styles.groupTitle}>{t('admin_settings', { defaultValue: 'Yönetici Ayarları' })}</Text>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => navigation.navigate('GlobalFieldsManagement')}
+            >
+              <View style={styles.settingItemLeft}>
+                <Ionicons name="grid-outline" size={22} color={colors.primary} />
+                <View style={styles.settingItemContent}>
+                  <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                    {t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' })}
+                  </Text>
+                  <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                    {t('stock:manage_global_fields_desc', { defaultValue: 'Tüm ürünlerde kullanılabilecek genel alanları oluşturun' })}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Admin Settings */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('admin_settings', { defaultValue: 'Yönetici Ayarları' })}</Text>
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => navigation.navigate('GlobalFieldsManagement')}
-          >
-            <View style={styles.settingItemLeft}>
-              <Ionicons name="grid-outline" size={22} color={colors.primary} />
-              <View style={styles.settingItemContent}>
-                <Text style={[styles.settingItemTitle, { color: colors.text }]}>
-                  {t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' })}
-                </Text>
-                <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
-                  {t('stock:manage_global_fields_desc', { defaultValue: 'Tüm ürünlerde kullanılabilecek genel alanları oluşturun' })}
-                </Text>
+        {/* Contact Section */}
+        <View style={styles.settingsGroup}>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => setContactModalVisible(true)}
+            >
+              <View style={styles.settingItemLeft}>
+                <Ionicons name="mail-outline" size={22} color={colors.primary} />
+                <View style={styles.settingItemContent}>
+                  <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                    {t('common:contact_us', { defaultValue: 'Bizimle İletişime Geç' })}
+                  </Text>
+                  <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                    {t('common:contact_us_desc', { defaultValue: 'Sorularınız, önerileriniz veya sorunlarınız için bize ulaşın' })}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Contact Us */}
-        <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => setContactModalVisible(true)}
-          >
-            <View style={styles.settingItemLeft}>
-              <Ionicons name="mail-outline" size={22} color={colors.primary} />
-              <View style={styles.settingItemContent}>
-                <Text style={[styles.settingItemTitle, { color: colors.text }]}>
-                  {t('common:contact_us', { defaultValue: 'Bizimle İletişime Geç' })}
-                </Text>
-                <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
-                  {t('common:contact_us_desc', { defaultValue: 'Sorularınız, önerileriniz veya sorunlarınız için bize ulaşın' })}
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
-          </TouchableOpacity>
+              <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* App Info */}
@@ -143,34 +152,36 @@ export default function SettingsScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: {
-    padding: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+  },
+  settingsGroup: {
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+    gap: spacing.md,
+  },
+  groupTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.muted,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: spacing.lg,
-    marginBottom: spacing.lg,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-      },
-    }),
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.md,

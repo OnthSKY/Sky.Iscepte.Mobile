@@ -24,7 +24,14 @@ export default function Modal({ visible, onRequestClose, children, containerStyl
 
 const getStyles = (colors: any) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  card: { backgroundColor: colors.background, padding: spacing.lg, borderRadius: 12, width: '85%' },
+  card: { 
+    backgroundColor: colors.background, 
+    padding: spacing.lg, 
+    borderRadius: 12, 
+    width: '90%',
+    maxWidth: 600,
+    maxHeight: '90%',
+  },
 });
 
 

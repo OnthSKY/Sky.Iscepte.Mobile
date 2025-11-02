@@ -68,7 +68,7 @@ export default function ToastManager() {
       <Snackbar
         visible={visible}
         onDismiss={handleDismiss}
-        duration={currentToast.duration || 3000}
+        duration={4000}
         style={{ backgroundColor: getBackgroundColor(currentToast.type) }}
         action={
           isReportableError
@@ -78,7 +78,7 @@ export default function ToastManager() {
                 textColor: '#fff',
               }
             : {
-                label: t('confirm', { defaultValue: 'OK' }),
+                label: t('thanks', { defaultValue: 'Teşekkürler' }),
                 onPress: handleDismiss,
                 textColor: '#fff',
               }

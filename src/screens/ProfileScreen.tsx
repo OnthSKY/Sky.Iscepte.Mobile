@@ -12,6 +12,7 @@ import LanguagePicker from '../shared/components/LanguagePicker';
 import ThemeGradientToggle from '../shared/components/ThemeGradientToggle';
 import ConfirmDialog from '../shared/components/ConfirmDialog';
 import LoadingState from '../shared/components/LoadingState';
+import ErrorReportModal from '../shared/components/ErrorReportModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function ProfileScreen() {
@@ -19,6 +20,7 @@ export default function ProfileScreen() {
   const { colors, activeTheme } = useTheme();
   const logout = useAppStore((s: any) => s.logout);
   const [logoutVisible, setLogoutVisible] = React.useState(false);
+  const [contactModalVisible, setContactModalVisible] = React.useState(false);
   
   // Fetch profile from API
   const { data: profile, isLoading: isLoadingProfile } = useProfileQuery();
@@ -134,6 +136,28 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.settingsGroup}>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => setContactModalVisible(true)}
+            >
+              <View style={styles.settingItemLeft}>
+                <Ionicons name="mail-outline" size={22} color={colors.primary} />
+                <View style={styles.settingItemContent}>
+                  <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                    {t('common:contact_us', { defaultValue: 'Bizimle İletişime Geç' })}
+                  </Text>
+                  <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                    {t('common:contact_us_desc', { defaultValue: 'Sorularınız, önerileriniz veya sorunlarınız için bize ulaşın' })}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.footer}>
           <Text style={styles.versionText}>{t('common:version', { version: '1.0.0' })}</Text>
         </View>
@@ -147,6 +171,15 @@ export default function ProfileScreen() {
         cancelText={t('common:cancel')}
         onCancel={() => setLogoutVisible(false)}
         onConfirm={logout}
+      />
+
+      <ErrorReportModal
+        visible={contactModalVisible}
+        onClose={() => setContactModalVisible(false)}
+        errorCategory="business"
+        errorMessage={t('common:contact_form', { defaultValue: 'İletişim Formu' })}
+        context="profile-contact"
+        mode="contact"
       />
     </ScreenLayout>
   );
@@ -185,9 +218,7 @@ const getStyles = ({ colors }: { colors: any }) =>
       fontSize: 22,
       fontWeight: 'bold',
       color: '#fff',
-      textShadowColor: 'rgba(0, 0, 0, 0.1)',
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 2,
+      textShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
     },
     email: {
       fontSize: 16,
@@ -209,15 +240,16 @@ const getStyles = ({ colors }: { colors: any }) =>
     settingsGroup: {
       paddingHorizontal: spacing.lg,
       marginTop: spacing.xl,
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     groupTitle: {
       fontSize: 14,
       fontWeight: '600',
       color: colors.muted,
       textTransform: 'uppercase',
-      marginBottom: spacing.xs,
+      marginBottom: 4,
       paddingHorizontal: spacing.xs,
+      letterSpacing: 0.5,
     },
     card: {
       backgroundColor: colors.surface,
@@ -273,6 +305,29 @@ const getStyles = ({ colors }: { colors: any }) =>
       fontSize: 16,
       color: colors.text,
       fontWeight: '500',
+    },
+    settingItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+    },
+    settingItemLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      gap: spacing.md,
+    },
+    settingItemContent: {
+      flex: 1,
+    },
+    settingItemTitle: {
+      fontSize: 16,
+      fontWeight: '500',
+      marginBottom: spacing.xs / 2,
+    },
+    settingItemDesc: {
+      fontSize: 12,
     },
   });
 
