@@ -1,6 +1,7 @@
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider, MD3LightTheme as PaperDefaultTheme, MD3DarkTheme as PaperDarkTheme } from 'react-native-paper';
+import { StatusBar } from 'expo-status-bar';
 import 'react-native-gesture-handler';
 import React from 'react';
 import './src/i18n';
@@ -110,6 +111,7 @@ function AppWrapper() {
   
   return (
     <PaperProvider theme={mergedPaperTheme}>
+      <StatusBar style={isDark ? "light" : "dark"} />
       <NavigationContainer theme={navigationTheme}>
         <NavigationPrefetchWrapper />
         <RootStack.Navigator screenOptions={{ headerShown: false }}>

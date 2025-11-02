@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, TextInput, KeyboardAvoidingView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import Modal from './Modal';
 import Button from './Button';
+import Select from './Select';
 import { ErrorCategory } from '../services/notificationService';
 import spacing from '../../core/constants/spacing';
 import { useAppStore } from '../../store/useAppStore';
@@ -17,11 +18,13 @@ import notificationService from '../services/notificationService';
 import errorReportService from '../services/errorReportService';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
+export type ContactCategory = 'system' | 'suggestion' | 'question' | 'other';
+
 type Props = {
   visible: boolean;
   onClose: () => void;
-  errorCategory: ErrorCategory;
-  errorMessage: string;
+  errorCategory?: ErrorCategory;
+  errorMessage?: string;
   errorDetails?: any;
   context?: string;
   mode?: 'error' | 'contact'; // 'error' for error reports, 'contact' for general contact
@@ -44,6 +47,15 @@ export default function ErrorReportModal({
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [contactCategory, setContactCategory] = useState<ContactCategory>('question');
+
+  // Contact category options
+  const contactCategoryOptions = useMemo(() => [
+    { label: t('contact_categories.system', { defaultValue: 'Sistem Hatası' }), value: 'system' },
+    { label: t('contact_categories.suggestion', { defaultValue: 'Öneri/Talep' }), value: 'suggestion' },
+    { label: t('contact_categories.question', { defaultValue: 'Soru' }), value: 'question' },
+    { label: t('contact_categories.other', { defaultValue: 'Diğer' }), value: 'other' },
+  ], [t]);
 
   // Determine target based on error category or mode
   const target = useMemo(() => {
@@ -63,8 +75,8 @@ export default function ErrorReportModal({
   // Collect automatic error details
   const autoDetails = useMemo(() => {
     const details: any = {
-      message: errorMessage,
-      category: errorCategory,
+      message: mode === 'contact' ? `Contact Form - ${contactCategory}` : errorMessage,
+      category: mode === 'contact' ? contactCategory : errorCategory,
       context: context || 'unknown',
       timestamp: new Date().toISOString(),
       userRole: role,
@@ -83,7 +95,7 @@ export default function ErrorReportModal({
     }
 
     return details;
-  }, [errorMessage, errorCategory, context, errorDetails, role, user]);
+  }, [errorMessage, errorCategory, contactCategory, context, errorDetails, role, user, mode]);
 
   const handleSubmit = async () => {
     if (!description.trim()) {
@@ -95,23 +107,33 @@ export default function ErrorReportModal({
 
     setIsSubmitting(true);
     try {
+      const finalCategory = mode === 'contact' ? 'business' : (errorCategory || 'unknown');
+      const finalMessage = mode === 'contact' 
+        ? `Contact: ${t(`contact_categories.${contactCategory}`, { defaultValue: contactCategory })}`
+        : (errorMessage || '');
+
       await errorReportService.submitErrorReport({
-        category: errorCategory,
-        message: errorMessage,
+        category: finalCategory as ErrorCategory,
+        message: finalMessage,
         description: description.trim(),
         targetRole: target.role,
         autoDetails,
       });
 
       notificationService.success(
-        t('error_report_sent', { defaultValue: 'Hata bildirimi gönderildi' })
+        mode === 'contact'
+          ? t('success_message_sent', { defaultValue: 'Mesajınız gönderildi' })
+          : t('error_report_sent', { defaultValue: 'Hata bildirimi gönderildi' })
       );
       
       setDescription('');
+      setContactCategory('question');
       onClose();
     } catch (error: any) {
       notificationService.error(
-        error?.message || t('error_report_failed', { defaultValue: 'Hata bildirimi gönderilemedi' })
+        error?.message || (mode === 'contact'
+          ? t('error_message_failed', { defaultValue: 'Mesaj gönderilemedi' })
+          : t('error_report_failed', { defaultValue: 'Hata bildirimi gönderilemedi' }))
       );
     } finally {
       setIsSubmitting(false);
@@ -120,6 +142,7 @@ export default function ErrorReportModal({
 
   const handleClose = () => {
     setDescription('');
+    setContactCategory('question');
     onClose();
   };
 
@@ -127,7 +150,11 @@ export default function ErrorReportModal({
 
   return (
     <Modal visible={visible} onRequestClose={handleClose}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={true}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ maxHeight: '90%' }}
+      >
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={true}>
         <View style={styles.header}>
           <View style={[styles.iconContainer, { backgroundColor: mode === 'contact' ? `${colors.primary}15` : `${colors.error}15` }]}>
             <Ionicons 
@@ -197,19 +224,35 @@ export default function ErrorReportModal({
         )}
 
         {mode === 'contact' && (
-          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoRowLeft}>
-                <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
-                <Text style={[styles.infoLabel, { color: colors.muted }]}>
-                  {t('report_to', { defaultValue: 'Mesajınız iletilecek' })}:
+          <View style={styles.infoSection}>
+            <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoRowLeft}>
+                  <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
+                  <Text style={[styles.infoLabel, { color: colors.muted }]}>
+                    {t('report_to', { defaultValue: 'Mesajınız iletilecek' })}:
+                  </Text>
+                </View>
+                <View style={[styles.badge, { backgroundColor: `${colors.primary}15` }]}>
+                  <Text style={[styles.badgeText, { color: colors.primary }]}>
+                    {target.label}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.formSection}>
+              <View style={styles.labelRow}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  {t('contact_category', { defaultValue: 'İstek Kategorisi' })}
                 </Text>
               </View>
-              <View style={[styles.badge, { backgroundColor: `${colors.primary}15` }]}>
-                <Text style={[styles.badgeText, { color: colors.primary }]}>
-                  {target.label}
-                </Text>
-              </View>
+              <Select
+                value={contactCategory}
+                options={contactCategoryOptions}
+                placeholder={t('contact_category', { defaultValue: 'İstek Kategorisi' })}
+                onChange={(value) => setContactCategory(value as ContactCategory)}
+              />
             </View>
           </View>
         )}
@@ -333,7 +376,8 @@ export default function ErrorReportModal({
             disabled={isSubmitting || !description.trim()}
           />
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

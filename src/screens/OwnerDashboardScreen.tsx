@@ -86,11 +86,11 @@ export default function OwnerDashboardScreen() {
         </View>
       </View>
 
-      {/* Compact stats row (hidden by default, tap any to toggle) */}
+      {/* Compact stats row with eye icon to toggle all */}
       <View style={{ paddingHorizontal: 16, paddingTop: 16, marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           {/* Sales small card */}
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowValues((v) => !v)} activeOpacity={0.8}>
+          <View style={{ flex: 1 }}>
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_sales', { defaultValue: 'Satış' })}</Text>
               <Text style={{ color: showValues ? colors.success : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
@@ -98,10 +98,10 @@ export default function OwnerDashboardScreen() {
               </Text>
               <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:income_desc', { defaultValue: 'Gelir' })}</Text>
             </View>
-          </TouchableOpacity>
+          </View>
 
           {/* Expense small card */}
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowValues((v) => !v)} activeOpacity={0.8}>
+          <View style={{ flex: 1 }}>
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Gelir / Gider' })}</Text>
               <Text style={{ color: showValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
@@ -109,10 +109,10 @@ export default function OwnerDashboardScreen() {
               </Text>
               <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:expense_desc', { defaultValue: 'Gelir / Gider' })}</Text>
             </View>
-          </TouchableOpacity>
+          </View>
 
           {/* Total small card */}
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowValues((v) => !v)} activeOpacity={0.8}>
+          <View style={{ flex: 1 }}>
             <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
               <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_total', { defaultValue: 'Toplam' })}</Text>
               <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
@@ -120,6 +120,19 @@ export default function OwnerDashboardScreen() {
               </Text>
               <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:net_desc', { defaultValue: 'Net' })}</Text>
             </View>
+          </View>
+
+          {/* Eye icon to toggle all */}
+          <TouchableOpacity 
+            style={{ justifyContent: 'center', paddingHorizontal: 8 }}
+            onPress={() => setShowValues((v) => !v)}
+            activeOpacity={0.8}
+          >
+            <Ionicons 
+              name={showValues ? 'eye-off-outline' : 'eye-outline'} 
+              size={24} 
+              color={colors.muted} 
+            />
           </TouchableOpacity>
         </View>
       </View>
