@@ -8,6 +8,11 @@ import { toQueryParams } from '../../../shared/utils/query';
 
 export type Currency = 'TRY' | 'USD' | 'EUR';
 
+import { BaseCustomField } from '../../../shared/types/customFields';
+
+// Purchase custom field - inherits from BaseCustomField
+export type PurchaseCustomField = BaseCustomField;
+
 export interface Purchase {
   id: string;
   supplierId?: string;
@@ -20,6 +25,9 @@ export interface Purchase {
   total?: number;
   date?: string;
   status?: string;
+  purchaseTypeId?: string;
+  purchaseTypeName?: string;
+  customFields?: PurchaseCustomField[]; // Her purchase'a özel custom field'lar
 }
 
 export interface PurchaseStats {

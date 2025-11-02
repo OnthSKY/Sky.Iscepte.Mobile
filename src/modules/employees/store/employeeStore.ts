@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import { Role } from '../../../core/config/appConstants';
+import { BaseCustomField } from '../../../shared/types/customFields';
 
 export type Currency = 'TRY' | 'USD' | 'EUR';
+
+export interface EmployeeCustomField extends BaseCustomField {}
 
 export interface Employee { 
   id: string | number;
@@ -21,10 +24,12 @@ export interface Employee {
   username?: string;
   password?: string; // Only for creation, not stored
   role?: Role; // User role (staff, owner, admin)
+  userRole?: Role; // User role (staff, owner, admin)
   // Permissions
   customPermissions?: Record<string, {
     actions: string[];
   }>;
+  customFields?: EmployeeCustomField[];
 }
 
 interface EmployeeState {

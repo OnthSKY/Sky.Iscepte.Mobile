@@ -6,6 +6,11 @@ import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
 
+import { BaseCustomField } from '../../../shared/types/customFields';
+
+// Customer custom field - inherits from BaseCustomField
+export type CustomerCustomField = BaseCustomField;
+
 export interface Customer {
   id: string;
   name?: string;
@@ -14,6 +19,11 @@ export interface Customer {
   address?: string;
   isActive?: boolean;
   totalOrders?: number;
+  balance?: number;
+  currency?: 'TRY' | 'USD' | 'EUR';
+  group?: string;
+  debtLimit?: number;
+  customFields?: CustomerCustomField[]; // Dynamic custom fields
 }
 
 export interface CustomerStats {

@@ -1,8 +1,11 @@
 import { create } from 'zustand';
+import { BaseCustomField } from '../../../shared/types/customFields';
 
 export type ExpenseType = 'expense'; // Only expense, income has separate module
 export type ExpenseSource = 'product_purchase' | 'employee_salary' | 'manual';
 export type Currency = 'TRY' | 'USD' | 'EUR';
+
+export interface ExpenseCustomField extends BaseCustomField {}
 
 export interface Expense { 
   id: string | number;
@@ -23,6 +26,7 @@ export interface Expense {
   productId?: string;
   // Metadata
   isSystemGenerated?: boolean; // true if auto-generated from system
+  customFields?: ExpenseCustomField[];
 }
 
 interface ExpenseState {

@@ -15,7 +15,12 @@ export default function Card({ style, onPress, children, title, subtitle, header
   const styles = getStyles(colors);
   if (onPress) {
     return (
-      <TouchableOpacity style={[styles.card, style]} onPress={onPress} {...rest}>
+      <TouchableOpacity 
+        style={[styles.card, style]} 
+        onPress={onPress} 
+        activeOpacity={1}
+        {...rest}
+      >
         {title ? (
           <View style={styles.header}>
             <View style={{ flex: 1 }}>

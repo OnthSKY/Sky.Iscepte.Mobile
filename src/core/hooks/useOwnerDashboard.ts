@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../store/useAppStore';
 import { useEmployeesQuery } from '../../modules/employees/hooks/useEmployeesQuery';
 import { useOwnerStoreSummary, useOwnerEmployeeSummary, useOwnerTopProducts } from './useOwnerDashboardSummary';
+import { CURRENCY_SYMBOLS } from '../../modules/products/utils/currency';
 
 export interface OwnerDashboardStats {
   sales: string;
@@ -75,29 +76,63 @@ export function useOwnerDashboard() {
   
   // Calculate stats from API data
   const stats = useMemo(() => {
-    const salesAmount = storeSummary?.sales || 0;
-    const expensesAmount = storeSummary?.expenses || 0;
-    const totalAmount = storeSummary?.total || 0;
+    const sales = storeSummary?.sales || [];
+    const expenses = storeSummary?.expenses || [];
+    const total = storeSummary?.total || [];
+    
+    // Format as currency strings
+    const salesStr = sales.map((s: any) => {
+      const symbol = CURRENCY_SYMBOLS[s.currency as keyof typeof CURRENCY_SYMBOLS] || '₺';
+      return `${symbol}${s.amount.toLocaleString('tr-TR')}`;
+    }).join(' / ') || '₺0';
+    
+    const expensesStr = expenses.map((e: any) => {
+      const symbol = CURRENCY_SYMBOLS[e.currency as keyof typeof CURRENCY_SYMBOLS] || '₺';
+      return `${symbol}${e.amount.toLocaleString('tr-TR')}`;
+    }).join(' / ') || '₺0';
+    
+    const totalStr = total.map((t: any) => {
+      const symbol = CURRENCY_SYMBOLS[t.currency as keyof typeof CURRENCY_SYMBOLS] || '₺';
+      return `${symbol}${t.amount.toLocaleString('tr-TR')}`;
+    }).join(' / ') || '₺0';
     
     return {
-      sales: `₺${salesAmount.toLocaleString('tr-TR')}`,
-      expenses: `₺${expensesAmount.toLocaleString('tr-TR')}`,
-      total: `₺${totalAmount.toLocaleString('tr-TR')}`,
+      sales: salesStr,
+      expenses: expensesStr,
+      total: totalStr,
     };
   }, [storeSummary]);
   
   // Employee stats - from API
   const employeeStats = useMemo(() => {
-    const empSales = employeeSummary?.sales || 0;
-    const empExpenses = employeeSummary?.expenses || 0;
-    const empTotal = employeeSummary?.total || 0;
+    const empSales = employeeSummary?.sales || [];
+    const empExpenses = employeeSummary?.expenses || [];
+    const empTotal = employeeSummary?.total || [];
+    const productSales = employeeSummary?.productSales || [];
+    const productCount = employeeSummary?.productCount || 0;
+    
+    // Format as currency strings
+    const salesStr = empSales.map((s: any) => {
+      const symbol = CURRENCY_SYMBOLS[s.currency as keyof typeof CURRENCY_SYMBOLS] || '₺';
+      return `${symbol}${s.amount.toLocaleString('tr-TR')}`;
+    }).join(' / ') || '₺0';
+    
+    const expensesStr = empExpenses.map((e: any) => {
+      const symbol = CURRENCY_SYMBOLS[e.currency as keyof typeof CURRENCY_SYMBOLS] || '₺';
+      return `${symbol}${e.amount.toLocaleString('tr-TR')}`;
+    }).join(' / ') || '₺0';
+    
+    const totalStr = empTotal.map((t: any) => {
+      const symbol = CURRENCY_SYMBOLS[t.currency as keyof typeof CURRENCY_SYMBOLS] || '₺';
+      return `${symbol}${t.amount.toLocaleString('tr-TR')}`;
+    }).join(' / ') || '₺0';
     
     return {
-      sales: `₺${empSales.toLocaleString('tr-TR')}`,
-      expenses: `₺${empExpenses.toLocaleString('tr-TR')}`,
-      total: `₺${empTotal.toLocaleString('tr-TR')}`,
-      productSales: employeeSummary?.productSales || [],
-      productCount: employeeSummary?.productCount || 0,
+      sales: salesStr,
+      expenses: expensesStr,
+      total: totalStr,
+      productSales,
+      productCount,
     };
   }, [employeeSummary]);
   

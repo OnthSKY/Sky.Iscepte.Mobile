@@ -344,7 +344,10 @@ export function showErrorNotification(
     ...options,
     category,
     key,
-    details: isApiError(error) ? error.details : undefined,
+    details: isApiError(error) ? {
+      ...error.details,
+      errorMeta: error.errorMeta, // Include dynamic errorMeta in details
+    } : undefined,
   });
 }
 
@@ -364,7 +367,12 @@ export function showApiErrorNotification(
     ? `api:${error.code}`
     : `api:${message}`;
   
-  notificationService.apiError(message, details || (isApiError(error) ? error.details : undefined), {
+  const apiErrorDetails = isApiError(error) ? {
+    ...error.details,
+    errorMeta: error.errorMeta, // Include dynamic errorMeta in details
+  } : details;
+
+  notificationService.apiError(message, apiErrorDetails, {
     ...options,
     key,
   });

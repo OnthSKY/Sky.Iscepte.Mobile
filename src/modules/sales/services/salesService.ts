@@ -5,8 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
+import { BaseCustomField } from '../../../shared/types/customFields';
 
 export type Currency = 'TRY' | 'USD' | 'EUR';
+
+// Sale custom field - inherits from BaseCustomField
+export type SalesCustomField = BaseCustomField;
 
 export interface Sale {
   id: string;
@@ -20,6 +24,7 @@ export interface Sale {
   total?: number;
   date?: string;
   status?: string;
+  customFields?: SalesCustomField[];
 }
 
 export interface SalesStats {

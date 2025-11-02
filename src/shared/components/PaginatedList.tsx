@@ -33,14 +33,17 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
   const isFirstLoad = useRef(true);
 
   // Filter items if filterItems function is provided
+  // Ensure items is always an array before filtering
   const filteredItems = useMemo(() => {
-    return filterItems ? filterItems(items) : items;
+    const itemsArray = Array.isArray(items) ? items : [];
+    return filterItems ? filterItems(itemsArray) : itemsArray;
   }, [items, filterItems]);
 
   const canLoadMore = useMemo(() => {
     // Use original total before filtering for pagination
-    return items.length < total;
-  }, [items.length, total]);
+    const itemsArray = Array.isArray(items) ? items : [];
+    return itemsArray.length < total;
+  }, [items, total]);
 
   const load = useCallback(async (nextPage: number, reset = false) => {
     if (loadingRef.current) return;
@@ -48,8 +51,10 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
     setLoading(true);
     try {
       const res = await fetchPage({ page: nextPage, pageSize, query });
-      setTotal(res.total);
-      setItems((prev) => (reset ? res.items : [...prev, ...res.items]));
+      setTotal(res.total || 0);
+      // Ensure items is always an array
+      const newItems = Array.isArray(res.items) ? res.items : [];
+      setItems((prev) => (reset ? newItems : [...prev, ...newItems]));
       setPage(nextPage);
       isFirstLoad.current = false;
     } finally {
@@ -75,7 +80,8 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
   }, [query]); // Query changes should trigger reload
 
   // Initial loading check - show loading if first load is in progress or if loading and no items yet
-  const isInitialLoading = (loading && isFirstLoad.current) || (loading && items.length === 0);
+  const itemsArray = Array.isArray(items) ? items : [];
+  const isInitialLoading = (loading && isFirstLoad.current) || (loading && itemsArray.length === 0);
 
   return (
     <FlatList

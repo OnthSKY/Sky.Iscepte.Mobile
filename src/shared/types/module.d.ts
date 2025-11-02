@@ -7,6 +7,13 @@ export interface BaseEntity {
 export interface Paginated<T> {
   items: T[];
   total: number;
+  // Support for new PaginatedData structure
+  totalCount?: number;
+  page?: number;
+  pageSize?: number;
+  totalPage?: number;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
 }
 
 

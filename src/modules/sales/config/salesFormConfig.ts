@@ -5,6 +5,7 @@
 
 import { DynamicField } from '../../../shared/components/DynamicForm';
 import { Sale } from '../store/salesStore';
+import { formatDate } from '../../../core/utils/dateUtils';
 
 export const salesFormFields: DynamicField[] = [
   { name: 'productId', labelKey: 'product', type: 'select', required: true },
@@ -12,7 +13,8 @@ export const salesFormFields: DynamicField[] = [
   { name: 'quantity', labelKey: 'quantity', type: 'number', required: true },
   { name: 'amount', labelKey: 'total_amount', type: 'number', required: true },
   { name: 'customerId', labelKey: 'customer', type: 'select' },
-  { name: 'title', labelKey: 'notes', type: 'textarea' },
+  { name: 'date', labelKey: 'date', type: 'date', required: true, defaultValue: formatDate(new Date()) },
+  // Note: 'title' (notes) field is rendered separately in SalesFormScreen for better visibility
 ];
 
 export const salesValidator = (data: Partial<Sale>): Record<string, string> => {

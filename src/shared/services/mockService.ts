@@ -10,10 +10,25 @@ import revenueSeed from '../../mocks/revenue.json';
 import modules from '../../mocks/modules.json';
 import roles from '../../mocks/roles.json';
 import usersSeed from '../../mocks/users.json';
+import { BaseControllerResponse, PaginatedData } from '../types/apiResponse';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 type Entity = { id: number | string; [k: string]: any };
+
+type Currency = 'TRY' | 'USD' | 'EUR';
+
+// Mock currency conversion rates (to TRY)
+const CURRENCY_RATES: Record<Currency, number> = {
+  TRY: 1,
+  USD: 35, // 1 USD = 35 TRY
+  EUR: 38, // 1 EUR = 38 TRY
+};
+
+// Convert any currency amount to TRY
+function convertToTRY(amount: number, currency: Currency = 'TRY'): number {
+  return amount * CURRENCY_RATES[currency];
+}
 
 function createStore(seed: Entity[]) {
   let data: Entity[] = Array.isArray(seed) ? [...seed] : [];
@@ -122,6 +137,13 @@ const defaultPermissionGroupsSeed = [
   },
 ];
 
+// Default purchase types seed
+const defaultPurchaseTypesSeed = [
+  { id: '1', name: 'Elektronik Alışı' },
+  { id: '2', name: 'Hammadde Alışı' },
+  { id: '3', name: 'Aksesuar Alışı' },
+];
+
 const stores = {
   customers: createStore(customersSeed as unknown as Entity[]),
   expenses: createStore(expensesSeed as unknown as Entity[]),
@@ -133,6 +155,7 @@ const stores = {
   suppliers: createStore(suppliersSeed as unknown as Entity[]),
   purchases: createStore(purchasesSeed as unknown as Entity[]),
   revenue: createStore(revenueSeed as unknown as Entity[]),
+  'purchase-types': createStore(defaultPurchaseTypesSeed as unknown as Entity[]),
   modules: { list: () => modules },
   roles: { list: () => roles },
   users: createStore(usersSeed as unknown as Entity[]),
@@ -203,7 +226,7 @@ function handleAuthRequest<T>(method: HttpMethod, url: string, body?: any, authT
             const accessToken = `mock-access-token-${user.id}`;
             const refreshToken = `mock-refresh-token-${user.id}`;
             
-            const response = {
+            const responseData = {
               accessToken,
               refreshToken,
               user: {
@@ -213,11 +236,11 @@ function handleAuthRequest<T>(method: HttpMethod, url: string, body?: any, authT
               },
             };
             
-            resolve(response as T);
+            resolve(wrapResponse(responseData, 200, 'OperationSuccessful') as T);
             return;
           }
         }
-        reject({ status: 401, message: 'Invalid credentials' });
+        reject(wrapErrorResponse('Invalid credentials', 401));
       } else if (url === '/auth/refresh' && method === 'POST') {
         // Get refresh token from body or Authorization header
         const { refreshToken: bodyRefreshToken } = body || {};
@@ -232,24 +255,64 @@ function handleAuthRequest<T>(method: HttpMethod, url: string, body?: any, authT
           if (user) {
             const newAccessToken = `mock-access-token-${user.id}`;
             const newRefreshToken = `mock-refresh-token-${user.id}`;
-            const response = {
+            const responseData = {
               accessToken: newAccessToken,
               refreshToken: newRefreshToken,
             };
-            resolve(response as T);
+            resolve(wrapResponse(responseData, 200, 'OperationSuccessful') as T);
             return;
           }
         }
         
-        reject({ status: 401, message: 'Invalid refresh token' });
+        reject(wrapErrorResponse('Invalid refresh token', 401));
       } else if (url === '/auth/logout' && method === 'POST') {
-        // Just return success for logout
-        resolve({ success: true } as T);
+        // Just return success for logout (NoContent response)
+        resolve(wrapResponse(undefined, 204, 'OperationSuccessful') as T);
       } else {
-        reject({ status: 404, message: 'Auth endpoint not found' });
+        reject(wrapErrorResponse('Auth endpoint not found', 404));
       }
     }, 300); // Simulate network delay
   });
+}
+
+// Helper function to wrap response in BaseControllerResponse format
+// Note: statusCode is JsonIgnore in backend, so it's not in response body
+// HTTP response status code will be set separately if needed
+function wrapResponse<T>(data: T, statusCode: number = 200, message: string = 'OperationSuccessful'): BaseControllerResponse<T> {
+  return {
+    message,
+    data,
+    // statusCode is not included (JsonIgnore in backend)
+  };
+}
+
+// Helper function to wrap error response
+// Note: statusCode is JsonIgnore in backend, so it's not in response body
+function wrapErrorResponse(message: string, statusCode: number = 400, errorMeta?: any): BaseControllerResponse {
+  return {
+    message,
+    errorMeta,
+    // statusCode is not included (JsonIgnore in backend)
+  };
+}
+
+// Helper function to create paginated data
+function createPaginatedData<T>(
+  items: T[],
+  totalCount: number,
+  page: number,
+  pageSize: number
+): PaginatedData<T> {
+  const totalPage = Math.ceil(totalCount / pageSize);
+  return {
+    items,
+    totalCount,
+    page,
+    pageSize,
+    totalPage,
+    hasNextPage: page < totalPage,
+    hasPreviousPage: page > 1,
+  };
 }
 
 // Filter data by owner ID (admin sees all)
@@ -277,16 +340,16 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   if ((url === '/users/me' || url === '/profile') && method === 'GET') {
     const userId = extractUserIdFromToken(authToken || null);
     if (!userId) {
-      throw new Error('Unauthorized');
+      throw wrapErrorResponse('Unauthorized', 401);
     }
     
     const user = (usersSeed as any[]).find((u: any) => u.id === userId);
     if (!user) {
-      throw new Error('User not found');
+      throw wrapErrorResponse('User not found', 404);
     }
     
-    // Return user profile with all details
-    return user as T;
+    // Return user profile with all details wrapped in response
+    return wrapResponse(user, 200, 'OperationSuccessful') as T;
   }
 
   // Get current owner ID from token
@@ -294,7 +357,8 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
 
   // Handle dashboard endpoints
   if (url.startsWith('/dashboard/owner/')) {
-    return calculateOwnerDashboardSummary(url, currentOwnerId) as T;
+    const summary = calculateOwnerDashboardSummary(url, currentOwnerId);
+    return wrapResponse(summary, 200, 'OperationSuccessful') as T;
   }
 
   // Supports: /resource?page=1&pageSize=20, /resource/:id
@@ -320,7 +384,7 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   if (id === 'stats') {
     try {
       const stats = calculateStats(resource, currentOwnerId);
-      return stats as T;
+      return wrapResponse(stats, 200, 'OperationSuccessful') as T;
     } catch (error: any) {
       // If stats calculation fails, return default empty stats instead of throwing
       // Return default empty stats structure based on resource
@@ -336,7 +400,7 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
       };
       
       const fallbackStats = defaultStats[resource] || { total: 0 };
-      return fallbackStats as T;
+      return wrapResponse(fallbackStats, 200, 'OperationSuccessful') as T;
     }
   }
   
@@ -344,20 +408,21 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   if (!store) {
     // Instead of throwing, return empty array for list endpoints or null for detail endpoints
     if (!id) {
-      return [] as T;
+      const emptyPaginated = createPaginatedData([], 0, page, pageSize);
+      return wrapResponse(emptyPaginated, 200, 'OperationSuccessful') as T;
     }
-    throw new Error(`Mock not found for ${url}`);
+    throw wrapErrorResponse(`Mock not found for ${url}`, 404);
   }
 
   if (method === 'GET') {
     if (id) {
       const item = store.get ? store.get(id) : null;
-      if (!item) throw new Error('Not found');
+      if (!item) throw wrapErrorResponse('Not found', 404);
       // Check owner access
       const filtered = filterByOwner([item], currentOwnerId);
-      if (filtered.length === 0) throw new Error('Not found');
+      if (filtered.length === 0) throw wrapErrorResponse('Not found', 404);
       
-      // Normalize product/stock item: convert field names and types
+      // Normalize all entities: ensure ID is string and handle resource-specific fields
       let result = filtered[0];
       if (resource === 'stock' || resource === 'products') {
         const normalized: any = {
@@ -372,15 +437,15 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
           delete normalized.active;
         }
         result = normalized;
-      } else if (resource === 'employees') {
-        // Normalize employees: ensure ID is string
+      } else {
+        // Normalize all other entities: ensure ID is string
         result = {
           ...result,
           id: String(result.id),
         };
       }
       
-      return result as T;
+      return wrapResponse(result, 200, 'OperationSuccessful') as T;
     }
     
     // Special handling for expenses and revenue: merge system-generated data with manual entries
@@ -531,7 +596,7 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
     const end = start + pageSize;
     let items = all.slice(start, end);
     
-    // Normalize products/stock items: convert field names and types
+    // Normalize all entities: ensure ID is string and handle resource-specific fields
     if (resource === 'stock' || resource === 'products') {
       items = items.map((item: any) => {
         const normalized: any = {
@@ -547,52 +612,54 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
         }
         return normalized;
       });
-    } else if (resource === 'employees') {
-      // Normalize employees: ensure ID is string
+    } else {
+      // Normalize all other entities: ensure ID is string
       items = items.map((item: any) => ({
         ...item,
         id: String(item.id),
       }));
     }
     
-    const payload: any = { items, total: all.length };
-    return payload as T;
+    const paginatedData = createPaginatedData(items, all.length, page, pageSize);
+    return wrapResponse(paginatedData, 200, 'OperationSuccessful') as T;
   }
 
   if (method === 'POST') {
-    if (!store.create) throw new Error('Create not supported');
+    if (!store.create) throw wrapErrorResponse('Create not supported', 405);
     // Add ownerId to new items if not admin (but don't send ownerId in body)
     const itemToCreate = { ...body };
     if (currentOwnerId !== null) {
       itemToCreate.ownerId = currentOwnerId;
     }
-    return store.create(itemToCreate) as T;
+    const created = store.create(itemToCreate);
+    return wrapResponse(created, 201, 'OperationSuccessful') as T;
   }
 
   if (method === 'PUT') {
-    if (!id || !store.update) throw new Error('Update not supported');
+    if (!id || !store.update) throw wrapErrorResponse('Update not supported', 405);
     // Check owner access before update
     const item = store.get ? store.get(id) : null;
-    if (!item) throw new Error('Not found');
+    if (!item) throw wrapErrorResponse('Not found', 404);
     const filtered = filterByOwner([item], currentOwnerId);
-    if (filtered.length === 0) throw new Error('Not found');
+    if (filtered.length === 0) throw wrapErrorResponse('Not found', 404);
     const updated = store.update(id, body);
-    if (!updated) throw new Error('Not found');
-    return updated as T;
+    if (!updated) throw wrapErrorResponse('Not found', 404);
+    return wrapResponse(updated, 200, 'OperationSuccessful') as T;
   }
 
   if (method === 'DELETE') {
-    if (!id || !store.remove) throw new Error('Delete not supported');
+    if (!id || !store.remove) throw wrapErrorResponse('Delete not supported', 405);
     // Check owner access before delete
     const item = store.get ? store.get(id) : null;
-    if (!item) throw new Error('Not found');
+    if (!item) throw wrapErrorResponse('Not found', 404);
     const filtered = filterByOwner([item], currentOwnerId);
-    if (filtered.length === 0) throw new Error('Not found');
+    if (filtered.length === 0) throw wrapErrorResponse('Not found', 404);
     const ok = store.remove(id);
-    return ({ success: ok } as unknown) as T;
+    // Return NoContent response for successful delete
+    return wrapResponse(undefined, 204, 'OperationSuccessful') as T;
   }
 
-  throw new Error('Unsupported method');
+  throw wrapErrorResponse('Unsupported method', 405);
 }
 
 // Calculate owner dashboard summary
@@ -663,9 +730,38 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
   if (endpoint === 'store-summary') {
     const filteredSales = filterByPeriod(allSales, period, true);
     const filteredExpenses = filterByPeriod(allExpenses, period, false);
-    const sales = filteredSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
-    const expenses = filteredExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-    const total = sales - expenses;
+    
+    // Group sales by currency (no conversion)
+    const salesByCurrency = new Map<string, number>();
+    filteredSales.forEach((s: any) => {
+      const amount = s.amount || s.total || 0;
+      const currency = s.currency || 'TRY';
+      const existing = salesByCurrency.get(currency) || 0;
+      salesByCurrency.set(currency, existing + amount);
+    });
+    
+    // Group expenses by currency (no conversion)
+    const expensesByCurrency = new Map<string, number>();
+    filteredExpenses.forEach((e: any) => {
+      const amount = e.amount || 0;
+      const currency = e.currency || 'TRY';
+      const existing = expensesByCurrency.get(currency) || 0;
+      expensesByCurrency.set(currency, existing + amount);
+    });
+    
+    // Calculate total by currency
+    const totalByCurrency = new Map<string, number>();
+    const allCurrencies = new Set([...salesByCurrency.keys(), ...expensesByCurrency.keys()]);
+    
+    allCurrencies.forEach((currency) => {
+      const salesAmount = salesByCurrency.get(currency) || 0;
+      const expensesAmount = expensesByCurrency.get(currency) || 0;
+      totalByCurrency.set(currency, salesAmount - expensesAmount);
+    });
+    
+    const sales = Array.from(salesByCurrency.entries()).map(([currency, amount]) => ({ amount, currency }));
+    const expenses = Array.from(expensesByCurrency.entries()).map(([currency, amount]) => ({ amount, currency }));
+    const total = Array.from(totalByCurrency.entries()).map(([currency, amount]) => ({ amount, currency }));
     
     return { sales, expenses, total };
   }
@@ -699,13 +795,14 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
     const employeeIdParam = queryParams.get('employeeId');
     const employeeId = employeeIdParam ? parseInt(employeeIdParam, 10) : null;
 
-    let employeeSales = 0;
-    let employeeExpenses = 0;
     let filteredSales: any[] = [];
 
     // First filter by period
     const periodFilteredSales = filterByPeriod(allSales, period, true);
     const periodFilteredExpenses = filterByPeriod(allExpenses, period, false);
+    
+    let salesByCurrency: Map<string, number>;
+    let expensesByCurrency: Map<string, number>;
     
     if (employeeId) {
       // Filter by specific employee
@@ -714,22 +811,62 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
         return saleEmployeeId === employeeId;
       });
       
-      employeeSales = filteredSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
-      
       const filteredExpenses = periodFilteredExpenses.filter((e: any) => {
         const expEmployeeId = e.employeeId ? parseInt(String(e.employeeId), 10) : null;
         return expEmployeeId === employeeId;
       });
       
-      employeeExpenses = filteredExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      // Group employee sales by currency
+      salesByCurrency = new Map<string, number>();
+      filteredSales.forEach((s: any) => {
+        const amount = s.amount || s.total || 0;
+        const currency = s.currency || 'TRY';
+        const existing = salesByCurrency.get(currency) || 0;
+        salesByCurrency.set(currency, existing + amount);
+      });
+      
+      // Group employee expenses by currency
+      expensesByCurrency = new Map<string, number>();
+      filteredExpenses.forEach((e: any) => {
+        const amount = e.amount || 0;
+        const currency = e.currency || 'TRY';
+        const existing = expensesByCurrency.get(currency) || 0;
+        expensesByCurrency.set(currency, existing + amount);
+      });
     } else {
-      // All employees summary
+      // All employees summary - group by currency
       filteredSales = periodFilteredSales;
-      employeeSales = filteredSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
-      employeeExpenses = periodFilteredExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      
+      salesByCurrency = new Map<string, number>();
+      filteredSales.forEach((s: any) => {
+        const amount = s.amount || s.total || 0;
+        const currency = s.currency || 'TRY';
+        const existing = salesByCurrency.get(currency) || 0;
+        salesByCurrency.set(currency, existing + amount);
+      });
+      
+      expensesByCurrency = new Map<string, number>();
+      periodFilteredExpenses.forEach((e: any) => {
+        const amount = e.amount || 0;
+        const currency = e.currency || 'TRY';
+        const existing = expensesByCurrency.get(currency) || 0;
+        expensesByCurrency.set(currency, existing + amount);
+      });
     }
-
-    const employeeTotal = employeeSales - employeeExpenses;
+    
+    // Calculate total by currency
+    const totalByCurrency = new Map<string, number>();
+    const allCurrencies = new Set([...salesByCurrency.keys(), ...expensesByCurrency.keys()]);
+    
+    allCurrencies.forEach((currency) => {
+      const salesAmount = salesByCurrency.get(currency) || 0;
+      const expensesAmount = expensesByCurrency.get(currency) || 0;
+      totalByCurrency.set(currency, salesAmount - expensesAmount);
+    });
+    
+    const employeeSales = Array.from(salesByCurrency.entries()).map(([currency, amount]) => ({ amount, currency }));
+    const employeeExpenses = Array.from(expensesByCurrency.entries()).map(([currency, amount]) => ({ amount, currency }));
+    const employeeTotal = Array.from(totalByCurrency.entries()).map(([currency, amount]) => ({ amount, currency }));
 
     // Calculate product sales details
     const productsStore: any = (stores as any).products;
@@ -760,7 +897,7 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
     };
   }
 
-  throw new Error(`Unknown dashboard endpoint: ${endpoint}`);
+  throw wrapErrorResponse(`Unknown dashboard endpoint: ${endpoint}`, 404);
 }
 
 // Calculate stats for modules
@@ -791,7 +928,11 @@ function calculateStats(resource: string, ownerId: number | null): any {
     case 'sales': {
       const completedSales = data.filter((s: any) => s.status === 'completed');
       const totalSales = completedSales.length;
-      const totalRevenue = completedSales.reduce((sum: number, s: any) => sum + (s.amount || 0), 0);
+      const totalRevenue = completedSales.reduce((sum: number, s: any) => {
+        const amount = s.amount || s.total || 0;
+        const currency = s.currency || 'TRY';
+        return sum + convertToTRY(amount, currency);
+      }, 0);
       const monthlySales = completedSales.filter((s: any) => {
         if (!s.date) return false;
         const saleDate = new Date(s.date);
@@ -836,8 +977,11 @@ function calculateStats(resource: string, ownerId: number | null): any {
       employeesData = filterByOwner(employeesData, ownerId);
       
       // Calculate expenses from product purchases (70% of price)
-      const expenseFromProducts = productsData.reduce((sum: number, p: any) => 
-        sum + Math.round((p.price || 0) * 0.7), 0);
+      const expenseFromProducts = productsData.reduce((sum: number, p: any) => {
+        const amount = Math.round((p.price || 0) * 0.7);
+        const currency = p.currency || 'TRY';
+        return sum + convertToTRY(amount, currency);
+      }, 0);
       
       // Calculate expenses from employee salaries
       const expenseFromSalaries = employeesData
@@ -846,14 +990,22 @@ function calculateStats(resource: string, ownerId: number | null): any {
       
       // Calculate manual expenses
       const manualExpenses = data.filter((e: any) => !e.isSystemGenerated || e.source === 'manual');
-      const expenseFromManual = manualExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      const expenseFromManual = manualExpenses.reduce((sum: number, e: any) => {
+        const amount = e.amount || 0;
+        const currency = e.currency || 'TRY';
+        return sum + convertToTRY(amount, currency);
+      }, 0);
       const monthlyExpenseFromManual = manualExpenses
         .filter((e: any) => {
           if (!e.date) return false;
           const expenseDate = new Date(e.date);
           return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
         })
-        .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+        .reduce((sum: number, e: any) => {
+          const amount = e.amount || 0;
+          const currency = e.currency || 'TRY';
+          return sum + convertToTRY(amount, currency);
+        }, 0);
       
       // Totals (only expenses)
       const totalExpenses = expenseFromProducts + expenseFromSalaries + expenseFromManual;
@@ -887,25 +1039,41 @@ function calculateStats(resource: string, ownerId: number | null): any {
       
       // Calculate revenue from sales
       const completedSales = salesData.filter((s: any) => s.status === 'completed');
-      const revenueFromSales = completedSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+      const revenueFromSales = completedSales.reduce((sum: number, s: any) => {
+        const amount = s.amount || s.total || 0;
+        const currency = s.currency || 'TRY';
+        return sum + convertToTRY(amount, currency);
+      }, 0);
       const monthlyRevenueFromSales = completedSales
         .filter((s: any) => {
           if (!s.date) return false;
           const saleDate = new Date(s.date);
           return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
         })
-        .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+        .reduce((sum: number, s: any) => {
+          const amount = s.amount || s.total || 0;
+          const currency = s.currency || 'TRY';
+          return sum + convertToTRY(amount, currency);
+        }, 0);
       
       // Calculate manual revenue
       const manualRevenue = data.filter((r: any) => !r.isSystemGenerated || r.source === 'manual');
-      const revenueFromManual = manualRevenue.reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      const revenueFromManual = manualRevenue.reduce((sum: number, r: any) => {
+        const amount = r.amount || 0;
+        const currency = r.currency || 'TRY';
+        return sum + convertToTRY(amount, currency);
+      }, 0);
       const monthlyRevenueFromManual = manualRevenue
         .filter((r: any) => {
           if (!r.date) return false;
           const revenueDate = new Date(r.date);
           return revenueDate.getMonth() === currentMonth && revenueDate.getFullYear() === currentYear;
         })
-        .reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+        .reduce((sum: number, r: any) => {
+          const amount = r.amount || 0;
+          const currency = r.currency || 'TRY';
+          return sum + convertToTRY(amount, currency);
+        }, 0);
       
       // Totals
       const totalRevenue = revenueFromSales + revenueFromManual;

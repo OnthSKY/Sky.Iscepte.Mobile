@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useProductStatsQuery, useProductsQuery } from '../hooks/useProductsQuery';
@@ -8,7 +8,7 @@ import { productEntityService } from '../services/productServiceAdapter';
 import Card from '../../../shared/components/Card';
 import { useNavigation } from '@react-navigation/native';
 import { Product } from '../services/productService';
-import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashboard/ModuleStatsHeader';
+import { ModuleStat } from '../../../shared/components/dashboard/ModuleStatsHeader';
 import LoadingState from '../../../shared/components/LoadingState';
 import ScreenLayout from '../../../shared/layouts/ScreenLayout';
 import spacing from '../../../core/constants/spacing';
@@ -120,7 +120,7 @@ export default function ProductListScreen() {
     ];
   }, [stats, t, colors]);
 
-  // Stats header component for FlatList
+  // Stats header component for FlatList - All cards in single row
   const statsHeader = React.useMemo(() => {
     if (statsLoading) {
       return (
@@ -130,12 +130,58 @@ export default function ProductListScreen() {
       );
     }
     return (
-      <View style={{ marginBottom: spacing.md }}>
-        <ModuleStatsHeader 
-          stats={moduleStats}
-          mainStatKey="total-stock-items"
-          translationNamespace="stock"
-        />
+      <View style={{ marginBottom: spacing.md, paddingHorizontal: spacing.lg }}>
+        <View style={{ flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' }}>
+          {moduleStats.map((stat) => {
+            const valueStr = typeof stat.value === 'number' 
+              ? stat.value.toLocaleString() 
+              : String(stat.value ?? '—');
+            
+            return (
+              <View
+                key={stat.key}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.surface,
+                  borderRadius: 12,
+                  padding: spacing.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: 'center',
+                  minHeight: 80,
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons 
+                  name={stat.icon as any} 
+                  size={24} 
+                  color={stat.color} 
+                  style={{ marginBottom: spacing.xs }}
+                />
+                <Text 
+                  style={{ 
+                    fontSize: 20, 
+                    fontWeight: 'bold', 
+                    color: colors.text,
+                    marginBottom: spacing.xs / 2,
+                  }}
+                >
+                  {valueStr}
+                </Text>
+                <Text 
+                  style={{ 
+                    fontSize: 11, 
+                    color: colors.muted,
+                    textAlign: 'center',
+                  }}
+                  numberOfLines={2}
+                >
+                  {stat.label}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
       </View>
     );
   }, [statsLoading, moduleStats, colors]);
@@ -188,82 +234,99 @@ export default function ProductListScreen() {
                 },
               ],
             }}
-            renderItem={(item: Product) => (
-              <Card
-                style={{ marginBottom: 12 }}
-                onPress={() => handleProductPress(item)}
-              >
-                <View style={{ gap: spacing.sm }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '500', flex: 1, color: colors.text }}>{item.name}</Text>
-                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setSelectedProduct(item);
-                          setAdjustmentMode('increase');
-                          setAdjustmentModalVisible(true);
-                        }}
-                        style={{
-                          backgroundColor: colors.success,
-                          width: 40,
-                          height: 40,
-                          borderRadius: 10,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.1,
-                          shadowRadius: 3,
-                          elevation: 3,
-                        }}
-                      >
-                        <Ionicons name="add" size={22} color="#fff" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setSelectedProduct(item);
-                          setAdjustmentMode('decrease');
-                          setAdjustmentModalVisible(true);
-                        }}
-                        style={{
-                          backgroundColor: colors.warning,
-                          width: 40,
-                          height: 40,
-                          borderRadius: 10,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.1,
-                          shadowRadius: 3,
-                          elevation: 3,
-                        }}
-                      >
-                        <Ionicons name="remove" size={22} color="#fff" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: 14, color: colors.muted }}>
-                    {item.category || t('stock:uncategorized', { defaultValue: 'Kategori yok' })}
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
-                    <Text style={{ fontSize: 14, color: colors.text }}>
-                      {t('stock:price', { defaultValue: 'Fiyat' })}: {item.price !== undefined ? formatCurrency(item.price, item.currency || 'TRY') : '—'}
-                    </Text>
-                    <Text style={{ fontSize: 14, color: colors.text }}>
-                      {t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' })}: {item.stock ?? '—'}
-                    </Text>
-                    {item.moq && (
-                      <Text style={{ fontSize: 14, color: colors.primary }}>
-                        {t('stock:moq', { defaultValue: 'MOQ' })}: {item.moq}
+            renderItem={(item: Product) => {
+              const isLowStock = (item.stock ?? 0) < 10;
+              const stockValue = item.stock ?? 0;
+              
+              return (
+                <View style={{ marginBottom: 12 }}>
+                  <Card
+                    style={{ position: 'relative', borderLeftWidth: isLowStock ? 3 : 0, borderLeftColor: isLowStock ? (stockValue > 5 ? '#F59E0B' : '#D97706') : 'transparent' }}
+                    onPress={() => handleProductPress(item)}
+                  >
+                    <View style={{ gap: spacing.sm }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <View style={{ flex: 1 }}>
+                          {isLowStock && (
+                            <View style={[styles.lowStockBadge, { backgroundColor: stockValue > 5 ? '#F59E0B20' : '#D9770630' }]}>
+                              <View style={[styles.lowStockDot, { backgroundColor: stockValue > 5 ? '#F59E0B' : '#D97706' }]} />
+                              <Text style={[styles.lowStockText, { color: stockValue > 5 ? '#F59E0B' : '#D97706' }]}>
+                                {stockValue > 5 ? t('stock:low_stock', { defaultValue: 'Düşük Stok' }) : t('stock:critical_stock', { defaultValue: 'Kritik Stok' })}
+                              </Text>
+                            </View>
+                          )}
+                          <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginTop: isLowStock ? spacing.xs : 0 }}>{item.name}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedProduct(item);
+                              setAdjustmentMode('increase');
+                              setAdjustmentModalVisible(true);
+                            }}
+                            style={{
+                              backgroundColor: colors.success,
+                              width: 40,
+                              height: 40,
+                              borderRadius: 10,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              shadowColor: '#000',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.1,
+                              shadowRadius: 3,
+                              elevation: 3,
+                            }}
+                          >
+                            <Ionicons name="add" size={22} color="#fff" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedProduct(item);
+                              setAdjustmentMode('decrease');
+                              setAdjustmentModalVisible(true);
+                            }}
+                            style={{
+                              backgroundColor: colors.warning,
+                              width: 40,
+                              height: 40,
+                              borderRadius: 10,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              shadowColor: '#000',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.1,
+                              shadowRadius: 3,
+                              elevation: 3,
+                            }}
+                          >
+                            <Ionicons name="remove" size={22} color="#fff" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 14, color: colors.muted }}>
+                        {item.category || t('stock:uncategorized', { defaultValue: 'Kategori yok' })}
                       </Text>
-                    )}
-                  </View>
+                      <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
+                        <Text style={{ fontSize: 14, color: colors.text }}>
+                          {t('stock:price', { defaultValue: 'Fiyat' })}: {item.price !== undefined ? formatCurrency(item.price, item.currency || 'TRY') : '—'}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: colors.text }}>
+                          {t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' })}: {item.stock ?? '—'}
+                        </Text>
+                        {item.moq && (
+                          <Text style={{ fontSize: 14, color: colors.primary }}>
+                            {t('stock:moq', { defaultValue: 'MOQ' })}: {item.moq}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </Card>
                 </View>
-              </Card>
-            )}
+              );
+            }}
             keyExtractor={(item: Product) => String(item.id)}
           />
       </View>
@@ -285,4 +348,25 @@ export default function ProductListScreen() {
   );
 }
 
+const styles = StyleSheet.create({
+  lowStockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: 12,
+    gap: 4,
+    alignSelf: 'flex-start',
+    marginBottom: spacing.xs,
+  },
+  lowStockDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  lowStockText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+});
 

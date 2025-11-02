@@ -8,6 +8,7 @@ import {
   createTimeoutError,
   isApiError,
 } from '../../core/types/apiErrors';
+import { BaseControllerResponse } from '../types/apiResponse';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -51,8 +52,41 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
     const authHeader = config.headers?.Authorization || config.headers?.authorization;
     const token = authHeader?.replace('Bearer ', '') || null;
     try {
-      const result = await mod.mockRequest<T>(method, url, body, token);
-      return result;
+      // Mock service returns BaseControllerResponse<T>, need to parse it
+      const mockResponse = await mod.mockRequest<BaseControllerResponse<T>>(method, url, body, token ?? "");
+      
+      // Check if response is BaseControllerResponse format
+      if (mockResponse && typeof mockResponse === 'object' && 'message' in mockResponse) {
+        const apiResponse = mockResponse as BaseControllerResponse<T>;
+        
+        // For mock mode, assume success (status 200) if message is OperationSuccessful
+        const isSuccess = apiResponse.message === 'OperationSuccessful' || !apiResponse.errorMeta;
+        
+        if (isSuccess) {
+          // Success: return data (can be undefined for NoContent responses like 204)
+          if (apiResponse.data === undefined || apiResponse.data === null) {
+            return undefined as T;
+          }
+          return apiResponse.data;
+        }
+        
+        // Error response: extract error information
+        const errorMessage = apiResponse.message || 'Request failed';
+        const errorMeta = apiResponse.errorMeta;
+        
+        // For mock mode, use 400 as default error status
+        const apiError = createApiErrorFromStatus(
+          400,
+          errorMessage,
+          mockResponse, // Full response as details
+          errorMeta
+        );
+        
+        throw apiError;
+      }
+      
+      // If not BaseControllerResponse format, return as-is (backward compatibility)
+      return mockResponse as T;
     } catch (error: any) {
       throw error;
     }
@@ -70,46 +104,74 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
 
     for (const i of responseInterceptors) await i({ method, url, response: res });
 
+    // Handle empty body first to avoid consuming the stream twice
+    const text = await res.text();
+    const parsedResponse = text ? JSON.parse(text) : undefined;
+    const httpStatus = res.status;
+
+    // Check if response is BaseControllerResponse format
+    // BaseControllerResponse has 'message' field (statusCode is JsonIgnore in backend, not in response)
+    if (parsedResponse && typeof parsedResponse === 'object' && 'message' in parsedResponse) {
+      const apiResponse = parsedResponse as BaseControllerResponse<T>;
+
+      // Check if HTTP response is successful (200-299)
+      if (httpStatus >= 200 && httpStatus < 300) {
+        // Success: return data (can be undefined for NoContent responses like 204)
+        if (apiResponse.data === undefined || apiResponse.data === null) {
+          return undefined as T;
+        }
+        return apiResponse.data;
+      }
+
+      // Error response: extract error information
+      const errorMessage = apiResponse.message || `HTTP ${httpStatus}`;
+      const errorMeta = apiResponse.errorMeta; // Dynamic error metadata from API
+
+      // Create appropriate error based on HTTP status code
+      const apiError = createApiErrorFromStatus(
+        httpStatus,
+        errorMessage,
+        parsedResponse, // Full response as details
+        errorMeta
+      );
+
+      throw apiError;
+    }
+
+    // Handle non-BaseControllerResponse format
     if (!res.ok) {
       // Try to parse error details from response
-      let errorDetails: any = undefined;
+      let errorDetails: any = parsedResponse || undefined;
       let errorMessage: string | undefined = undefined;
-      
-      try {
-        const errorBody = await res.json();
-        errorDetails = errorBody;
-        
+      let errorMeta: any = undefined;
+
+      if (errorDetails) {
         // Extract message from common error response formats
-        errorMessage = errorBody?.message || 
-                      errorBody?.error?.message || 
-                      errorBody?.errors?.[0]?.message ||
+        errorMessage = errorDetails?.message ||
+                      errorDetails?.error?.message ||
+                      errorDetails?.errors?.[0]?.message ||
                       undefined;
-      } catch {
-        // If JSON parse fails, try to get text
-        try {
-          const errorText = await res.text();
-          if (errorText) {
-            errorDetails = { message: errorText };
-            errorMessage = errorText;
-          }
-        } catch {
-          // Ignore body parse errors
-        }
+
+        // Extract errorMeta if present
+        errorMeta = errorDetails?.errorMeta;
+      } else {
+        // If no JSON, use text as message
+        errorMessage = text || `HTTP ${res.status}`;
       }
 
       // Create appropriate error based on HTTP status
       const apiError = createApiErrorFromStatus(
         res.status,
         errorMessage || `HTTP ${res.status}`,
-        errorDetails
+        errorDetails,
+        errorMeta
       );
-      
+
       throw apiError;
     }
-    
-    // Handle empty body
-    const text = await res.text();
-    return (text ? JSON.parse(text) : (undefined as any)) as T;
+
+    // Success response (not BaseControllerResponse format) - return as-is
+    return parsedResponse as T;
   } catch (e: any) {
     // Handle timeout
     if (e?.name === 'AbortError') {

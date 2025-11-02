@@ -51,6 +51,7 @@ export interface ModuleDashboardConfig<T extends BaseEntity = BaseEntity> {
   listRoute?: string; // Route to view all items (deprecated, use listConfig instead)
   createRoute?: string; // Route to create new item
   description?: string; // Module description/summary (optional, will be translated)
+  compactStats?: boolean; // If true, show all stats in a single row (compact mode)
   // List configuration for integrated list tab
   listConfig?: {
     service: BaseEntityService<T>;
@@ -287,35 +288,121 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
         {/* Summary Stats Cards - Top Section */}
         {finalStats && finalStats.length > 0 && (
           <View style={styles.summarySection}>
-            <View style={styles.summaryStatsRow}>
-              {finalStats.slice(0, layoutConfig.numColumns === 2 ? 2 : 1).map((stat) => {
+            {config.compactStats ? (
+              /* Compact mode: All stats in single row */
+              <View style={[styles.summaryStatsRow, { gap: spacing.md, justifyContent: 'space-between' }]}>
+                {finalStats.map((stat) => {
+                  const valueStr = typeof stat.value === 'number' 
+                    ? stat.value.toLocaleString() 
+                    : String(stat.value ?? '—');
+                  return (
+                    <TouchableOpacity
+                      key={stat.key}
+                      style={[
+                        styles.compactStatCard,
+                        { 
+                          backgroundColor: colors.surface,
+                          borderColor: colors.border,
+                          flex: 1,
+                        },
+                      ]}
+                      onPress={() => handleNavigate(stat.route)}
+                      activeOpacity={1}
+                    >
+                      <Ionicons 
+                        name={stat.icon as any} 
+                        size={24} 
+                        color={stat.color} 
+                        style={{ marginBottom: spacing.xs }}
+                      />
+                      <Text 
+                        style={{ 
+                          fontSize: 20, 
+                          fontWeight: 'bold', 
+                          color: colors.text,
+                          marginBottom: spacing.xs / 2,
+                        }}
+                      >
+                        {valueStr}
+                      </Text>
+                      <Text 
+                        style={{ 
+                          fontSize: 11, 
+                          color: colors.muted,
+                          textAlign: 'center',
+                        }}
+                        numberOfLines={2}
+                      >
+                        {stat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              /* Default mode: Main stat as large card, others in grid */
+              <View style={styles.summaryStatsRow}>
+                {finalStats.slice(0, layoutConfig.numColumns === 2 ? 2 : 1).map((stat) => {
+                  const valueStr = typeof stat.value === 'number' 
+                    ? stat.value.toLocaleString() 
+                    : String(stat.value ?? '—');
+                  return (
+                    <TouchableOpacity
+                      key={stat.key}
+                      style={[
+                        styles.summaryCard,
+                        { backgroundColor: stat.color },
+                        isDark ? styles.cardDarkShadow : styles.cardLightShadow,
+                        layoutConfig.numColumns === 2 
+                          ? { width: (width - spacing.lg * 3) / 2 }
+                          : { width: width - spacing.lg * 2 },
+                      ]}
+                      onPress={() => handleNavigate(stat.route)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.summaryCardContent}>
+                        <View style={styles.summaryIconContainer}>
+                          <Ionicons name={stat.icon as any} size={28} color="white" />
+                        </View>
+                        <View style={styles.summaryTextContainer}>
+                          <Text style={styles.summaryLabel}>{stat.label}</Text>
+                          <Text style={styles.summaryValue}>{valueStr}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Secondary Stats Grid - Only show if not compact mode */}
+        {!config.compactStats && secondaryStats.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t(`${config.module}:statistics`, { defaultValue: 'İstatistikler' })}
+            </Text>
+            <View style={styles.statsGrid}>
+              {secondaryStats.map((stat, index) => {
                 const valueStr = typeof stat.value === 'number' 
                   ? stat.value.toLocaleString() 
                   : String(stat.value ?? '—');
                 return (
-                  <TouchableOpacity
+                  <StatCard
                     key={stat.key}
-                    style={[
-                      styles.summaryCard,
-                      { backgroundColor: stat.color },
-                      isDark ? styles.cardDarkShadow : styles.cardLightShadow,
-                      layoutConfig.numColumns === 2 
-                        ? { width: (width - spacing.lg * 3) / 2 }
-                        : { width: width - spacing.lg * 2 },
-                    ]}
+                    stat={{
+                      key: stat.key,
+                      label: stat.label,
+                      value: valueStr,
+                      icon: stat.icon,
+                      color: stat.color,
+                      route: stat.route || '',
+                    }}
                     onPress={() => handleNavigate(stat.route)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.summaryCardContent}>
-                      <View style={styles.summaryIconContainer}>
-                        <Ionicons name={stat.icon as any} size={28} color="white" />
-                      </View>
-                      <View style={styles.summaryTextContainer}>
-                        <Text style={styles.summaryLabel}>{stat.label}</Text>
-                        <Text style={styles.summaryValue}>{valueStr}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
+                    width={layoutConfig.statCardWidth}
+                    marginRight={layoutConfig.numColumns > 1 && index % 2 === 0 ? layoutConfig.cardMargin : 0}
+                  />
                 );
               })}
             </View>
@@ -375,37 +462,6 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
           </View>
         )}
 
-        {/* Secondary Stats Grid */}
-        {secondaryStats.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t(`${config.module}:statistics`, { defaultValue: 'İstatistikler' })}
-            </Text>
-            <View style={styles.statsGrid}>
-              {secondaryStats.map((stat, index) => {
-                const valueStr = typeof stat.value === 'number' 
-                  ? stat.value.toLocaleString() 
-                  : String(stat.value ?? '—');
-                return (
-                  <StatCard
-                    key={stat.key}
-                    stat={{
-                      key: stat.key,
-                      label: stat.label,
-                      value: valueStr,
-                      icon: stat.icon,
-                      color: stat.color,
-                      route: stat.route || '',
-                    }}
-                    onPress={() => handleNavigate(stat.route)}
-                    width={layoutConfig.statCardWidth}
-                    marginRight={layoutConfig.numColumns > 1 && index % 2 === 0 ? layoutConfig.cardMargin : 0}
-                  />
-                );
-              })}
-            </View>
-          </View>
-        )}
 
         {/* Related Modules */}
         {config.relatedModules && config.relatedModules.length > 0 && (
@@ -697,6 +753,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 28,
     fontWeight: 'bold',
+  },
+  compactStatCard: {
+    borderRadius: 12,
+    padding: spacing.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    minHeight: 80,
+    justifyContent: 'center',
   },
   quickAccessSection: {
     paddingHorizontal: spacing.lg,

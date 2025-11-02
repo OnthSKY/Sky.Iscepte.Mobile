@@ -8,6 +8,7 @@
   "total_amount": "Toplam Tutar",
   "payment_method": "Ödeme Yöntemi",
   "date": "Tarih",
+  "time": "Saat",
   "items": "Kalemler",
   "new_sale": "Yeni Satış",
   "edit_sale": "Satış Düzenle",

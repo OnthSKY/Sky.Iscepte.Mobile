@@ -4,6 +4,8 @@ Bu dokümantasyon, Sky.Template.Mobile projesindeki tüm API endpoint'lerinin re
 
 **Son Güncelleme:** 2025-02-18
 
+**Not:** Tüm API response'ları `BaseControllerResponse<T>` formatında döner. HTTP status code başarı kontrolü için kullanılır (200-299 başarılı, 400-499 client errors, 500+ server errors).
+
 ---
 
 ## İçindekiler
@@ -43,12 +45,15 @@ Bu dokümantasyon, Sky.Template.Mobile projesindeki tüm API endpoint'lerinin re
 **Response:** `200 OK`
 ```json
 {
-  "accessToken": "string",
-  "refreshToken": "string",
-  "user": {
-    "id": "number",
-    "username": "string",
-    "role": "admin" | "owner" | "staff"
+  "message": "OperationSuccessful",
+  "data": {
+    "accessToken": "string",
+    "refreshToken": "string",
+    "user": {
+      "id": "number",
+      "username": "string",
+      "role": "admin" | "owner" | "staff"
+    }
   }
 }
 ```
@@ -69,8 +74,11 @@ Bu dokümantasyon, Sky.Template.Mobile projesindeki tüm API endpoint'lerinin re
 **Response:** `200 OK`
 ```json
 {
-  "accessToken": "string",
-  "refreshToken": "string"
+  "message": "OperationSuccessful",
+  "data": {
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
 }
 ```
 
@@ -106,22 +114,25 @@ Authorization: Bearer {accessToken}
 **Response:** `200 OK`
 ```json
 {
-  "id": "number",
-  "firstName": "string",
-  "lastName": "string",
-  "name": "string",
-  "username": "string",
-  "email": "string",
-  "phone": "string",
-  "role": "string",
-  "package": "string",
-  "ownerId": "number | null",
-  "company": "string | null",
-  "ownerCompanyName": "string | null",
-  "customPermissions": {
-    "moduleName": {
-      "actions": ["string"],
-      "notifications": ["string"]
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "number",
+    "firstName": "string",
+    "lastName": "string",
+    "name": "string",
+    "username": "string",
+    "email": "string",
+    "phone": "string",
+    "role": "string",
+    "package": "string",
+    "ownerId": "number | null",
+    "company": "string | null",
+    "ownerCompanyName": "string | null",
+    "customPermissions": {
+      "moduleName": {
+        "actions": ["string"],
+        "notifications": ["string"]
+      }
     }
   }
 }
@@ -179,7 +190,21 @@ Authorization: Bearer {accessToken}
       "address": "string",
       "isActive": "boolean",
       "totalOrders": "number",
-      "ownerId": "number"
+      "ownerId": "number",
+      "balance": "number",
+      "currency": "TRY | USD | EUR",
+      "group": "string",
+      "debtLimit": "number",
+      "customFields": [
+        {
+          "key": "string",
+          "label": "string",
+          "type": "text | number | date | select | boolean",
+          "value": "any",
+          "options": [{"label": "string", "value": "any"}],
+          "isGlobal": "boolean"
+        }
+      ]
     }
   ],
   "total": "number"
@@ -196,7 +221,12 @@ Authorization: Bearer {accessToken}
   "address": "İstanbul, Kadıköy",
   "isActive": true,
   "totalOrders": 5,
-  "ownerId": 2
+  "ownerId": 2,
+  "balance": 1500,
+  "currency": "TRY",
+  "group": "Premium",
+  "debtLimit": 5000,
+  "customFields": []
 }
 ```
 
@@ -209,7 +239,36 @@ Authorization: Bearer {accessToken}
 Authorization: Bearer {accessToken}
 ```
 
-**Response:** `200 OK` (Single Customer object)
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "phone": "string",
+    "address": "string",
+    "isActive": "boolean",
+    "totalOrders": "number",
+    "ownerId": "number",
+    "balance": "number",
+    "currency": "TRY | USD | EUR",
+    "group": "string",
+    "debtLimit": "number",
+    "customFields": [
+      {
+        "key": "string",
+        "label": "string",
+        "type": "text | number | date | select | boolean",
+        "value": "any",
+        "options": [{"label": "string", "value": "any"}],
+        "isGlobal": "boolean"
+      }
+    ]
+  }
+}
+```
 
 ---
 
@@ -223,9 +282,12 @@ Authorization: Bearer {accessToken}
 **Response:** `200 OK`
 ```json
 {
-  "totalCustomers": "number",
-  "activeCustomers": "number",
-  "totalOrders": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "totalCustomers": "number",
+    "activeCustomers": "number",
+    "totalOrders": "number"
+  }
 }
 ```
 
@@ -245,11 +307,54 @@ Authorization: Bearer {accessToken}
   "email": "string",
   "phone": "string",
   "address": "string",
-  "isActive": "boolean"
+  "isActive": "boolean",
+  "balance": "number",
+  "currency": "TRY | USD | EUR",
+  "group": "string",
+  "debtLimit": "number",
+  "customFields": [
+    {
+      "key": "string",
+      "label": "string",
+      "type": "text | number | date | select | boolean",
+      "value": "any",
+      "options": [{"label": "string", "value": "any"}],
+      "isGlobal": "boolean"
+    }
+  ]
 }
 ```
 
-**Response:** `200 OK` (Customer object with generated `id`)
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "phone": "string",
+    "address": "string",
+    "isActive": "boolean",
+    "totalOrders": "number",
+    "ownerId": "number",
+    "balance": "number",
+    "currency": "TRY | USD | EUR",
+    "group": "string",
+    "debtLimit": "number",
+    "customFields": [
+      {
+        "key": "string",
+        "label": "string",
+        "type": "text | number | date | select | boolean",
+        "value": "any",
+        "options": [{"label": "string", "value": "any"}],
+        "isGlobal": "boolean"
+      }
+    ]
+  }
+}
+```
 
 ---
 
@@ -261,8 +366,60 @@ Authorization: Bearer {accessToken}
 ```
 
 **Request:** (Partial Customer object)
+```json
+{
+  "name": "string",
+  "email": "string",
+  "phone": "string",
+  "address": "string",
+  "isActive": "boolean",
+  "balance": "number",
+  "currency": "TRY | USD | EUR",
+  "group": "string",
+  "debtLimit": "number",
+  "customFields": [
+    {
+      "key": "string",
+      "label": "string",
+      "type": "text | number | date | select | boolean",
+      "value": "any",
+      "options": [{"label": "string", "value": "any"}],
+      "isGlobal": "boolean"
+    }
+  ]
+}
+```
 
-**Response:** `200 OK` (Updated Customer object)
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "phone": "string",
+    "address": "string",
+    "isActive": "boolean",
+    "totalOrders": "number",
+    "ownerId": "number",
+    "balance": "number",
+    "currency": "TRY | USD | EUR",
+    "group": "string",
+    "debtLimit": "number",
+    "customFields": [
+      {
+        "key": "string",
+        "label": "string",
+        "type": "text | number | date | select | boolean",
+        "value": "any",
+        "options": [{"label": "string", "value": "any"}],
+        "isGlobal": "boolean"
+      }
+    ]
+  }
+}
+```
 
 ---
 
@@ -273,10 +430,10 @@ Authorization: Bearer {accessToken}
 Authorization: Bearer {accessToken}
 ```
 
-**Response:** `200 OK`
+**Response:** `204 No Content`
 ```json
 {
-  "success": true
+  "message": "OperationSuccessful"
 }
 ```
 
@@ -296,23 +453,31 @@ Authorization: Bearer {accessToken}
 **Response:** `200 OK`
 ```json
 {
-  "items": [
-    {
-      "id": "string",
-      "customerId": "string",
-      "customerName": "string",
-      "productId": "string",
-      "productName": "string",
-      "quantity": "number",
-      "price": "number",
-      "currency": "TRY" | "USD" | "EUR",
-      "total": "number",
-      "date": "string (YYYY-MM-DD)",
-      "status": "string (completed | pending)",
-      "ownerId": "number"
-    }
-  ],
-  "total": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "customerId": "string",
+        "customerName": "string",
+        "productId": "string",
+        "productName": "string",
+        "quantity": "number",
+        "price": "number",
+        "currency": "TRY" | "USD" | "EUR",
+        "total": "number",
+        "date": "string (YYYY-MM-DD)",
+        "status": "string (completed | pending)",
+        "ownerId": "number"
+      }
+    ],
+    "totalCount": "number",
+    "page": "number",
+    "pageSize": "number",
+    "totalPage": "number",
+    "hasNextPage": "boolean",
+    "hasPreviousPage": "boolean"
+  }
 }
 ```
 
@@ -371,7 +536,26 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Response:** `200 OK` (Sale object with generated `id`)
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "customerId": "string",
+    "customerName": "string",
+    "productId": "string",
+    "productName": "string",
+    "quantity": "number",
+    "price": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "total": "number",
+    "date": "string (YYYY-MM-DD)",
+    "status": "string (completed | pending)",
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
@@ -379,13 +563,37 @@ Authorization: Bearer {accessToken}
 
 **Request:** (Partial Sale object)
 
-**Response:** `200 OK` (Updated Sale object)
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "customerId": "string",
+    "customerName": "string",
+    "productId": "string",
+    "productName": "string",
+    "quantity": "number",
+    "price": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "total": "number",
+    "date": "string (YYYY-MM-DD)",
+    "status": "string (completed | pending)",
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
 ### DELETE /sales/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -398,37 +606,45 @@ Authorization: Bearer {accessToken}
 **Response:** `200 OK`
 ```json
 {
-  "items": [
-    {
-      "id": "string",
-      "name": "string",
-      "sku": "string",
-      "category": "string",
-      "price": "number",
-      "currency": "TRY" | "USD" | "EUR",
-      "stock": "number",
-      "moq": "number (Minimum Order Quantity)",
-      "isActive": "boolean",
-      "hasSales": "boolean",
-      "customFields": [
-        {
-          "key": "string",
-          "label": "string",
-          "type": "text" | "number" | "date" | "select" | "boolean",
-          "value": "any",
-          "options": [
-            {
-              "label": "string",
-              "value": "any"
-            }
-          ],
-          "isGlobal": "boolean"
-        }
-      ],
-      "ownerId": "number"
-    }
-  ],
-  "total": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "name": "string",
+        "sku": "string",
+        "category": "string",
+        "price": "number",
+        "currency": "TRY" | "USD" | "EUR",
+        "stock": "number",
+        "moq": "number (Minimum Order Quantity)",
+        "isActive": "boolean",
+        "hasSales": "boolean",
+        "customFields": [
+          {
+            "key": "string",
+            "label": "string",
+            "type": "text" | "number" | "date" | "select" | "boolean",
+            "value": "any",
+            "options": [
+              {
+                "label": "string",
+                "value": "any"
+              }
+            ],
+            "isGlobal": "boolean"
+          }
+        ],
+        "ownerId": "number"
+      }
+    ],
+    "totalCount": "number",
+    "page": "number",
+    "pageSize": "number",
+    "totalPage": "number",
+    "hasNextPage": "boolean",
+    "hasPreviousPage": "boolean"
+  }
 }
 ```
 
@@ -490,7 +706,26 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Response:** `200 OK` (Product object with generated `id`)
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "sku": "string",
+    "category": "string",
+    "price": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "stock": "number",
+    "moq": "number",
+    "isActive": "boolean",
+    "hasSales": "boolean",
+    "customFields": [],
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
@@ -498,13 +733,37 @@ Authorization: Bearer {accessToken}
 
 **Request:** (Partial Product object)
 
-**Response:** `200 OK` (Updated Product object)
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "sku": "string",
+    "category": "string",
+    "price": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "stock": "number",
+    "moq": "number",
+    "isActive": "boolean",
+    "hasSales": "boolean",
+    "customFields": [],
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
 ### DELETE /stock/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 **Note:** `hasSales: true` olan ürünler silinemez.
 
@@ -514,21 +773,24 @@ Authorization: Bearer {accessToken}
 
 **Response:** `200 OK`
 ```json
-[
-  {
-    "id": "string | number",
-    "action": "string",
-    "description": "string",
-    "user": "string",
-    "timestamp": "string (ISO)",
-    "changes": {
-      "fieldName": {
-        "old": "any",
-        "new": "any"
+{
+  "message": "OperationSuccessful",
+  "data": [
+    {
+      "id": "string | number",
+      "action": "string",
+      "description": "string",
+      "user": "string",
+      "timestamp": "string (ISO)",
+      "changes": {
+        "fieldName": {
+          "old": "any",
+          "new": "any"
+        }
       }
     }
-  }
-]
+  ]
+}
 ```
 
 ---
@@ -542,29 +804,37 @@ Authorization: Bearer {accessToken}
 **Response:** `200 OK`
 ```json
 {
-  "items": [
-    {
-      "id": "string",
-      "firstName": "string",
-      "lastName": "string",
-      "name": "string",
-      "email": "string",
-      "phone": "string",
-      "position": "string",
-      "status": "string (active | inactive)",
-      "hireDate": "string (YYYY-MM-DD)",
-      "salary": "number",
-      "username": "string",
-      "role": "admin" | "owner" | "staff",
-      "customPermissions": {
-        "moduleName": {
-          "actions": ["string"]
-        }
-      },
-      "ownerId": "string | number"
-    }
-  ],
-  "total": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "firstName": "string",
+        "lastName": "string",
+        "name": "string",
+        "email": "string",
+        "phone": "string",
+        "position": "string",
+        "status": "string (active | inactive)",
+        "hireDate": "string (YYYY-MM-DD)",
+        "salary": "number",
+        "username": "string",
+        "role": "admin" | "owner" | "staff",
+        "customPermissions": {
+          "moduleName": {
+            "actions": ["string"]
+          }
+        },
+        "ownerId": "string | number"
+      }
+    ],
+    "totalCount": "number",
+    "page": "number",
+    "pageSize": "number",
+    "totalPage": "number",
+    "hasNextPage": "boolean",
+    "hasPreviousPage": "boolean"
+  }
 }
 ```
 
@@ -650,7 +920,12 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /employees/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -741,7 +1016,12 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /suppliers/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -843,7 +1123,12 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /purchases/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -992,7 +1277,12 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /expenses/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -1066,7 +1356,26 @@ Authorization: Bearer {accessToken}
 
 ### GET /revenue/:id
 
-**Response:** `200 OK` (Single Revenue object)
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "title": "string",
+    "amount": "number",
+    "source": "sales" | "manual",
+    "revenueTypeId": "string",
+    "revenueTypeName": "string",
+    "date": "string (YYYY-MM-DD)",
+    "description": "string",
+    "saleId": "string (optional)",
+    "employeeId": "string (optional)",
+    "isSystemGenerated": "boolean",
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
@@ -1075,12 +1384,15 @@ Authorization: Bearer {accessToken}
 **Response:** `200 OK`
 ```json
 {
-  "totalTransactions": "number",
-  "totalRevenue": "number",
-  "monthlyRevenue": "number",
-  "revenueFromSales": "number",
-  "revenueFromManual": "number",
-  "revenueTypes": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "totalTransactions": "number",
+    "totalRevenue": "number",
+    "monthlyRevenue": "number",
+    "revenueFromSales": "number",
+    "revenueFromManual": "number",
+    "revenueTypes": "number"
+  }
 }
 ```
 
@@ -1114,7 +1426,12 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /revenue/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -1154,7 +1471,27 @@ Authorization: Bearer {accessToken}
 
 ### GET /income/:id
 
-**Response:** `200 OK` (Single Income object)
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "title": "string",
+    "amount": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "source": "sales" | "manual",
+    "incomeTypeId": "string",
+    "incomeTypeName": "string",
+    "date": "string (YYYY-MM-DD)",
+    "description": "string",
+    "saleId": "string (optional)",
+    "employeeId": "string (optional)",
+    "isSystemGenerated": "boolean",
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
@@ -1163,12 +1500,15 @@ Authorization: Bearer {accessToken}
 **Response:** `200 OK`
 ```json
 {
-  "totalTransactions": "number",
-  "totalIncome": "number",
-  "monthlyIncome": "number",
-  "incomeFromSales": "number",
-  "incomeFromManual": "number",
-  "incomeTypes": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "totalTransactions": "number",
+    "totalIncome": "number",
+    "monthlyIncome": "number",
+    "incomeFromSales": "number",
+    "incomeFromManual": "number",
+    "incomeTypes": "number"
+  }
 }
 ```
 
@@ -1203,7 +1543,12 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /income/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -1261,7 +1606,12 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /reports/:id
 
-**Response:** `200 OK` (`{ "success": true }`)
+**Response:** `204 No Content`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
 
 ---
 
@@ -1436,12 +1786,55 @@ interface GridRequest {
 
 ---
 
-### Paginated Response
+### BaseControllerResponse
+
+Tüm API response'ları `BaseControllerResponse<T>` formatında döner:
 
 ```typescript
-interface Paginated<T> {
-  items: T[];   // Array of items for current page
-  total: number; // Total number of items (across all pages)
+interface BaseControllerResponse {
+  message: string;        // İşlem mesajı (örn: "OperationSuccessful")
+  errorMeta?: any;         // Hata durumunda dinamik error metadata (sadece hata response'larında)
+}
+
+interface BaseControllerResponse<T> extends BaseControllerResponse {
+  data?: T;                // Response data (başarılı response'larda)
+}
+```
+
+**Not:** `statusCode` field'ı backend'de `JsonIgnore` ile işaretlenmiştir ve response body'de yer almaz. HTTP response status code kullanılır:
+- **200-299**: Başarılı response'lar (data içerir)
+- **400-499**: Client errors (errorMeta içerebilir)
+- **500+**: Server errors (errorMeta içerebilir)
+
+### PaginatedData (List Response'lar için)
+
+List endpoint'leri `PaginatedData<T>` formatında döner:
+
+```typescript
+interface PaginatedData<T> {
+  items: T[];              // Sayfalı item'lar
+  totalCount: number;      // Toplam kayıt sayısı
+  page: number;            // Mevcut sayfa numarası (1-based)
+  pageSize: number;       // Sayfa başına kayıt sayısı
+  totalPage: number;      // Toplam sayfa sayısı
+  hasNextPage: boolean;    // Sonraki sayfa var mı?
+  hasPreviousPage: boolean; // Önceki sayfa var mı?
+}
+```
+
+**Örnek List Response:**
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [...],
+    "totalCount": 100,
+    "page": 1,
+    "pageSize": 20,
+    "totalPage": 5,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
 }
 ```
 
@@ -1469,29 +1862,63 @@ Content-Type: application/json
 
 ### Error Responses
 
+Tüm hata response'ları `BaseControllerResponse` formatında döner. HTTP status code hatayı belirtir:
+
+**400 Bad Request (Validation Error):**
+```json
+{
+  "message": "Validation failed. Please check your input.",
+  "errorMeta": {
+    // Dinamik error metadata (API'ye göre değişir)
+    // Örnek: validation errors, field-specific errors, etc.
+  }
+}
+```
+
 **401 Unauthorized:**
 ```json
 {
-  "status": 401,
-  "message": "Invalid credentials" | "Unauthorized"
+  "message": "Invalid credentials" | "Unauthorized",
+  "errorMeta": {
+    // Opsiyonel: ek hata bilgileri
+  }
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "message": "Access forbidden. You do not have permission.",
+  "errorMeta": {
+    // Opsiyonel: ek hata bilgileri
+  }
 }
 ```
 
 **404 Not Found:**
 ```json
 {
-  "status": 404,
-  "message": "Not found" | "Endpoint not found"
+  "message": "Not found" | "Endpoint not found",
+  "errorMeta": {
+    // Opsiyonel: ek hata bilgileri
+  }
 }
 ```
 
 **500 Internal Server Error:**
 ```json
 {
-  "status": 500,
-  "message": "Internal server error"
+  "message": "Server error. Please try again later.",
+  "errorMeta": {
+    // Opsiyonel: ek hata bilgileri (production'da hassas bilgiler içermemeli)
+  }
 }
 ```
+
+**Not:** 
+- `errorMeta` field'ı dinamik bir yapıdır ve API'ye göre değişebilir
+- Başarılı response'larda (200-299) `errorMeta` field'ı bulunmaz
+- Client error'lar (400-499) ve server error'lar (500+) için `errorMeta` opsiyoneldir
 
 ---
 

@@ -7,7 +7,7 @@ import { ListScreenContainer } from '../../../shared/components/screens/ListScre
 import { customerEntityService } from '../services/customerServiceAdapter';
 import Card from '../../../shared/components/Card';
 import { useNavigation } from '@react-navigation/native';
-import { Customer } from '../store/customerStore';
+import { Customer } from '../services/customerService';
 import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashboard/ModuleStatsHeader';
 import LoadingState from '../../../shared/components/LoadingState';
 import ScreenLayout from '../../../shared/layouts/ScreenLayout';

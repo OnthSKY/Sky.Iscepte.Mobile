@@ -53,6 +53,12 @@
   "category": "Category",
   "stock_quantitiy": "Stock Quantity",
   "moq": "Minimum Order Quantity (MOQ)",
+  "validation": {
+    "name_required": "Product name is required",
+    "stock_negative": "Stock cannot be negative",
+    "price_negative": "Price cannot be negative",
+    "required": "{{field}} is required"
+  },
   "custom_fields": "Custom Fields",
   "add_custom_field": "Add Custom Field",
   "remove_custom_field": "Remove Custom Field",
@@ -74,6 +80,8 @@
   "global_fields_info": "Fields available for all products. You can add or remove these fields.",
   "product_specific_fields": "Product Specific Fields",
   "product_specific_fields_info": "Fields valid only for this product. These fields are not visible in other products.",
+  "item_specific_fields": "Item-Specific Fields",
+  "item_specific_fields_info": "Fields specific to this item only. These fields will not appear on other items.",
   "global": "Global",
   "active": "Active",
   "add": "Add",
@@ -81,6 +89,8 @@
   "global_field_desc": "Available for all products",
   "product_specific_field": "Product Specific",
   "product_specific_field_desc": "Only for this product",
+  "item_specific_field": "Item-Specific",
+  "item_specific_field_desc": "For this item only",
   "manage_global_fields": "Manage Global Fields",
   "manage_global_fields_desc": "Create, edit, or delete global fields that can be used in all products.",
   "add_global_field": "Add Global Field",
@@ -118,6 +128,8 @@
   "erp_recommendation_decrease": "For proper reporting and accounting control, you should perform stock decrease operations from the Quick Sale screen. This way, your sales transactions are reflected in reports and accounting records are created correctly.",
   "erp_recommendation_increase": "For proper reporting and accounting control, you should perform stock increase operations from the Quick Purchase screen. This way, your purchase transactions are reflected in reports and accounting records are created correctly.",
   "use_quick_sale": "Use Quick Sale",
-  "use_quick_purchase": "Use Quick Purchase"
+  "use_quick_purchase": "Use Quick Purchase",
+  "field_required": "Required field",
+  "required": "Required"
 }
 

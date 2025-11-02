@@ -1,6 +1,10 @@
 import { create } from 'zustand';
+import { BaseCustomField } from '../../../shared/types/customFields';
 
 export type Currency = 'TRY' | 'USD' | 'EUR';
+
+// Sale custom field - inherits from BaseCustomField
+export type SalesCustomField = BaseCustomField;
 
 export interface Sale {
   id: string | number;
@@ -18,6 +22,7 @@ export interface Sale {
   status?: string;
   ownerId?: string | number;
   employeeId?: string | number;
+  customFields?: SalesCustomField[];
 }
 
 interface SalesState {

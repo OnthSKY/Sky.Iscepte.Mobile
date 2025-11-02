@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 export type Currency = 'TRY' | 'USD' | 'EUR';
 
+import { BaseCustomField } from '../../../shared/types/customFields';
+
+// Purchase custom field - inherits from BaseCustomField
+export type PurchaseCustomField = BaseCustomField;
+
 export interface Purchase {
   id: string | number;
   title?: string;
@@ -18,6 +23,9 @@ export interface Purchase {
   status?: string;
   ownerId?: string | number;
   employeeId?: string | number;
+  purchaseTypeId?: string;
+  purchaseTypeName?: string;
+  customFields?: PurchaseCustomField[]; // Her purchase'a özel custom field'lar
 }
 
 interface PurchaseState {

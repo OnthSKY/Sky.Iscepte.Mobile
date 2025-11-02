@@ -14,16 +14,21 @@ export interface ProductSaleDetail {
   currency?: Currency;
 }
 
+export interface CurrencySummary {
+  amount: number;
+  currency: Currency;
+}
+
 export interface OwnerStoreSummary {
-  sales: number;
-  expenses: number;
-  total: number;
+  sales: CurrencySummary[];
+  expenses: CurrencySummary[];
+  total: CurrencySummary[];
 }
 
 export interface OwnerEmployeeSummary {
-  sales: number;
-  expenses: number;
-  total: number;
+  sales: CurrencySummary[];
+  expenses: CurrencySummary[];
+  total: CurrencySummary[];
   employeeId?: string | number;
   productSales?: ProductSaleDetail[];
   productCount?: number;

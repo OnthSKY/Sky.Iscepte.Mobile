@@ -4,20 +4,31 @@
  */
 
 import { DynamicField } from '../../../shared/components/DynamicForm';
-import { Customer } from '../store/customerStore';
+import { Customer } from '../services/customerService';
+import i18n from '../../../i18n';
 
 export const customerFormFields: DynamicField[] = [
   { name: 'name', labelKey: 'name', type: 'text', required: true },
   { name: 'phone', labelKey: 'phone', type: 'text' },
   { name: 'email', labelKey: 'email', type: 'text' },
-  { name: 'debtLimit', labelKey: 'debt_limit', type: 'number' },
+  { name: 'address', labelKey: 'address', type: 'text' },
   { name: 'group', labelKey: 'group', type: 'text' },
+  { name: 'debtLimit', labelKey: 'debt_limit', type: 'number', defaultValue: 0 },
 ];
 
 export const customerValidator = (data: Partial<Customer>): Record<string, string> => {
   const errors: Record<string, string> = {};
   if (!data.name || (data.name as string).trim() === '') {
-    errors.name = 'Name is required';
+    errors.name = i18n.t('customers:validation.name_required');
+  }
+  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    errors.email = i18n.t('customers:validation.email_invalid');
+  }
+  if (data.phone && data.phone.length < 10) {
+    errors.phone = i18n.t('customers:validation.phone_invalid');
+  }
+  if (data.debtLimit !== undefined && data.debtLimit < 0) {
+    errors.debtLimit = i18n.t('customers:validation.debt_limit_negative');
   }
   return errors;
 };

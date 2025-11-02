@@ -14,6 +14,8 @@ export interface Customer {
   currency?: Currency;
   lastTransaction?: string;
   ownerId?: string | number;
+  group?: string;
+  debtLimit?: number;
 }
 
 interface CustomerState {

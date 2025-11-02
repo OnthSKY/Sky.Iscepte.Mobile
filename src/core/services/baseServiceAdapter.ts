@@ -7,6 +7,7 @@ import { BaseEntityService } from './baseEntityService.types';
 import { BaseEntity, ListQuery, ListResponse } from '../types/screen.types';
 import { GridRequest } from '../../shared/types/grid';
 import { Paginated } from '../../shared/types/module';
+import { PaginatedData } from '../../shared/types/apiResponse';
 import { toQueryParams } from '../../shared/utils/query';
 
 /**
@@ -36,6 +37,18 @@ export function createBaseServiceAdapter<T extends BaseEntity>(
       const response = await gridService.list(gridRequest);
       
       // Handle different response formats
+      // Check if response is PaginatedData format (from new API)
+      if ('totalCount' in response && 'totalPage' in response) {
+        const paginatedData = response as PaginatedData<T>;
+        return {
+          items: paginatedData.items,
+          total: paginatedData.totalCount,
+          page: paginatedData.page,
+          pageSize: paginatedData.pageSize,
+        };
+      }
+      
+      // Handle legacy Paginated format
       const items = response.items || (response as any).data || [];
       const total = response.total || (response as any).totalCount || 0;
       

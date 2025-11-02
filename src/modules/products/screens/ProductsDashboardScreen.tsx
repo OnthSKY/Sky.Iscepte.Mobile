@@ -205,6 +205,7 @@ export default function ProductsDashboardScreen() {
         listRoute: 'StockList',
         createRoute: 'StockCreate',
         description: 'stock:module_description',
+        compactStats: true, // Show all stats in single row
         listConfig: {
           service: productEntityService,
           config: {

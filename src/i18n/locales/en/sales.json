@@ -7,6 +7,7 @@
   "total_amount": "Total Amount",
   "payment_method": "Payment Method",
   "date": "Date",
+  "time": "Time",
   "items": "Items",
   "new_sale": "New Sale",
   "edit_sale": "Edit Sale",

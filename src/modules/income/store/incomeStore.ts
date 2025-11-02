@@ -1,7 +1,10 @@
 import { create } from 'zustand';
+import { BaseCustomField } from '../../../shared/types/customFields';
 
 export type IncomeSource = 'sales' | 'manual';
 export type Currency = 'TRY' | 'USD' | 'EUR';
+
+export interface IncomeCustomField extends BaseCustomField {}
 
 export interface Income { 
   id: string | number;
@@ -20,6 +23,7 @@ export interface Income {
   saleId?: string;
   // Metadata
   isSystemGenerated?: boolean; // true if auto-generated from system
+  customFields?: IncomeCustomField[];
 }
 
 interface IncomeState {

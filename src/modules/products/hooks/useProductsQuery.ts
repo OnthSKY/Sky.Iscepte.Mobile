@@ -13,6 +13,7 @@ import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import { Product, ProductStats, ProductHistoryItem } from '../services/productService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
+import { PaginatedData } from '../../../shared/types/apiResponse';
 import { toQueryParams } from '../../../shared/utils/query';
 
 /**
@@ -23,17 +24,35 @@ export function useProductsQuery(filters?: Record<string, any>) {
     url: `${apiEndpoints.stock.list}${filters ? toQueryParams({ filters } as GridRequest) : ''}`,
     queryKey: queryKeys.stock.list(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes for lists (fresher than detail)
-    transform: (data) => {
-      // Ensure proper paginated structure
+    transform: (data: any) => {
+      // Handle PaginatedData format (from new API structure)
+      if (data && 'totalCount' in data && 'totalPage' in data) {
+        const paginatedData = data as PaginatedData<Product>;
+        return {
+          items: paginatedData.items || [],
+          total: paginatedData.totalCount || 0,
+          page: paginatedData.page || 1,
+          pageSize: paginatedData.pageSize || 20,
+        } as Paginated<Product>;
+      }
+      
+      // Handle legacy array format
       if (!data.items && Array.isArray(data)) {
         return {
           items: data,
           total: data.length,
           page: 1,
           pageSize: 20,
-        };
+        } as Paginated<Product>;
       }
-      return data;
+      
+      // Ensure proper paginated structure (fallback)
+      return {
+        items: data?.items || [],
+        total: data?.total || data?.totalCount || 0,
+        page: data?.page || 1,
+        pageSize: data?.pageSize || 20,
+      } as Paginated<Product>;
     },
   });
 }
@@ -73,6 +92,26 @@ export function useProductsInfiniteQuery(pageSize: number = 20) {
     getNextPageParam: (lastPage) => {
       const totalPages = Math.ceil(lastPage.total / lastPage.pageSize);
       return lastPage.page < totalPages ? lastPage.page + 1 : undefined;
+    },
+    transform: (data: any) => {
+      // Handle PaginatedData format (from new API structure)
+      if (data && 'totalCount' in data && 'totalPage' in data) {
+        const paginatedData = data as PaginatedData<Product>;
+        return {
+          items: paginatedData.items || [],
+          total: paginatedData.totalCount || 0,
+          page: paginatedData.page || 1,
+          pageSize: paginatedData.pageSize || 20,
+        };
+      }
+      
+      // Handle legacy Paginated format
+      return {
+        items: data?.items || [],
+        total: data?.total || data?.totalCount || 0,
+        page: data?.page || 1,
+        pageSize: data?.pageSize || 20,
+      };
     },
   });
 }

@@ -4,16 +4,13 @@ import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
+import { PaginatedData } from '../../../shared/types/apiResponse';
 import { toQueryParams } from '../../../shared/utils/query';
 
-export interface ProductCustomField {
-  key: string;
-  label: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'boolean';
-  value: any;
-  options?: Array<{ label: string; value: any }>; // for select type
-  isGlobal?: boolean; // true: tüm ürünlerde kullanılabilir, false/undefined: sadece bu ürüne özel
-}
+import { BaseCustomField } from '../../../shared/types/customFields';
+
+// Product custom field - inherits from BaseCustomField
+export type ProductCustomField = BaseCustomField;
 
 export type Currency = 'TRY' | 'USD' | 'EUR';
 
@@ -38,32 +35,22 @@ export interface ProductStats {
   totalStockValue?: number;
 }
 
-// Internal mock service handler
-async function getMockService() {
-  if (appConfig.mode === 'mock') {
-    const mod = await import('../../../shared/services/mockService');
-    return mod.mockRequest;
-  }
-  return null;
-}
-
+// Use httpService directly (it handles both mock and real API)
+// httpService already parses BaseControllerResponse format correctly
 async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, body?: any): Promise<T> {
-  const mockService = await getMockService();
-  if (mockService) {
-    // Get token from AsyncStorage for mock service
-    const token = await AsyncStorage.getItem('access_token');
-    return mockService<T>(method, url, body, token || undefined);
-  }
+  // Get token from AsyncStorage for mock service (if in mock mode)
+  const token = appConfig.mode === 'mock' ? await AsyncStorage.getItem('access_token') : null;
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
   
   switch (method) {
     case 'GET':
-      return httpService.get<T>(url);
+      return httpService.get<T>(url, { headers });
     case 'POST':
-      return httpService.post<T>(url, body);
+      return httpService.post<T>(url, body, { headers });
     case 'PUT':
-      return httpService.put<T>(url, body);
+      return httpService.put<T>(url, body, { headers });
     case 'DELETE':
-      return httpService.delete<T>(url);
+      return httpService.delete<T>(url, { headers });
   }
 }
 
@@ -77,8 +64,59 @@ export interface ProductHistoryItem {
 }
 
 export const productService = {
-  list: (req: GridRequest) =>
-    request<Paginated<Product>>('GET', `${apiEndpoints.stock.list}${toQueryParams(req)}`),
+  list: async (req: GridRequest): Promise<Paginated<Product>> => {
+    const response = await request<any>('GET', `${apiEndpoints.stock.list}${toQueryParams(req)}`);
+    
+    // Handle null or undefined response
+    if (!response) {
+      return {
+        items: [],
+        total: 0,
+        page: req.page || 1,
+        pageSize: req.pageSize || 20,
+      };
+    }
+    
+    // Normalize PaginatedData to Paginated format (new API structure)
+    if ('totalCount' in response || 'totalPage' in response) {
+      const paginatedData = response as PaginatedData<Product>;
+      return {
+        items: Array.isArray(paginatedData.items) ? paginatedData.items : [],
+        total: paginatedData.totalCount || 0,
+        page: paginatedData.page || (req.page || 1),
+        pageSize: paginatedData.pageSize || (req.pageSize || 20),
+      };
+    }
+    
+    // Handle legacy Paginated format
+    if ('items' in response || 'total' in response) {
+      const paginated = response as Paginated<Product>;
+      return {
+        items: Array.isArray(paginated.items) ? paginated.items : [],
+        total: paginated.total || 0,
+        page: paginated.page || (req.page || 1),
+        pageSize: paginated.pageSize || (req.pageSize || 20),
+      };
+    }
+    
+    // Handle array response (fallback)
+    if (Array.isArray(response)) {
+      return {
+        items: response,
+        total: response.length,
+        page: req.page || 1,
+        pageSize: req.pageSize || 20,
+      };
+    }
+    
+    // Fallback: empty result
+    return {
+      items: [],
+      total: 0,
+      page: req.page || 1,
+      pageSize: req.pageSize || 20,
+    };
+  },
 
   get: (id: string) => request<Product>('GET', apiEndpoints.stock.get(id)),
 

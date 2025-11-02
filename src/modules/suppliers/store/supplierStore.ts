@@ -1,6 +1,9 @@
 import { create } from 'zustand';
+import { BaseCustomField } from '../../../shared/types/customFields';
 
 export type Currency = 'TRY' | 'USD' | 'EUR';
+
+export interface SupplierCustomField extends BaseCustomField {}
 
 export interface Supplier { 
   id: string | number;
@@ -14,6 +17,7 @@ export interface Supplier {
   currency?: Currency;
   lastTransaction?: string;
   ownerId?: string | number;
+  customFields?: SupplierCustomField[];
 }
 
 interface SupplierState {
