@@ -190,5 +190,15 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.reports.details(), id] as const,
     stats: () => [...queryKeys.reports.all, 'stats'] as const, // Stats are persisted
   },
+  
+  // Suppliers (NON-CRITICAL - memory only, except stats)
+  suppliers: {
+    all: ['suppliers'] as const,
+    lists: () => [...queryKeys.suppliers.all, 'list'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.suppliers.lists(), { filters }] as const,
+    details: () => [...queryKeys.suppliers.all, 'detail'] as const,
+    detail: (id: string | number) => [...queryKeys.suppliers.details(), id] as const,
+    stats: () => [...queryKeys.suppliers.all, 'stats'] as const, // Stats are persisted
+  },
 };
 

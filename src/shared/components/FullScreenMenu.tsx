@@ -72,6 +72,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   const [purchaseVisible, setPurchaseVisible] = useState(false);
   const [purchaseTarget, setPurchaseTarget] = useState<string | null>(null);
   const [addQaVisible, setAddQaVisible] = useState(false);
+  const [removeQaVisible, setRemoveQaVisible] = useState(false);
+  const [removeQaKey, setRemoveQaKey] = useState<string | null>(null);
   const [customQuickActions, setCustomQuickActions] = useState<MenuItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -165,33 +167,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     return labels;
   }, [t]);
 
-  const processedQuickActions = useMemo(() => {
-    const mapped = ALL_QUICK_ACTIONS.map((qa) => {
-      const hasAccess = !qa.requiredPermission || hasPermission(role, qa.requiredPermission);
-      // Check if the route or its fallback is available
-      const isAvailable = availableRoutes?.includes(qa.routeName) ?? false;
-      const fallback = qa.fallbackRoute || getQuickActionFallback(qa.routeName);
-      const fallbackAvailable = fallback && (availableRoutes?.includes(fallback) ?? false);
-      
-      return {
-        key: qa.key,
-        label: quickActionLabelByRoute[qa.routeName] ?? qa.routeName,
-        icon: qa.icon,
-        routeName: qa.routeName,
-        requiredPermission: qa.requiredPermission,
-        isLocked: !hasAccess,
-        isAvailable: isAvailable || fallbackAvailable,
-      };
-    });
-    // Sadece navigator'da mevcut olan veya fallback'i olan route'ları göster
-    const available = mapped.filter(it => it.isAvailable);
-    // Staff: Sadece erişim izni olanları göster
-    if (role === 'staff') {
-      return available.filter(it => !it.isLocked);
-    }
-    // Owner ve admin için tüm öğeleri göster (kilitli olanlar dahil)
-    return available;
-  }, [role, quickActionLabelByRoute, availableRoutes]);
+  // Note: processedQuickActions is not used - we only show custom quick actions
+  // ALL_QUICK_ACTIONS is only used for the "Add Quick Action" modal
 
   const processedCustomQuickActions = useMemo(() => {
     return customQuickActions
@@ -222,11 +199,31 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         if (mounted && saved != null) {
           const parsed = JSON.parse(saved) as MenuItem[];
           setCustomQuickActions(parsed);
+        } else {
+          // First time setup: add default quick actions for common items
+          const defaults: MenuItem[] = [];
+          // Add most common quick actions: stock, sales, purchases, customers, expenses
+          const commonRoutes = ['StockCreate', 'SalesCreate', 'PurchaseCreate', 'CustomerCreate', 'ExpenseCreate'];
+          commonRoutes.forEach(route => {
+            const qa = ALL_QUICK_ACTIONS.find(a => a.routeName === route && hasPermission(role, a.requiredPermission));
+            if (qa && defaults.length < qaCols) {
+              defaults.push({
+                key: qa.key,
+                label: quickActionLabelByRoute[qa.routeName] || qa.routeName,
+                icon: qa.icon,
+                routeName: qa.routeName,
+                requiredPermission: qa.requiredPermission,
+              });
+            }
+          });
+          if (mounted && defaults.length > 0) {
+            setCustomQuickActions(defaults);
+          }
         }
       } catch {}
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [role, quickActionLabelByRoute, qaCols]);
 
   useEffect(() => {
     (async () => {
@@ -257,14 +254,13 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     return processedItems.filter(i => i.label.toLowerCase().includes(term));
   }, [processedItems, searchTerm]);
 
-  const totalQuickCount = processedQuickActions.length + processedCustomQuickActions.length;
+  const totalQuickCount = processedCustomQuickActions.length;
   const filteredQuickActions = useMemo(() => {
-    const list = [...processedQuickActions, ...processedCustomQuickActions];
     const filtered = !searchTerm.trim()
-      ? list
-      : list.filter(i => i.label.toLowerCase().includes(searchTerm.trim().toLowerCase()));
+      ? processedCustomQuickActions
+      : processedCustomQuickActions.filter(i => i.label.toLowerCase().includes(searchTerm.trim().toLowerCase()));
     return filtered.slice(0, QUICK_MAX);
-  }, [processedQuickActions, processedCustomQuickActions, searchTerm]);
+  }, [processedCustomQuickActions, searchTerm, QUICK_MAX]);
 
   const handleRemoveCustomQuick = useCallback((key: string) => {
     setCustomQuickActions(prev => prev.filter(q => q.key !== key));
@@ -336,6 +332,68 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
 
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={{ padding: spacing.lg, gap: spacing.lg }}>
+              {/* Quick Actions Section */}
+              {filteredQuickActions.length > 0 && (
+                <View>
+                  <View style={styles.quickHeader}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      {t('common:quick_actions', { defaultValue: 'Hızlı İşlemler' })}
+                    </Text>
+                    {canAddQuick && totalQuickCount < QUICK_MAX && (
+                      <TouchableOpacity 
+                        onPress={() => setAddQaVisible(true)}
+                        style={{ padding: spacing.xs }}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common:add', { defaultValue: 'Ekle' }) as string}
+                      >
+                        <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <View style={styles.quickRow}>
+                    {filteredQuickActions.map((qa, idx) => (
+                      <TouchableOpacity
+                        key={qa.key}
+                        style={[
+                          styles.quickItem,
+                          { width: `${100 / qaCols}%` }
+                        ]}
+                        onPress={() => {
+                          onClose();
+                          safeNavigate(qa.routeName);
+                        }}
+                        onLongPress={() => {
+                          // Check if it's a custom quick action for removal
+                          if (customQuickActions.find(c => c.key === qa.key)) {
+                            setRemoveQaKey(qa.key);
+                            setRemoveQaVisible(true);
+                          }
+                        }}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={qa.label}
+                      >
+                        <View style={[
+                          styles.quickIconWrap, 
+                          { 
+                            backgroundColor: `${colors.primary}15`,
+                            width: quickIconWrapSize,
+                            height: quickIconWrapSize,
+                            borderRadius: Math.round(quickIconWrapSize / 3)
+                          }
+                        ]}>
+                          <Ionicons name={qa.icon as any} size={quickIconSize} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.quickLabel, { color: colors.text, fontSize: width > 640 ? 11 : 10 }]} numberOfLines={1}>
+                          {qa.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Main Menu Items */}
               <View>
                 <View style={styles.itemsGrid}>
                   {filteredItems.map((item) => {
@@ -406,10 +464,9 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
           <AppModal visible={addQaVisible} onRequestClose={() => setAddQaVisible(false)}>
             <View style={{ gap: spacing.md }}>
               <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: spacing.xs }}>{t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' })}</Text>
-              {ALL_QUICK_ACTIONS
+              {totalQuickCount < QUICK_MAX && ALL_QUICK_ACTIONS
                 .filter(qa => hasPermission(role, qa.requiredPermission))
                 .filter(qa => !customQuickActions.find(c => c.key === qa.key))
-                .filter(() => totalQuickCount < QUICK_MAX)
                 .map(qa => {
                   const menuItem: MenuItem = {
                     key: qa.key,
@@ -458,6 +515,22 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
               onClose();
               // Yönlendirme: Ayarlar sayfasına yönlendiriyoruz (paket satın alma akışı burada olabilir)
               safeNavigate('Settings');
+            }}
+          />
+
+          <ConfirmDialog
+            visible={removeQaVisible}
+            title={t('common:remove_quick_action', { defaultValue: 'Hızlı İşlemi Kaldır' }) as string}
+            message={t('common:remove_quick_action_message', { defaultValue: 'Bu hızlı işlemi kaldırmak istediğinize emin misiniz?' }) as string}
+            confirmText={t('common:remove', { defaultValue: 'Kaldır' }) as string}
+            cancelText={t('common:cancel', { defaultValue: 'Vazgeç' }) as string}
+            onCancel={() => setRemoveQaVisible(false)}
+            onConfirm={() => {
+              if (removeQaKey) {
+                handleRemoveCustomQuick(removeQaKey);
+              }
+              setRemoveQaVisible(false);
+              setRemoveQaKey(null);
             }}
           />
         </Animated.View>

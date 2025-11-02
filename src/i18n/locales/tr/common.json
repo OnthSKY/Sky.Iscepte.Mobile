@@ -177,6 +177,9 @@
   "inactive": "Pasif",
   "customer": "Müşteri",
   "guest": "MİSAFİR",
-  "version": "Sürüm {{version}}"
+  "version": "Sürüm {{version}}",
+  "add": "Ekle",
+  "remove_quick_action": "Hızlı İşlemi Kaldır",
+  "remove_quick_action_message": "Bu hızlı işlemi kaldırmak istediğinize emin misiniz?"
 }
 

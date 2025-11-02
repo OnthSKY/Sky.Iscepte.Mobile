@@ -21,6 +21,11 @@ export const navigationFallbackMap: Record<string, string> = {
   CustomerEdit: 'Customers',
   CustomerDetail: 'Customers',
   
+  // Suppliers module
+  SupplierCreate: 'Suppliers',
+  SupplierEdit: 'Suppliers',
+  SupplierDetail: 'Suppliers',
+  
   // Expenses module
   ExpenseCreate: 'Expenses',
   ExpenseEdit: 'Expenses',

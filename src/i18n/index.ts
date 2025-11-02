@@ -40,6 +40,8 @@ import enEmployees from './locales/en/employees.json';
 import trEmployees from './locales/tr/employees.json';
 import enPurchases from './locales/en/purchases.json';
 import trPurchases from './locales/tr/purchases.json';
+import enSuppliers from './locales/en/suppliers.json';
+import trSuppliers from './locales/tr/suppliers.json';
 
 const resources = {
   en: {
@@ -57,6 +59,7 @@ const resources = {
     products: enProducts, // Keep for backward compatibility
     employees: enEmployees,
     purchases: enPurchases,
+    suppliers: enSuppliers,
     'dynamic-fields': enDynamic,
   },
   tr: {
@@ -74,6 +77,7 @@ const resources = {
     products: trProducts, // Keep for backward compatibility
     employees: trEmployees,
     purchases: trPurchases,
+    suppliers: trSuppliers,
     'dynamic-fields': trDynamic,
   },
 };
@@ -88,7 +92,7 @@ if (!i18n.isInitialized) {
     .init({
       compatibilityJSON: 'v4',
       resources,
-      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'revenue', 'settings', 'stock', 'products', 'employees', 'purchases', 'dynamic-fields'],
+      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'revenue', 'settings', 'stock', 'products', 'employees', 'purchases', 'suppliers', 'dynamic-fields'],
       defaultNS: 'common',
       lng: 'tr', // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
       fallbackLng: 'tr',

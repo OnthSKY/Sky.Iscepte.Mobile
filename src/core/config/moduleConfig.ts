@@ -109,6 +109,26 @@ export const MODULE_CONFIGS: ModuleConfig[] = [
     ],
   },
   {
+    key: 'suppliers',
+    routeName: 'Suppliers',
+    dashboardRoute: 'SuppliersDashboard',
+    icon: 'storefront-outline',
+    requiredPermission: 'suppliers:view',
+    translationNamespace: 'suppliers',
+    translationKey: 'module_name',
+    quickActions: [
+      {
+        key: 'qa-supplier',
+        routeName: 'SupplierCreate',
+        icon: 'storefront-outline',
+        requiredPermission: 'suppliers:create',
+        translationNamespace: 'suppliers',
+        translationKey: 'new_supplier',
+        fallbackRoute: 'Suppliers',
+      },
+    ],
+  },
+  {
     key: 'expenses',
     routeName: 'Expenses',
     dashboardRoute: 'ExpensesDashboard',

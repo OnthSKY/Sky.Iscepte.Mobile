@@ -125,6 +125,18 @@ export const reportsEndpoints = {
 } as const;
 
 /**
+ * Suppliers module endpoints
+ */
+export const suppliersEndpoints = {
+  list: '/suppliers',
+  get: (id: string | number) => `/suppliers/${id}`,
+  stats: '/suppliers/stats',
+  create: '/suppliers',
+  update: (id: string | number) => `/suppliers/${id}`,
+  remove: (id: string | number) => `/suppliers/${id}`,
+} as const;
+
+/**
  * Modules endpoint (for navigation/config)
  */
 export const modulesEndpoints = {
@@ -168,6 +180,7 @@ export const apiEndpoints = {
   revenue: revenueEndpoints,
   employees: employeesEndpoints,
   reports: reportsEndpoints,
+  suppliers: suppliersEndpoints,
   modules: modulesEndpoints,
   dashboard: dashboardEndpoints,
 } as const;

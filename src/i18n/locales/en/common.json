@@ -177,6 +177,9 @@
   "inactive": "Inactive",
   "customer": "Customer",
   "guest": "GUEST",
-  "version": "Version {{version}}"
+  "version": "Version {{version}}",
+  "add": "Add",
+  "remove_quick_action": "Remove Quick Action",
+  "remove_quick_action_message": "Are you sure you want to remove this quick action?"
 }
 
