@@ -9,7 +9,7 @@ import { useTheme } from '../../core/contexts/ThemeContext';
 import ConfirmDialog from './ConfirmDialog';
 import AppModal from './Modal';
 import storage from '../services/storageService';
-import { MODULE_CONFIGS, ALL_QUICK_ACTIONS, getQuickActionFallback } from '../../core/config/moduleConfig';
+import { MODULE_CONFIGS, ALL_QUICK_ACTIONS, getQuickActionFallback, getModuleConfigByRoute } from '../../core/config/moduleConfig';
 import { allRoutes } from '../../core/navigation/routes';
 
 type MenuItem = {
@@ -28,9 +28,10 @@ type Props = {
   onNavigate: (routeName: string) => void;
   availableRoutes?: string[];
   role?: Role;
+  activeRouteName?: string | null;
 };
 
-export default function FullScreenMenu({ visible, onClose, onNavigate, availableRoutes, role = 'guest' }: Props) {
+export default function FullScreenMenu({ visible, onClose, onNavigate, availableRoutes, role = 'guest', activeRouteName }: Props) {
   // Get all unique translation namespaces from module configs
   const translationNamespaces = useMemo(() => {
     const namespaces = new Set<string>();
@@ -125,6 +126,15 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     }
   }, [visible, onClose]);
   
+  // Get active module from current route
+  const activeModule = useMemo(() => {
+    if (!activeRouteName) return null;
+    const routeConfig = allRoutes.find(r => r.name === activeRouteName);
+    if (!routeConfig) return null;
+    return getModuleConfigByRoute(activeRouteName) || 
+           MODULE_CONFIGS.find(m => m.routeName === routeConfig.module || m.key === routeConfig.module) || null;
+  }, [activeRouteName]);
+
   const processedItems = useMemo(() => {
     const mapped = MODULE_CONFIGS.map((module) => {
       const hasAccess = !module.requiredPermission || hasPermission(role, module.requiredPermission);
@@ -152,12 +162,21 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     // Owner: Tüm öğeleri göster (kilitli olanlar dahil)
     // Staff: Sadece erişim izni olanları göster
     // Admin: Tüm öğeleri göster (hepsi açık)
-    if (role === 'staff') {
-      return available.filter(it => !it.isLocked);
+    const filtered = role === 'staff' 
+      ? available.filter(it => !it.isLocked)
+      : available;
+    
+    // If we have an active module, prioritize it by putting it first
+    if (activeModule) {
+      const activeModuleItem = filtered.find(item => item.routeName === activeModule.routeName);
+      const others = filtered.filter(item => item.routeName !== activeModule.routeName);
+      if (activeModuleItem) {
+        return [activeModuleItem, ...others];
+      }
     }
-    // Owner ve admin için tüm öğeleri göster
-    return available;
-  }, [t, role, availableRoutes]);
+    
+    return filtered;
+  }, [t, role, availableRoutes, activeModule]);
 
   const quickActionLabelByRoute = useMemo(() => {
     const labels: Record<string, string> = {};
@@ -395,6 +414,18 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
           score += 100;
         }
         
+        // Boost active module items significantly
+        if (activeModule) {
+          const routeConfig = allRoutes.find(r => r.name === item.routeName);
+          if (routeConfig) {
+            const itemModule = getModuleConfigByRoute(item.routeName) || 
+                              MODULE_CONFIGS.find(m => m.routeName === routeConfig.module || m.key === routeConfig.module);
+            if (itemModule && itemModule.key === activeModule.key) {
+              score += 300; // Significant boost for active module
+            }
+          }
+        }
+        
         // Boost quick actions
         if (item.key.startsWith('qa-')) score += 50;
         
@@ -418,8 +449,31 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       .map(({ item }) => item)
       .slice(0, 20); // Limit to top 20 results
     
+    // If we have an active module, prioritize its items by moving them to the front
+    if (activeModule && uniqueItems.length > 0) {
+      const activeModuleItems: typeof uniqueItems = [];
+      const otherItems: typeof uniqueItems = [];
+      
+      uniqueItems.forEach(item => {
+        const routeConfig = allRoutes.find(r => r.name === item.routeName);
+        if (routeConfig) {
+          const itemModule = getModuleConfigByRoute(item.routeName) || 
+                            MODULE_CONFIGS.find(m => m.routeName === routeConfig.module || m.key === routeConfig.module);
+          if (itemModule && itemModule.key === activeModule.key) {
+            activeModuleItems.push(item);
+          } else {
+            otherItems.push(item);
+          }
+        } else {
+          otherItems.push(item);
+        }
+      });
+      
+      return [...activeModuleItems, ...otherItems];
+    }
+    
     return uniqueItems;
-  }, [processedItems, searchTerm, allSearchItems, role]);
+  }, [processedItems, searchTerm, allSearchItems, role, activeModule]);
 
   const totalQuickCount = processedCustomQuickActions.length;
   const filteredQuickActions = useMemo(() => {
@@ -562,10 +616,28 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
 
               {/* Main Menu Items */}
               <View>
+                {activeModule && processedItems.length > 0 && (
+                  <View style={styles.activeModuleHeader}>
+                    <View style={[styles.activeModuleBadge, { backgroundColor: `${colors.primary}20` }]}>
+                      <Ionicons name="location" size={16} color={colors.primary} />
+                      <Text style={[styles.activeModuleText, { color: colors.primary }]}>
+                        {t('common:current_module', { defaultValue: 'Mevcut Modül' })}: {activeModule ? t(`${activeModule.translationNamespace}:${activeModule.translationKey}`, { defaultValue: activeModule.key }) : ''}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 <View style={styles.itemsGrid}>
                   {filteredItems.map((item) => {
                     // Calculate item width as percentage - gap will handle spacing
                     const itemWidthPercent = 100 / numColumns;
+                    
+                    // Check if item belongs to active module
+                    const routeConfig = allRoutes.find(r => r.name === item.routeName);
+                    const itemModule = routeConfig 
+                      ? (getModuleConfigByRoute(item.routeName) || 
+                         MODULE_CONFIGS.find(m => m.routeName === routeConfig.module || m.key === routeConfig.module))
+                      : null;
+                    const isActiveModule = activeModule && itemModule && itemModule.key === activeModule.key;
                     
                     return (
                       <TouchableOpacity
@@ -573,10 +645,12 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                         style={[
                           styles.item,
                           { 
-                            backgroundColor: colors.surface,
+                            backgroundColor: isActiveModule ? `${colors.primary}10` : colors.surface,
                             width: `${itemWidthPercent}%`,
-                            borderWidth: 1,
-                            borderColor: activeTheme === 'dark' ? colors.border : `${colors.border}40`,
+                            borderWidth: isActiveModule ? 2 : 1,
+                            borderColor: isActiveModule 
+                              ? colors.primary 
+                              : (activeTheme === 'dark' ? colors.border : `${colors.border}40`),
                             ...(Platform.OS === 'web' ? {} : {
                               // For native, ensure proper wrapping
                               flex: 0,
@@ -764,6 +838,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: spacing.md,
     opacity: 0.7,
+  },
+  activeModuleHeader: {
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  activeModuleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  activeModuleText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   quickHeader: {
     flexDirection: 'row',

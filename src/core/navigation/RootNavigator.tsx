@@ -21,6 +21,7 @@ type Props = {
 export default function RootNavigator({ role }: Props) {
   const allRoutes = filterRoutesByRole(role, hasPermission);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [activeRouteName, setActiveRouteName] = useState<string | null>('Dashboard');
   const tabNavigationRef = useRef<any>(null);
   const { colors } = useTheme();
   const { t } = useTranslation('common');
@@ -89,6 +90,13 @@ export default function RootNavigator({ role }: Props) {
           if (tabProps.navigation) {
             tabNavigationRef.current = tabProps.navigation;
           }
+          // Update active route name when navigation state changes
+          if (tabProps.state?.routeNames && tabProps.state?.index !== undefined) {
+            const currentRoute = tabProps.state.routeNames[tabProps.state.index];
+            if (currentRoute && currentRoute !== activeRouteName) {
+              setActiveRouteName(currentRoute);
+            }
+          }
           return <CustomTabBar {...tabProps} onOpenMenu={() => setMenuVisible(true)} />;
         }}
         >
@@ -117,6 +125,7 @@ export default function RootNavigator({ role }: Props) {
         onNavigate={handleNavigate}
         availableRoutes={availableRouteNames}
         role={role}
+        activeRouteName={activeRouteName}
       />
     </>
   );
