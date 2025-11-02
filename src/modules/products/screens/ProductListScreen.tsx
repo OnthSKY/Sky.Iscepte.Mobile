@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../core/services/queryClient';
 import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import httpService from '../../../shared/services/httpService';
+import { formatCurrency } from '../utils/currency';
 
 /**
  * ProductListScreen - SOLID Principles Applied
@@ -249,7 +250,7 @@ export default function ProductListScreen() {
                   </Text>
                   <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
                     <Text style={{ fontSize: 14, color: colors.text }}>
-                      {t('stock:price', { defaultValue: 'Fiyat' })}: {item.price ?? '—'}
+                      {t('stock:price', { defaultValue: 'Fiyat' })}: {item.price !== undefined ? formatCurrency(item.price, item.currency || 'TRY') : '—'}
                     </Text>
                     <Text style={{ fontSize: 14, color: colors.text }}>
                       {t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' })}: {item.stock ?? '—'}

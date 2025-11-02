@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type Currency = 'TRY' | 'USD' | 'EUR';
+
 export interface Sale {
   id: string | number;
   title?: string;
@@ -10,6 +12,7 @@ export interface Sale {
   productName?: string;
   quantity?: number;
   price?: number;
+  currency?: Currency;
   total?: number;
   date?: string;
   status?: string;

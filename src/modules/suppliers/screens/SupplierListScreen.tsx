@@ -88,6 +88,23 @@ export default function SupplierListScreen() {
               entityName: 'supplier',
               translationNamespace: 'suppliers',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'isActive',
+                  label: 'suppliers:active_status',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: t('common:active', { defaultValue: 'Aktif' }), value: 'true' },
+                    { label: t('common:inactive', { defaultValue: 'Pasif' }), value: 'false' },
+                  ],
+                },
+                {
+                  key: 'status',
+                  label: 'suppliers:status',
+                  type: 'text',
+                },
+              ],
             }}
             renderItem={(item: Supplier) => (
               <Card

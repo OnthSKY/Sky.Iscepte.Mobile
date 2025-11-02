@@ -88,6 +88,23 @@ export default function CustomerListScreen() {
               entityName: 'customer',
               translationNamespace: 'customers',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'isActive',
+                  label: 'customers:active_status',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: t('common:active', { defaultValue: 'Aktif' }), value: 'true' },
+                    { label: t('common:inactive', { defaultValue: 'Pasif' }), value: 'false' },
+                  ],
+                },
+                {
+                  key: 'status',
+                  label: 'customers:status',
+                  type: 'text',
+                },
+              ],
             }}
             renderItem={(item: Customer) => (
               <Card

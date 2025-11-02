@@ -80,10 +80,37 @@ export default function EmployeeListScreen() {
               entityName: 'employee',
               translationNamespace: 'employees',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'isActive',
+                  label: 'employees:active_status',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: t('common:active', { defaultValue: 'Aktif' }), value: 'true' },
+                    { label: t('common:inactive', { defaultValue: 'Pasif' }), value: 'false' },
+                  ],
+                },
+                {
+                  key: 'position',
+                  label: 'employees:position',
+                  type: 'text',
+                },
+                {
+                  key: 'salaryMin',
+                  label: 'employees:salary_min',
+                  type: 'number',
+                },
+                {
+                  key: 'salaryMax',
+                  label: 'employees:salary_max',
+                  type: 'number',
+                },
+              ],
             }}
             emptyStateTitle={t('employees:no_employees_found', { defaultValue: 'Henüz çalışan yok' })}
             emptyStateSubtitle={t('employees:no_employees_found_subtitle', { defaultValue: 'Yeni çalışan eklemek için menüden ilgili seçeneği kullanabilirsiniz.' })}
-            showFilters={false}
+            showFilters={true}
             renderItem={(item: Employee) => (
               <Card
                 style={{ marginBottom: 12 }}

@@ -11,6 +11,7 @@ export const productFormFields: DynamicField[] = [
   { name: 'sku', labelKey: 'sku', type: 'text' },
   { name: 'category', labelKey: 'category', type: 'custom' }, // Will be rendered as CategorySelect in ProductFormScreen
   { name: 'price', labelKey: 'price', type: 'number' },
+  { name: 'currency', labelKey: 'currency', type: 'custom' }, // Will be rendered as CurrencySelect in ProductFormScreen
   { name: 'stock', labelKey: 'stock', type: 'number', defaultValue: 1 },
 ];
 

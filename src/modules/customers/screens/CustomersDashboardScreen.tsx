@@ -14,6 +14,7 @@ import { Customer } from '../store/customerStore';
 import Card from '../../../shared/components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * CustomersDashboardScreen - Dashboard for Customers module
@@ -185,7 +186,7 @@ export default function CustomersDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="cash-outline" size={16} color={item.balance >= 0 ? '#10B981' : '#EF4444'} />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, fontWeight: '600', color: item.balance >= 0 ? '#10B981' : '#EF4444' }}>
-                      {item.balance >= 0 ? '+' : ''}₺{Math.abs(item.balance || 0).toLocaleString()}
+                      {item.balance >= 0 ? '+' : ''}{formatCurrency(Math.abs(item.balance || 0), item.currency || 'TRY')}
                     </Text>
                   </View>
                 )}

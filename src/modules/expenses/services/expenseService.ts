@@ -8,11 +8,13 @@ import { toQueryParams } from '../../../shared/utils/query';
 
 export type ExpenseType = 'expense'; // Only expense, income has separate module
 export type ExpenseSource = 'product_purchase' | 'employee_salary' | 'manual';
+export type Currency = 'TRY' | 'USD' | 'EUR';
 
 export interface Expense {
   id: string;
   title?: string;
   amount?: number;
+  currency?: Currency;
   type?: ExpenseType; // Always 'expense'
   source?: ExpenseSource; // 'product_purchase', 'employee_salary', 'manual'
   expenseTypeId?: string;

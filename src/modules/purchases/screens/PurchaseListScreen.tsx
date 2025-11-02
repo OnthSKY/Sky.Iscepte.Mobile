@@ -104,6 +104,39 @@ export default function PurchaseListScreen() {
               entityName: 'purchases',
               translationNamespace: 'purchases',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'status',
+                  label: 'purchases:status',
+                  type: 'text',
+                },
+                {
+                  key: 'currency',
+                  label: 'purchases:currency',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: 'TRY', value: 'TRY' },
+                    { label: 'USD', value: 'USD' },
+                    { label: 'EUR', value: 'EUR' },
+                  ],
+                },
+                {
+                  key: 'amountMin',
+                  label: 'purchases:amount_min',
+                  type: 'number',
+                },
+                {
+                  key: 'amountMax',
+                  label: 'purchases:amount_max',
+                  type: 'number',
+                },
+                {
+                  key: 'date',
+                  label: 'purchases:date',
+                  type: 'date',
+                },
+              ],
             }}
             title={t('purchases:purchases', { defaultValue: 'Alışlar' })}
             renderItem={(item: Purchase) => (

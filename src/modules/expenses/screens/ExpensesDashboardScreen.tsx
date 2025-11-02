@@ -14,6 +14,7 @@ import { Expense } from '../store/expenseStore';
 import Card from '../../../shared/components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * ExpensesDashboardScreen - Dashboard for Expenses module
@@ -191,7 +192,7 @@ export default function ExpensesDashboardScreen() {
                       fontWeight: '600', 
                       color: colors.error || '#DC2626'
                     }}>
-                      -₺{item.amount.toLocaleString()}
+                      -{formatCurrency(item.amount, item.currency || 'TRY')}
                     </Text>
                   </View>
                 )}

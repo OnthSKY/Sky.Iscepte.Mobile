@@ -28,6 +28,9 @@ import { ModuleStat } from '../../../shared/components/dashboard/ModuleStatsHead
 import { StatCard } from '../../../shared/components/dashboard/StatCard';
 import { useEmployeeStatsQuery } from '../hooks/useEmployeesQuery';
 import { useWindowDimensions } from 'react-native';
+import { useStaffPermissionGroupStore } from '../store/staffPermissionGroupStore';
+import Select from '../../../shared/components/Select';
+import { Role } from '../../../core/config/appConstants';
 
 interface PermissionDetail {
   actions: string[];
@@ -78,6 +81,13 @@ export default function EmployeePermissionsScreen() {
   const [saving, setSaving] = useState(false);
   const [modifiedPermissions, setModifiedPermissions] = useState<Record<string, PermissionDetail>>({});
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [selectedPermissionGroup, setSelectedPermissionGroup] = useState<string>('');
+  const { groups, loadGroups } = useStaffPermissionGroupStore();
+
+  // Load permission groups on mount
+  useEffect(() => {
+    loadGroups();
+  }, []);
   
   // Fetch employee stats
   const { data: stats, isLoading: statsLoading } = useEmployeeStatsQuery();
@@ -190,6 +200,8 @@ export default function EmployeePermissionsScreen() {
         });
       }
       setModifiedPermissions(cleanedPermissions);
+      // Reset selected group when loading employee
+      setSelectedPermissionGroup('');
     } catch (error) {
       console.error('Failed to load employee permissions:', error);
     } finally {
@@ -420,6 +432,45 @@ export default function EmployeePermissionsScreen() {
                 <LoadingState />
               ) : (
                 <View style={{ gap: spacing.md }}>
+                  {/* Permission Group Selection - Only for STAFF role */}
+                  {selectedEmployee?.role === Role.STAFF && (
+                    <Card style={{ marginBottom: spacing.md }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: spacing.sm, color: colors.text }}>
+                        {t('employees:permission_group', { defaultValue: 'Yetki Grubu' })}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.sm }}>
+                        {t('employees:permission_group_desc', { defaultValue: 'Hızlıca yetki vermek için bir grup seçin (isteğe bağlı)' })}
+                      </Text>
+                      <Select
+                        value={selectedPermissionGroup}
+                        options={[
+                          { label: t('employees:none', { defaultValue: 'Grup Seçme' }), value: '' },
+                          ...groups.map(g => ({ label: g.name, value: g.id })),
+                        ]}
+                        placeholder={t('employees:select_permission_group', { defaultValue: 'Yetki Grubu Seç' })}
+                        onChange={(value) => {
+                          setSelectedPermissionGroup(value);
+                          if (value) {
+                            // Load group permissions
+                            const group = groups.find(g => g.id === value);
+                            if (group) {
+                              const groupPermissions: Record<string, PermissionDetail> = {};
+                              Object.keys(group.permissions).forEach(moduleKey => {
+                                groupPermissions[moduleKey] = {
+                                  actions: group.permissions[moduleKey].actions || [],
+                                };
+                              });
+                              setModifiedPermissions(groupPermissions);
+                            }
+                          } else {
+                            // Clear permissions if no group selected
+                            setModifiedPermissions({});
+                          }
+                        }}
+                      />
+                    </Card>
+                  )}
+
                   <View style={{ marginBottom: spacing.md, padding: spacing.md, backgroundColor: colors.primary + '10', borderRadius: 8, borderWidth: 1, borderColor: colors.primary + '30' }}>
                     <Text style={{ fontSize: 13, color: colors.text }}>
                       {t('employees:view_all_data_note', { defaultValue: 'Not: Görüntüle izni ile bu kullanıcı, başkaları tarafından girilen verileri de görüntüleyebilir.' })}

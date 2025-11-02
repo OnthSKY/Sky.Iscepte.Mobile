@@ -114,6 +114,17 @@ export const employeesEndpoints = {
 } as const;
 
 /**
+ * Staff Permission Groups endpoints
+ */
+export const permissionGroupsEndpoints = {
+  list: '/staff-permission-groups',
+  get: (id: string | number) => `/staff-permission-groups/${id}`,
+  create: '/staff-permission-groups',
+  update: (id: string | number) => `/staff-permission-groups/${id}`,
+  remove: (id: string | number) => `/staff-permission-groups/${id}`,
+} as const;
+
+/**
  * Reports module endpoints
  */
 export const reportsEndpoints = {
@@ -184,6 +195,7 @@ export const apiEndpoints = {
   suppliers: suppliersEndpoints,
   modules: modulesEndpoints,
   dashboard: dashboardEndpoints,
+  permissionGroups: permissionGroupsEndpoints,
 } as const;
 
 /**

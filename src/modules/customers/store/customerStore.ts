@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type Currency = 'TRY' | 'USD' | 'EUR';
+
 export interface Customer { 
   id: string | number;
   name?: string;
@@ -9,6 +11,7 @@ export interface Customer {
   isActive?: boolean;
   status?: string;
   balance?: number;
+  currency?: Currency;
   lastTransaction?: string;
   ownerId?: string | number;
 }

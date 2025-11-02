@@ -8,6 +8,7 @@ import LoadingState from '../shared/components/LoadingState';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useOwnerDashboard } from '../core/hooks/useOwnerDashboard';
+import { formatCurrency } from '../modules/products/utils/currency';
 
 /**
  * OwnerDashboardScreen - SOLID Principles Applied
@@ -186,7 +187,7 @@ export default function OwnerDashboardScreen() {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ color: colors.success, fontSize: 16, fontWeight: '700' }}>
-                    ₺{product.totalAmount.toLocaleString('tr-TR')}
+                    {formatCurrency(product.totalAmount, product.currency || 'TRY')}
                   </Text>
                 </View>
               </View>
@@ -303,7 +304,7 @@ export default function OwnerDashboardScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>{product.productName}</Text>
                     <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
-                      {product.quantity} {t('dashboard:quantity', { defaultValue: 'adet' })} • {t('dashboard:amount', { defaultValue: 'Tutar' })}: {showEmpIncomeValues ? product.totalAmount.toLocaleString('tr-TR') : '••••••'} ₺
+                      {product.quantity} {t('dashboard:quantity', { defaultValue: 'adet' })} • {t('dashboard:amount', { defaultValue: 'Tutar' })}: {showEmpIncomeValues ? formatCurrency(product.totalAmount, product.currency || 'TRY') : '••••••'}
                     </Text>
                   </View>
                 </View>

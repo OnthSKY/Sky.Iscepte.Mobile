@@ -27,6 +27,13 @@ export default function ExpenseTypeListScreen() {
         entityName: 'expenseType',
         translationNamespace: 'expenses',
         defaultPageSize: 10,
+        filterOptions: [
+          {
+            key: 'name',
+            label: 'expenses:name',
+            type: 'text',
+          },
+        ],
       }}
       renderItem={(item: ExpenseType) => (
         <Card

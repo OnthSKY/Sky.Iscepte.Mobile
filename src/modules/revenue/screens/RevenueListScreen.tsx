@@ -12,6 +12,7 @@ import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashbo
 import LoadingState from '../../../shared/components/LoadingState';
 import ScreenLayout from '../../../shared/layouts/ScreenLayout';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * RevenueListScreen - SOLID Principles Applied
@@ -92,6 +93,33 @@ export default function RevenueListScreen() {
               entityName: 'revenue',
               translationNamespace: 'revenue',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'source',
+                  label: 'revenue:source',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: t('revenue:sales', { defaultValue: 'Satış' }), value: 'sales' },
+                    { label: t('revenue:manual', { defaultValue: 'Manuel' }), value: 'manual' },
+                  ],
+                },
+                {
+                  key: 'amountMin',
+                  label: 'revenue:amount_min',
+                  type: 'number',
+                },
+                {
+                  key: 'amountMax',
+                  label: 'revenue:amount_max',
+                  type: 'number',
+                },
+                {
+                  key: 'date',
+                  label: 'revenue:date',
+                  type: 'date',
+                },
+              ],
             }}
             renderItem={(item: Revenue) => (
               <Card
@@ -99,7 +127,7 @@ export default function RevenueListScreen() {
                 onPress={() => navigation.navigate('RevenueDetail', { id: item.id, title: item.title, amount: item.amount })}
               >
                 <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
-                <Text style={{ color: '#10B981', fontWeight: '600' }}>+{item.amount} ₺</Text>
+                <Text style={{ color: '#10B981', fontWeight: '600' }}>+{formatCurrency(item.amount || 0, item.currency || 'TRY')}</Text>
               </Card>
             )}
             keyExtractor={(item: Revenue) => String(item.id)}

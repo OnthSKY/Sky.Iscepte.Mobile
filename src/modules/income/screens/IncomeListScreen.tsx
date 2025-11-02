@@ -12,6 +12,7 @@ import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashbo
 import LoadingState from '../../../shared/components/LoadingState';
 import ScreenLayout from '../../../shared/layouts/ScreenLayout';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * IncomeListScreen - SOLID Principles Applied
@@ -92,6 +93,33 @@ export default function IncomeListScreen() {
               entityName: 'income',
               translationNamespace: 'income',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'source',
+                  label: 'income:source',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: t('income:sales', { defaultValue: 'Satış' }), value: 'sales' },
+                    { label: t('income:manual', { defaultValue: 'Manuel' }), value: 'manual' },
+                  ],
+                },
+                {
+                  key: 'amountMin',
+                  label: 'income:amount_min',
+                  type: 'number',
+                },
+                {
+                  key: 'amountMax',
+                  label: 'income:amount_max',
+                  type: 'number',
+                },
+                {
+                  key: 'date',
+                  label: 'income:date',
+                  type: 'date',
+                },
+              ],
             }}
             renderItem={(item: Income) => (
               <Card
@@ -99,7 +127,7 @@ export default function IncomeListScreen() {
                 onPress={() => navigation.navigate('IncomeDetail', { id: item.id, title: item.title, amount: item.amount })}
               >
                 <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
-                <Text style={{ color: '#10B981', fontWeight: '600' }}>+{item.amount} ₺</Text>
+                <Text style={{ color: '#10B981', fontWeight: '600' }}>+{formatCurrency(item.amount || 0, item.currency || 'TRY')}</Text>
               </Card>
             )}
             keyExtractor={(item: Income) => String(item.id)}

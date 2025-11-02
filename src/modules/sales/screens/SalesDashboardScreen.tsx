@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { View, Text } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * SalesDashboardScreen - Dashboard for Sales module
@@ -185,7 +186,7 @@ export default function SalesDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="cash-outline" size={16} color={colors.primary} />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                      ₺{(item.amount || item.total || 0).toLocaleString()}
+                      {formatCurrency(item.amount || item.total || 0, item.currency || 'TRY')}
                     </Text>
                   </View>
                 )}

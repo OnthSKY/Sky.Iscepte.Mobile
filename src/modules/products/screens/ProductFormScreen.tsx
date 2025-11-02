@@ -21,6 +21,7 @@ import spacing from '../../../core/constants/spacing';
 import globalFieldsService from '../services/globalFieldsService';
 import { useProductsQuery } from '../hooks/useProductsQuery';
 import CategorySelect from '../components/CategorySelect';
+import CurrencySelect from '../components/CurrencySelect';
 
 interface ProductFormScreenProps {
   mode?: 'create' | 'edit';
@@ -40,6 +41,7 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
     }
     return {
       stock: 1, // Default stock value
+      currency: 'TRY', // Default currency is TL
       isActive: true,
       customFields: [],
     };
@@ -130,8 +132,8 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
           updateField('customFields' as keyof Product, fields);
         };
 
-        // Build form fields with custom category field
-        const fieldsWithCategory = useMemo(() => {
+        // Build form fields with custom category and currency fields
+        const fieldsWithCustoms = useMemo(() => {
           return productFormFields.map((field) => {
             if (field.name === 'category') {
               return {
@@ -147,6 +149,18 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
                 ),
               };
             }
+            if (field.name === 'currency') {
+              return {
+                ...field,
+                render: (value: any, onChange: (v: any) => void) => (
+                  <CurrencySelect
+                    value={value}
+                    onChange={(val) => onChange(val)}
+                    placeholder="Para Birimi"
+                  />
+                ),
+              };
+            }
             return field;
           });
         }, [categoryOptions, handleCategoryAdded]);
@@ -156,7 +170,7 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
             <DynamicForm
               namespace="stock"
               columns={2}
-              fields={fieldsWithCategory}
+              fields={fieldsWithCustoms}
               values={{
                 ...formData,
                 stock: formData.stock ?? 1, // Ensure default value is set

@@ -14,6 +14,7 @@ import { Income } from '../store/incomeStore';
 import Card from '../../../shared/components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * IncomeDashboardScreen - Dashboard for Income module
@@ -183,7 +184,7 @@ export default function IncomeDashboardScreen() {
                       fontWeight: '600', 
                       color: '#10B981' 
                     }}>
-                      +₺{item.amount.toLocaleString()}
+                      +{formatCurrency(item.amount, item.currency || 'TRY')}
                     </Text>
                   </View>
                 )}

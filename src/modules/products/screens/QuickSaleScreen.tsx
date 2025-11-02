@@ -21,12 +21,15 @@ import spacing from '../../../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SearchBar from '../../../shared/components/SearchBar';
 import LoadingState from '../../../shared/components/LoadingState';
+import { formatCurrency } from '../utils/currency';
+import { Currency } from '../services/productService';
 
 interface SaleItem {
   productId: string;
   quantity: number;
   price: number;
   subtotal: number;
+  currency?: Currency;
 }
 
 export default function QuickSaleScreen() {
@@ -123,6 +126,7 @@ export default function QuickSaleScreen() {
           quantity: qty,
           price: itemPrice,
           subtotal,
+          currency: selectedProduct.currency || 'TRY',
         },
       ]);
     }
@@ -183,7 +187,8 @@ export default function QuickSaleScreen() {
     }
 
     try {
-      // Create sale with items
+      // Create sale with items - use currency from first item if all same, otherwise TRY
+      const firstItemCurrency = saleItems[0]?.currency || 'TRY';
       await createSaleMutation.mutateAsync({
         customerId,
         items: saleItems.map(item => ({
@@ -193,6 +198,7 @@ export default function QuickSaleScreen() {
           subtotal: item.subtotal,
         })),
         amount: totalAmount,
+        currency: firstItemCurrency,
         date: new Date().toISOString(),
       });
 
@@ -262,7 +268,7 @@ export default function QuickSaleScreen() {
                           {t('stock:stock_quantity', { defaultValue: 'Stok' })}: {item.stock || 0}
                         </Text>
                         <Text style={[styles.productPrice, { color: colors.primary }]}>
-                          ₺{item.price?.toLocaleString() || '0'}
+                          {item.price ? formatCurrency(item.price, item.currency || 'TRY') : '0'}
                         </Text>
                       </View>
                     </View>
@@ -298,7 +304,7 @@ export default function QuickSaleScreen() {
                   <Text style={[styles.label, { color: colors.text }]}>
                     {t('sales:price', { defaultValue: 'Fiyat' })} {selectedProduct.price && (
                       <Text style={{ color: colors.muted, fontSize: 12 }}>
-                        ({t('stock:default_price', { defaultValue: 'Varsayılan' })}: ₺{selectedProduct.price.toLocaleString()})
+                        ({t('stock:default_price', { defaultValue: 'Varsayılan' })}: {formatCurrency(selectedProduct.price, selectedProduct.currency || 'TRY')})
                       </Text>
                     )}
                   </Text>
@@ -335,7 +341,7 @@ export default function QuickSaleScreen() {
                       {product?.name || t('stock:stock_item', { defaultValue: 'Ürün' })}
                     </Text>
                     <Text style={[styles.saleItemMeta, { color: colors.muted }]}>
-                      {item.quantity} x ₺{item.price.toLocaleString()} = ₺{item.subtotal.toLocaleString()}
+                      {item.quantity} x {formatCurrency(item.price, product?.currency || 'TRY')} = {formatCurrency(item.subtotal, product?.currency || 'TRY')}
                     </Text>
                   </View>
                   <View style={styles.saleItemActions}>
@@ -362,13 +368,13 @@ export default function QuickSaleScreen() {
               );
             })}
 
-            {/* Total */}
+            {/* Total - Note: mixed currencies will show the actual currency of items */}
             <View style={[styles.totalSection, { borderTopColor: colors.border }]}>
               <Text style={[styles.totalLabel, { color: colors.text }]}>
                 {t('sales:total_amount', { defaultValue: 'Toplam Tutar' })}:
               </Text>
               <Text style={[styles.totalAmount, { color: colors.primary }]}>
-                ₺{totalAmount.toLocaleString()}
+                {formatCurrency(totalAmount, 'TRY')}
               </Text>
             </View>
           </Card>

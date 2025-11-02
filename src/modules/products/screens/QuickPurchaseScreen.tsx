@@ -21,12 +21,15 @@ import spacing from '../../../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SearchBar from '../../../shared/components/SearchBar';
 import LoadingState from '../../../shared/components/LoadingState';
+import { formatCurrency } from '../utils/currency';
+import { Currency } from '../services/productService';
 
 interface PurchaseItem {
   productId: string;
   quantity: number;
   price: number;
   subtotal: number;
+  currency?: Currency;
 }
 
 export default function QuickPurchaseScreen() {
@@ -113,6 +116,7 @@ export default function QuickPurchaseScreen() {
           quantity: qty,
           price: itemPrice,
           subtotal,
+          currency: selectedProduct.currency || 'TRY',
         },
       ]);
     }
@@ -150,7 +154,8 @@ export default function QuickPurchaseScreen() {
     }
 
     try {
-      // Create purchase with items
+      // Create purchase with items - use currency from first item if all same, otherwise TRY
+      const firstItemCurrency = purchaseItems[0]?.currency || 'TRY';
       await createPurchaseMutation.mutateAsync({
         title: t('purchases:purchase', { defaultValue: 'Alış' }),
         supplierName: supplierName || undefined,
@@ -162,6 +167,7 @@ export default function QuickPurchaseScreen() {
         })),
         amount: totalAmount,
         total: totalAmount,
+        currency: firstItemCurrency,
         date: new Date().toISOString(),
         status: 'completed',
       });
@@ -245,7 +251,7 @@ export default function QuickPurchaseScreen() {
                         </Text>
                         {item.price && (
                           <Text style={[styles.productPrice, { color: colors.muted }]}>
-                            {t('purchases:current_price', { defaultValue: 'Mevcut Fiyat' })}: ₺{item.price.toLocaleString()}
+                            {t('purchases:current_price', { defaultValue: 'Mevcut Fiyat' })}: {formatCurrency(item.price, item.currency || 'TRY')}
                           </Text>
                         )}
                       </View>
@@ -315,7 +321,7 @@ export default function QuickPurchaseScreen() {
                       {product?.name || t('stock:stock_item', { defaultValue: 'Ürün' })}
                     </Text>
                     <Text style={[styles.purchaseItemMeta, { color: colors.muted }]}>
-                      {item.quantity} x ₺{item.price.toLocaleString()} = ₺{item.subtotal.toLocaleString()}
+                      {item.quantity} x {formatCurrency(item.price, product?.currency || 'TRY')} = {formatCurrency(item.subtotal, product?.currency || 'TRY')}
                     </Text>
                   </View>
                   <View style={styles.purchaseItemActions}>
@@ -342,7 +348,7 @@ export default function QuickPurchaseScreen() {
                 {t('purchases:total_amount', { defaultValue: 'Toplam Tutar' })}:
               </Text>
               <Text style={[styles.totalAmount, { color: '#EF4444' }]}>
-                ₺{totalAmount.toLocaleString()}
+                {formatCurrency(totalAmount, 'TRY')}
               </Text>
             </View>
           </Card>

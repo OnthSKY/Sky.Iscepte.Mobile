@@ -59,6 +59,7 @@ const RevenueEditScreen = React.lazy(() => import('../../modules/revenue/screens
 const EmployeeCreateScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeCreateScreen'));
 const EmployeeEditScreen = React.lazy(() => import('../../modules/employees/screens/EmployeeEditScreen'));
 const EmployeePermissionsScreen = React.lazy(() => import('../../modules/employees/screens/EmployeePermissionsScreen'));
+const StaffPermissionGroupManagementScreen = React.lazy(() => import('../../modules/employees/screens/StaffPermissionGroupManagementScreen'));
 const ExpenseTypeListScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseTypeListScreen'));
 const ExpenseTypeCreateScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseTypeCreateScreen'));
 const ExpenseTypeEditScreen = React.lazy(() => import('../../modules/expenses/screens/ExpenseTypeEditScreen'));
@@ -151,6 +152,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'RevenueEdit', module: 'revenue', component: RevenueEditScreen, requiredPermission: 'revenue:edit', options: { title: i18n.t('revenue:edit_revenue', { defaultValue: 'Gelir Düzenle' }) } },
   { name: 'EmployeeEdit', module: 'employees', component: EmployeeEditScreen, requiredPermission: 'employees:edit', options: { title: i18n.t('settings:edit_employee') } },
   { name: 'EmployeePermissions', module: 'employees', component: EmployeePermissionsScreen, requiredPermission: 'employees:edit', options: { title: i18n.t('employees:manage_permissions') } },
+  { name: 'StaffPermissionGroupManagement', module: 'employees', component: StaffPermissionGroupManagementScreen, requiredPermission: 'employees:edit', options: { title: i18n.t('employees:permission_groups', { defaultValue: 'Yetki Grupları' }) } },
   { name: 'ExpenseTypeEdit', module: 'expenses', component: ExpenseTypeEditScreen, requiredPermission: 'expenses:edit', options: { title: i18n.t('expenses:edit_expense_type') } },
   { name: 'StockEdit', module: 'stock', component: StockEditScreen, requiredPermission: 'stock:edit', options: { title: i18n.t('stock:edit_stock', { defaultValue: 'Edit stock' }) } },
   

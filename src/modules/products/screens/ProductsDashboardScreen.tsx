@@ -17,6 +17,7 @@ import spacing from '../../../core/constants/spacing';
 import { useAppStore } from '../../../store/useAppStore';
 import { usePermissions } from '../../../core/hooks/usePermissions';
 import { useNavigation } from '@react-navigation/native';
+import { formatCurrency, getCurrencySymbol } from '../utils/currency';
 
 /**
  * StockDashboardScreen - Dashboard for Stock module
@@ -250,7 +251,7 @@ export default function ProductsDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="cash-outline" size={16} color={colors.primary} />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                      ₺{item.price.toLocaleString()}
+                      {formatCurrency(item.price, item.currency || 'TRY')}
                     </Text>
                   </View>
                 )}

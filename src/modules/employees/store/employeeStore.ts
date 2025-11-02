@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Role } from '../../../core/config/appConstants';
 
+export type Currency = 'TRY' | 'USD' | 'EUR';
+
 export interface Employee { 
   id: string | number;
   firstName?: string;
@@ -13,6 +15,7 @@ export interface Employee {
   status?: string;
   hireDate?: string;
   salary?: number;
+  currency?: Currency;
   ownerId?: string | number;
   // User account fields
   username?: string;

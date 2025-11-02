@@ -30,6 +30,15 @@ export default function EmployeesModuleSettingsScreen() {
       color: '#8B5CF6',
       permission: 'employees:edit',
     },
+    {
+      key: 'permission-groups',
+      label: t('employees:permission_groups', { defaultValue: 'Yetki Gruplarını Yönet' }),
+      desc: t('settings:manage_permission_groups_desc', { defaultValue: 'Staff kullanıcıları için yetki grupları oluşturun ve yönetin' }),
+      icon: 'layers-outline',
+      route: 'StaffPermissionGroupManagement',
+      color: '#10B981',
+      permission: 'employees:edit',
+    },
   ];
 
   // Filter settings based on permissions

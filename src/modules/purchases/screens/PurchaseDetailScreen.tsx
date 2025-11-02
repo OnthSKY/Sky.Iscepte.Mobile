@@ -7,6 +7,7 @@ import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 import { Purchase } from '../store/purchaseStore';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * PurchaseDetailScreen - SOLID Principles Applied
@@ -60,7 +61,7 @@ export default function PurchaseDetailScreen() {
                 <Text style={{ fontSize: 16, fontWeight: '500', color: colors.muted }}>
                   {t('price', { defaultValue: 'Price' })}
                 </Text>
-                <Text style={{ fontSize: 16 }}>{data.price ? `${data.price.toFixed(2)} ₺` : '-'}</Text>
+                <Text style={{ fontSize: 16 }}>{data.price ? formatCurrency(data.price, data.currency || 'TRY') : '-'}</Text>
               </View>
 
               <View style={{ height: 1, backgroundColor: colors.border }} />
@@ -70,7 +71,7 @@ export default function PurchaseDetailScreen() {
                   {t('total_amount', { defaultValue: 'Total Amount' })}
                 </Text>
                 <Text style={{ fontSize: 16, fontWeight: '600' }}>
-                  {data.total || data.amount ? `${(data.total || data.amount || 0).toFixed(2)} ₺` : '-'}
+                  {data.total || data.amount ? formatCurrency(data.total || data.amount || 0, data.currency || 'TRY') : '-'}
                 </Text>
               </View>
             </View>

@@ -104,6 +104,39 @@ export default function SalesListScreen() {
               entityName: 'sales',
               translationNamespace: 'sales',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'status',
+                  label: 'sales:status',
+                  type: 'text',
+                },
+                {
+                  key: 'currency',
+                  label: 'sales:currency',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: 'TRY', value: 'TRY' },
+                    { label: 'USD', value: 'USD' },
+                    { label: 'EUR', value: 'EUR' },
+                  ],
+                },
+                {
+                  key: 'amountMin',
+                  label: 'sales:amount_min',
+                  type: 'number',
+                },
+                {
+                  key: 'amountMax',
+                  label: 'sales:amount_max',
+                  type: 'number',
+                },
+                {
+                  key: 'date',
+                  label: 'sales:date',
+                  type: 'date',
+                },
+              ],
             }}
             title={t('sales:sales', { defaultValue: 'Satışlar' })}
             renderItem={(item: Sale) => (

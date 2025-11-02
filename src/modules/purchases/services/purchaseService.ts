@@ -6,6 +6,8 @@ import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
 
+export type Currency = 'TRY' | 'USD' | 'EUR';
+
 export interface Purchase {
   id: string;
   supplierId?: string;
@@ -14,6 +16,7 @@ export interface Purchase {
   productName?: string;
   quantity?: number;
   price?: number;
+  currency?: Currency;
   total?: number;
   date?: string;
   status?: string;

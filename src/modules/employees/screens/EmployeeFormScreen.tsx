@@ -6,7 +6,7 @@
  * Open/Closed: Can handle both create and edit modes via props
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +26,7 @@ import { MODULE_CONFIGS } from '../../../core/config/moduleConfig';
 import { permissionsRegistry } from '../../../core/config/permissions';
 import { useAppStore } from '../../../store/useAppStore';
 import { getModuleActions, ALL_FIELDS, ALL_NOTIFICATIONS } from '../utils/permissionsUtils';
+import { useStaffPermissionGroupStore } from '../store/staffPermissionGroupStore';
 
 interface EmployeeFormScreenProps {
   mode?: 'create' | 'edit';
@@ -61,6 +62,13 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   const currentUserRole = useAppStore((state) => state.role);
   const [createUserAccount, setCreateUserAccount] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [selectedPermissionGroup, setSelectedPermissionGroup] = useState<string>('');
+  const { groups, loadGroups } = useStaffPermissionGroupStore();
+
+  // Load permission groups on mount
+  useEffect(() => {
+    loadGroups();
+  }, []);
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
@@ -276,12 +284,44 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                         <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: spacing.md, color: colors.text }}>
                           {t('permissions', { defaultValue: 'Permissions' })}
                         </Text>
+                        
+                        {/* Permission Group Selection */}
+                        <View style={{ marginBottom: spacing.md }}>
+                          <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: spacing.sm, color: colors.text }}>
+                            {t('employees:permission_group', { defaultValue: 'Yetki Grubu' })}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.sm }}>
+                            {t('employees:permission_group_desc', { defaultValue: 'Hızlıca yetki vermek için bir grup seçin (isteğe bağlı)' })}
+                          </Text>
+                          <Select
+                            value={selectedPermissionGroup}
+                            options={[
+                              { label: t('employees:none', { defaultValue: 'Grup Seçme' }), value: '' },
+                              ...groups.map(g => ({ label: g.name, value: g.id })),
+                            ]}
+                            placeholder={t('employees:select_permission_group', { defaultValue: 'Yetki Grubu Seç' })}
+                            onChange={(value) => {
+                              setSelectedPermissionGroup(value);
+                              if (value) {
+                                // Load group permissions
+                                const group = groups.find(g => g.id === value);
+                                if (group) {
+                                  updateField('customPermissions', group.permissions);
+                                }
+                              } else {
+                                // Clear permissions if no group selected
+                                updateField('customPermissions', {});
+                              }
+                            }}
+                          />
+                        </View>
+
                         <Text style={{ fontSize: 14, color: colors.muted, marginBottom: spacing.md }}>
-                          {t('select_permissions_desc', { defaultValue: 'Select the permissions this user will have:' })}
+                          {t('select_permissions_desc', { defaultValue: 'Veya manuel olarak yetkileri seçin:' })}
                         </Text>
                         <View style={{ marginBottom: spacing.md, padding: spacing.md, backgroundColor: colors.primary + '10', borderRadius: 8, borderWidth: 1, borderColor: colors.primary + '30' }}>
                           <Text style={{ fontSize: 13, color: colors.text }}>
-                            {t('view_all_data_note', { defaultValue: 'Note: With View permission, this user can view data entered by others as well.' })}
+                            {t('view_all_data_note', { defaultValue: 'Not: Görüntüle izni ile bu kullanıcı, başkaları tarafından girilen verileri de görüntüleyebilir.' })}
                           </Text>
                         </View>
                         <View style={{ gap: spacing.md }}>

@@ -12,6 +12,7 @@ import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashbo
 import LoadingState from '../../../shared/components/LoadingState';
 import ScreenLayout from '../../../shared/layouts/ScreenLayout';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * ExpenseListScreen - SOLID Principles Applied
@@ -84,6 +85,39 @@ export default function ExpenseListScreen() {
               entityName: 'expense',
               translationNamespace: 'expenses',
               defaultPageSize: 10,
+              filterOptions: [
+                {
+                  key: 'source',
+                  label: 'expenses:source',
+                  type: 'select',
+                  options: [
+                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                    { label: t('expenses:product_purchase', { defaultValue: 'Ürün Alış' }), value: 'product_purchase' },
+                    { label: t('expenses:employee_salary', { defaultValue: 'Maaş' }), value: 'employee_salary' },
+                    { label: t('expenses:manual', { defaultValue: 'Manuel' }), value: 'manual' },
+                  ],
+                },
+                {
+                  key: 'expenseTypeId',
+                  label: 'expenses:expense_type',
+                  type: 'text',
+                },
+                {
+                  key: 'amountMin',
+                  label: 'expenses:amount_min',
+                  type: 'number',
+                },
+                {
+                  key: 'amountMax',
+                  label: 'expenses:amount_max',
+                  type: 'number',
+                },
+                {
+                  key: 'date',
+                  label: 'expenses:date',
+                  type: 'date',
+                },
+              ],
             }}
             renderItem={(item: Expense) => (
               <Card
@@ -91,7 +125,7 @@ export default function ExpenseListScreen() {
                 onPress={() => navigation.navigate('ExpenseDetail', { id: item.id, title: item.title, amount: item.amount })}
               >
                 <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
-                <Text style={{ color: '#DC2626', fontWeight: '600' }}>-{item.amount} ₺</Text>
+                <Text style={{ color: '#DC2626', fontWeight: '600' }}>-{formatCurrency(item.amount || 0, item.currency || 'TRY')}</Text>
               </Card>
             )}
             keyExtractor={(item: Expense) => String(item.id)}

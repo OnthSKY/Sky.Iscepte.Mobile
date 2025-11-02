@@ -57,6 +57,71 @@ function createStore(seed: Entity[]) {
   };
 }
 
+// Default permission groups seed
+const defaultPermissionGroupsSeed = [
+  {
+    id: 'mobile-seller',
+    name: 'Arabalı Satıcı',
+    description: 'Seyyar satış yapabilen personel için yetki grubu',
+    permissions: {
+      sales: { actions: ['view', 'create'] },
+      customers: { actions: ['view', 'create'] },
+      products: { actions: ['view'] },
+      reports: { actions: ['view'] },
+    },
+  },
+  {
+    id: 'store-seller',
+    name: 'Dükkan Satıcısı',
+    description: 'Dükkanda satış yapabilen personel için yetki grubu',
+    permissions: {
+      sales: { actions: ['view', 'create', 'edit'] },
+      customers: { actions: ['view', 'create', 'edit'] },
+      products: { actions: ['view'] },
+      purchases: { actions: ['view'] },
+      reports: { actions: ['view'] },
+    },
+  },
+  {
+    id: 'cashier',
+    name: 'Kasa',
+    description: 'Kasa işlemlerini yönetebilen personel için yetki grubu',
+    permissions: {
+      sales: { actions: ['view', 'create', 'edit'] },
+      purchases: { actions: ['view', 'create', 'edit'] },
+      expenses: { actions: ['view', 'create'] },
+      revenue: { actions: ['view', 'create'] },
+      customers: { actions: ['view'] },
+      suppliers: { actions: ['view'] },
+      products: { actions: ['view'] },
+      reports: { actions: ['view'] },
+    },
+  },
+  {
+    id: 'warehouse',
+    name: 'Depo',
+    description: 'Depo işlemlerini yönetebilen personel için yetki grubu',
+    permissions: {
+      products: { actions: ['view', 'create', 'edit'] },
+      purchases: { actions: ['view', 'create', 'edit'] },
+      suppliers: { actions: ['view', 'create'] },
+      stock: { actions: ['view', 'create', 'edit'] },
+      reports: { actions: ['view'] },
+    },
+  },
+  {
+    id: 'sales-manager',
+    name: 'Satış Müdürü',
+    description: 'Satış işlemlerini tam olarak yönetebilen personel için yetki grubu',
+    permissions: {
+      sales: { actions: ['view', 'create', 'edit', 'delete'] },
+      customers: { actions: ['view', 'create', 'edit', 'delete'] },
+      products: { actions: ['view'] },
+      reports: { actions: ['view'] },
+    },
+  },
+];
+
 const stores = {
   customers: createStore(customersSeed as unknown as Entity[]),
   expenses: createStore(expensesSeed as unknown as Entity[]),
@@ -71,6 +136,7 @@ const stores = {
   modules: { list: () => modules },
   roles: { list: () => roles },
   users: createStore(usersSeed as unknown as Entity[]),
+  'staff-permission-groups': createStore(defaultPermissionGroupsSeed as unknown as Entity[]),
 } as const;
 
 // Extract user ID from token
@@ -337,6 +403,7 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
             id: `expense_product_${product.id}`,
             title: `${product.name} Alış`,
             amount: purchaseCost,
+            currency: product.currency || 'TRY',
             type: 'expense' as const,
             source: 'product_purchase' as const,
             date: new Date().toISOString().split('T')[0], // Use current date as default
@@ -357,6 +424,7 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
           id: `expense_salary_${employee.id}`,
           title: `${employee.name || 'Çalışan'} Maaşı`,
           amount: employee.salary || 0,
+          currency: employee.currency || 'TRY',
           type: 'expense' as const,
           source: 'employee_salary' as const,
           date: new Date().toISOString().split('T')[0], // Use current date as default
@@ -397,6 +465,7 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
           id: `revenue_sale_${sale.id}`,
           title: `${sale.title || 'Satış'}`,
           amount: sale.amount || sale.total || 0,
+          currency: sale.currency || 'TRY',
           source: 'sales' as const,
           date: sale.date,
           saleId: String(sale.id),
@@ -614,7 +683,7 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
       // Compare as strings to handle both string and number IDs
       const product = allProducts.find((p: any) => String(p.id) === String(sale.productId));
       if (product) {
-        const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0 };
+        const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0, currency: product.currency || 'TRY' };
         existing.quantity += sale.quantity || 1;
         existing.totalAmount += sale.amount || sale.total || 0;
         productSalesMap.set(sale.productId, existing);
@@ -672,7 +741,7 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
       // Compare as strings to handle both string and number IDs
       const product = allProducts.find((p: any) => String(p.id) === String(sale.productId));
       if (product) {
-        const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0 };
+        const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0, currency: product.currency || 'TRY' };
         existing.quantity += sale.quantity || 1;
         existing.totalAmount += sale.amount || sale.total || 0;
         productSalesMap.set(sale.productId, existing);

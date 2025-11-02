@@ -7,11 +7,13 @@ import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
 
 export type RevenueSource = 'sales' | 'manual';
+export type Currency = 'TRY' | 'USD' | 'EUR';
 
 export interface Revenue {
   id: string;
   title?: string;
   amount?: number;
+  currency?: Currency;
   source?: RevenueSource; // 'sales', 'manual'
   revenueTypeId?: string;
   revenueTypeName?: string;

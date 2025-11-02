@@ -4,11 +4,14 @@
  * Single Responsibility: Provides owner-specific dashboard summary data
  */
 
+export type Currency = 'TRY' | 'USD' | 'EUR';
+
 export interface ProductSaleDetail {
   productId: number;
   productName: string;
   quantity: number;
   totalAmount: number;
+  currency?: Currency;
 }
 
 export interface OwnerStoreSummary {

@@ -7,6 +7,7 @@ import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 import { Sale } from '../store/salesStore';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * SalesDetailScreen - SOLID Principles Applied
@@ -43,7 +44,7 @@ export default function SalesDetailScreen() {
                   {t('total_amount', { defaultValue: 'Total Amount' })}
                 </Text>
                 <Text style={{ fontSize: 16, fontWeight: '600' }}>
-                  {data.amount ? `${data.amount.toFixed(2)} ₺` : '-'}
+                  {data.amount ? formatCurrency(data.amount, data.currency || 'TRY') : '-'}
                 </Text>
               </View>
             </View>

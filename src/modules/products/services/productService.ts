@@ -15,12 +15,15 @@ export interface ProductCustomField {
   isGlobal?: boolean; // true: tüm ürünlerde kullanılabilir, false/undefined: sadece bu ürüne özel
 }
 
+export type Currency = 'TRY' | 'USD' | 'EUR';
+
 export interface Product {
   id: string;
   name: string;
   sku?: string;
   category?: string;
   price?: number;
+  currency?: Currency;
   stock?: number;
   moq?: number; // Minimum Order Quantity
   isActive?: boolean;

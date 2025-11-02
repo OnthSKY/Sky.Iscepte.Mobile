@@ -24,6 +24,7 @@ import ProductHistoryModal from '../components/ProductHistoryModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ProductCustomField } from '../services/productService';
 import { isSmallScreen } from '../../../core/constants/breakpoints';
+import { formatCurrency as formatCurrencyHelper } from '../utils/currency';
 
 export default function ProductDetailScreen() {
   const { colors } = useTheme();
@@ -81,14 +82,10 @@ export default function ProductDetailScreen() {
 
   const styles = getStyles(colors, isSmall);
 
-  // Format currency
+  // Format currency helper
   const formatCurrency = (value: number | undefined | null) => {
     if (value === undefined || value === null) return '-';
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-      minimumFractionDigits: 2,
-    }).format(value);
+    return formatCurrencyHelper(value, data.currency || 'TRY');
   };
 
   // Format custom field value

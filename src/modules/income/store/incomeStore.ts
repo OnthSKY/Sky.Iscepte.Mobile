@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 
 export type IncomeSource = 'sales' | 'manual';
+export type Currency = 'TRY' | 'USD' | 'EUR';
 
 export interface Income { 
   id: string | number;
   title?: string;
   amount?: number;
+  currency?: Currency;
   source?: IncomeSource; // 'sales', 'manual'
   incomeTypeId?: string;
   incomeTypeName?: string;

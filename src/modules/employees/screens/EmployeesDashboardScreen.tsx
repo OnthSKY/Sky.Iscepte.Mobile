@@ -14,6 +14,7 @@ import { Employee } from '../store/employeeStore';
 import Card from '../../../shared/components/Card';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
+import { formatCurrency } from '../../products/utils/currency';
 
 /**
  * EmployeesDashboardScreen - Dashboard for Employees module
@@ -183,7 +184,7 @@ export default function EmployeesDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="cash-outline" size={16} color={colors.primary} />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                      ₺{item.salary.toLocaleString()}
+                      {formatCurrency(item.salary, item.currency || 'TRY')}
                     </Text>
                   </View>
                 )}
