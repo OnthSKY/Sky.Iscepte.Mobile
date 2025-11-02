@@ -42,6 +42,10 @@ export function useOwnerDashboard() {
   const [showEmpExpenseValues, setShowEmpExpenseValues] = useState(false);
   const [employeePickerVisible, setEmployeePickerVisible] = useState(false);
   
+  // Show more state
+  const [showMoreTopProducts, setShowMoreTopProducts] = useState(false);
+  const [showMoreEmployeeProducts, setShowMoreEmployeeProducts] = useState(false);
+  
   // User data
   const userId = useAppStore((s: any) => s.userId);
   const token = useAppStore((s: any) => s.token);
@@ -55,7 +59,7 @@ export function useOwnerDashboard() {
     selectedEmployeeId !== 'total' ? selectedEmployeeId : undefined,
     activeTab
   );
-  const { data: topProducts, isLoading: topProductsLoading } = useOwnerTopProducts(activeTab, 10);
+  const { data: topProducts, isLoading: topProductsLoading } = useOwnerTopProducts(activeTab, 20);
   
   // Transform employees data
   const employeeCards: EmployeeCard[] = useMemo(() => {
@@ -115,6 +119,10 @@ export function useOwnerDashboard() {
     setShowEmpExpenseValues,
     employeePickerVisible,
     setEmployeePickerVisible,
+    showMoreTopProducts,
+    setShowMoreTopProducts,
+    showMoreEmployeeProducts,
+    setShowMoreEmployeeProducts,
     
     // Data
     employeeCards,

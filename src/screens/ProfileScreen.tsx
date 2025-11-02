@@ -56,7 +56,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {/* HEADER */}
         <LinearGradient
-          colors={colors.gradient}
+          colors={colors.gradient as [string, string]}
           style={styles.header}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}

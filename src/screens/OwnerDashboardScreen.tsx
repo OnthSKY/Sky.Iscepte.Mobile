@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
 import DashboardTopBar from '../shared/components/DashboardTopBar';
@@ -15,6 +16,7 @@ import { useOwnerDashboard } from '../core/hooks/useOwnerDashboard';
  * Dependency Inversion: Depends on useOwnerDashboard hook, not concrete implementation
  */
 export default function OwnerDashboardScreen() {
+  const navigation = useNavigation<any>();
   const { colors, activeTheme } = useTheme();
 
   const isDark = activeTheme === 'dark';
@@ -39,6 +41,10 @@ export default function OwnerDashboardScreen() {
     setShowEmpExpenseValues,
     employeePickerVisible,
     setEmployeePickerVisible,
+    showMoreTopProducts,
+    setShowMoreTopProducts,
+    showMoreEmployeeProducts,
+    setShowMoreEmployeeProducts,
     employeeCards,
     stats,
     employeeStats,
@@ -169,8 +175,10 @@ export default function OwnerDashboardScreen() {
                 {topProductsCount} {t('dashboard:products', { defaultValue: 'ürün' })}
               </Text>
             </View>
-            {topProducts.map((product: any, index: number) => (
-              <View key={product.productId || index} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: index < 4 ? 1 : 0, borderBottomColor: colors.border }}>
+            {(showMoreTopProducts ? topProducts.slice(0, 20) : topProducts.slice(0, 5)).map((product: any, index: number) => {
+              const displayedItems = showMoreTopProducts ? Math.min(topProducts.length, 20) : 5;
+              return (
+              <View key={product.productId || index} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: index < displayedItems - 1 ? 1 : 0, borderBottomColor: colors.border }}>
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                     <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
@@ -188,7 +196,22 @@ export default function OwnerDashboardScreen() {
                   </Text>
                 </View>
               </View>
-            ))}
+              );
+            })}
+            {topProducts.length > 5 && (
+              <View>
+                <TouchableOpacity onPress={() => setShowMoreTopProducts(!showMoreTopProducts)} style={{ paddingVertical: 12, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, marginTop: 4 }}>
+                  <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>
+                    {showMoreTopProducts ? t('common:show_less', { defaultValue: 'Daha Az Göster' }) : t('common:show_more', { defaultValue: 'Daha Fazla Göster' })} ({topProducts.length - 5})
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('StockList')} style={{ paddingVertical: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border }}>
+                  <Text style={{ color: colors.muted, fontSize: 12, fontWeight: '600' }}>
+                    {t('dashboard:view_all_products', { defaultValue: 'Tümünü Görüntüle' })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -279,8 +302,10 @@ export default function OwnerDashboardScreen() {
               <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 8, fontWeight: '600' }}>
                 {t('dashboard:product_sales_details', { defaultValue: 'Ürün satış detayları' })}
               </Text>
-              {employeeStats.productSales.map((product: any, index: number) => (
-                <View key={product.productId || index} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              {(showMoreEmployeeProducts ? employeeStats.productSales.slice(0, 20) : employeeStats.productSales.slice(0, 5)).map((product: any, index: number) => {
+                const displayedItems = showMoreEmployeeProducts ? Math.min(employeeStats.productSales.length, 20) : 5;
+                return (
+                <View key={product.productId || index} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: index < displayedItems - 1 ? 1 : 0, borderBottomColor: colors.border }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>{product.productName}</Text>
                     <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
@@ -288,7 +313,22 @@ export default function OwnerDashboardScreen() {
                     </Text>
                   </View>
                 </View>
-              ))}
+                );
+              })}
+              {employeeStats.productSales.length > 5 && (
+                <View>
+                  <TouchableOpacity onPress={() => setShowMoreEmployeeProducts(!showMoreEmployeeProducts)} style={{ paddingVertical: 10, alignItems: 'center', marginTop: 4 }}>
+                    <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>
+                      {showMoreEmployeeProducts ? t('common:show_less', { defaultValue: 'Daha Az Göster' }) : t('common:show_more', { defaultValue: 'Daha Fazla Göster' })} ({employeeStats.productSales.length - 5})
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => navigation.navigate('SalesList')} style={{ paddingVertical: 8, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border }}>
+                    <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600' }}>
+                      {t('dashboard:view_all_sales', { defaultValue: 'Tümünü Görüntüle' })}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
         </View>
