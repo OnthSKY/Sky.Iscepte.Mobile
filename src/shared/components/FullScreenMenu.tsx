@@ -10,6 +10,7 @@ import ConfirmDialog from './ConfirmDialog';
 import AppModal from './Modal';
 import storage from '../services/storageService';
 import { MODULE_CONFIGS, ALL_QUICK_ACTIONS, getQuickActionFallback } from '../../core/config/moduleConfig';
+import { allRoutes } from '../../core/navigation/routes';
 
 type MenuItem = {
   key: string;
@@ -40,6 +41,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       });
     });
     namespaces.add('settings');
+    namespaces.add('dashboard');
     namespaces.add('common');
     return Array.from(namespaces);
   }, []);
@@ -57,7 +59,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       : 1;
 
   // Responsive breakpoints for quick actions row - single row with more items
-  const qaCols = width > 1600 ? 8 : width > 1280 ? 7 : width > 980 ? 6 : width > 640 ? 5 : 4;
+  const qaCols = 6; // Fixed to 6 quick actions
   // Icon/label sizes scale with width - icon wrapper smaller, icons larger
   const itemIconSize = width > 1200 ? 28 : width > 900 ? 24 : 22;
   const iconWrapSize = width > 1200 ? 60 : width > 900 ? 54 : 36;
@@ -68,7 +70,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   const quickIconSize = width > 1600 ? 20 : width > 1280 ? 18 : width > 980 ? 17 : width > 640 ? 16 : 14;
   const quickIconWrapSize = width > 640 ? 36 : 32;
   const { colors, activeTheme } = useTheme();
-  const QUICK_MAX = qaCols; // Allow as many quick actions as columns in single row
+  const QUICK_MAX = 6; // Fixed to 6 quick actions
   const [purchaseVisible, setPurchaseVisible] = useState(false);
   const [purchaseTarget, setPurchaseTarget] = useState<string | null>(null);
   const [addQaVisible, setAddQaVisible] = useState(false);
@@ -202,11 +204,11 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         } else {
           // First time setup: add default quick actions for common items
           const defaults: MenuItem[] = [];
-          // Add most common quick actions: stock, sales, purchases, customers, expenses
-          const commonRoutes = ['StockCreate', 'SalesCreate', 'PurchaseCreate', 'CustomerCreate', 'ExpenseCreate'];
+          // Add most common quick actions: stock, sales, purchases, customers, expenses, suppliers
+          const commonRoutes = ['StockCreate', 'SalesCreate', 'PurchaseCreate', 'CustomerCreate', 'ExpenseCreate', 'SupplierCreate'];
           commonRoutes.forEach(route => {
             const qa = ALL_QUICK_ACTIONS.find(a => a.routeName === route && hasPermission(role, a.requiredPermission));
-            if (qa && defaults.length < qaCols) {
+            if (qa && defaults.length < QUICK_MAX) {
               defaults.push({
                 key: qa.key,
                 label: quickActionLabelByRoute[qa.routeName] || qa.routeName,
@@ -223,7 +225,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       } catch {}
     })();
     return () => { mounted = false; };
-  }, [role, quickActionLabelByRoute, qaCols]);
+  }, [role, quickActionLabelByRoute, QUICK_MAX]);
 
   useEffect(() => {
     (async () => {
@@ -248,11 +250,130 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     // Route not registered - navigation handled by parent
   };
 
+  // Create comprehensive search items from all available routes and quick actions
+  const allSearchItems = useMemo(() => {
+    const searchItems: MenuItem[] = [];
+    
+    // Add main modules (they're already processed in processedItems)
+    processedItems.forEach(item => {
+      searchItems.push(item);
+    });
+    
+    // Add all available routes for search
+    allRoutes
+      .filter(route => availableRoutes?.includes(route.name))
+      .forEach(route => {
+        // Skip if already in processedItems (module dashboards)
+        if (processedItems.find(i => i.routeName === route.name)) return;
+        
+        // Determine translation and icon based on route type
+        let label = route.name;
+        let icon = 'document-outline';
+        let category = 'other';
+        
+        // Try to get label from route options
+        if (route.options && typeof route.options.title === 'string') {
+          label = route.options.title;
+        } else {
+          // Try common translations based on route name patterns
+          if (route.name.endsWith('List')) {
+            const moduleName = route.name.replace('List', '');
+            label = t(`${route.module}:${route.module}`, { defaultValue: moduleName });
+            icon = 'list-outline';
+            category = 'list';
+          } else if (route.name.endsWith('Create')) {
+            const moduleName = route.name.replace('Create', '');
+            label = t(`${route.module}:new_${route.module.toLowerCase()}`, { defaultValue: `New ${moduleName}` });
+            icon = 'add-circle-outline';
+            category = 'create';
+          } else if (route.name.endsWith('Edit')) {
+            const moduleName = route.name.replace('Edit', '');
+            label = t(`${route.module}:edit_${route.module.toLowerCase()}`, { defaultValue: `Edit ${moduleName}` });
+            icon = 'pencil-outline';
+            category = 'edit';
+          } else if (route.name.endsWith('Detail')) {
+            const moduleName = route.name.replace('Detail', '');
+            label = t(`${route.module}:${route.module.toLowerCase()}_details`, { defaultValue: `${moduleName} Details` });
+            icon = 'document-text-outline';
+            category = 'detail';
+          } else if (route.name === 'Settings') {
+            label = t('common:settings');
+            icon = 'settings-outline';
+            category = 'settings';
+          } else if (route.name === 'Profile') {
+            label = t('common:profile');
+            icon = 'person-outline';
+            category = 'profile';
+          } else if (route.name === 'Notifications') {
+            label = t('common:notifications');
+            icon = 'notifications-outline';
+            category = 'notifications';
+          }
+        }
+        
+        const hasAccess = !route.requiredPermission || hasPermission(role, route.requiredPermission);
+        searchItems.push({
+          key: `route-${route.name}`,
+          label,
+          icon,
+          routeName: route.name,
+          requiredPermission: route.requiredPermission,
+          isLocked: !hasAccess && role === 'owner',
+          isAvailable: true,
+        });
+      });
+    
+    return searchItems;
+  }, [processedItems, availableRoutes, role, t]);
+
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return processedItems;
     const term = searchTerm.trim().toLowerCase();
-    return processedItems.filter(i => i.label.toLowerCase().includes(term));
-  }, [processedItems, searchTerm]);
+    
+    // Smart search with priority scoring
+    const scoredItems = allSearchItems
+      .filter(i => {
+        const labelLower = i.label.toLowerCase();
+        const termLower = term.toLowerCase();
+        
+        // Filter out locked items for non-owners
+        if (i.isLocked && role !== 'owner') return false;
+        if (!i.isAvailable) return false;
+        
+        // Check if label contains the search term
+        if (!labelLower.includes(termLower)) return false;
+        
+        return true;
+      })
+      .map(item => {
+        let score = 0;
+        const labelLower = item.label.toLowerCase();
+        const termLower = term.toLowerCase();
+        
+        // Exact match gets highest priority
+        if (labelLower === termLower) score += 1000;
+        // Starts with gets high priority
+        else if (labelLower.startsWith(termLower)) score += 500;
+        // Contains at start of word
+        else if (labelLower.includes(` ${termLower}`)) score += 200;
+        
+        // Boost main modules over sub-screens
+        if (!item.routeName.endsWith('List') && !item.routeName.endsWith('Create') && 
+            !item.routeName.endsWith('Edit') && !item.routeName.endsWith('Detail')) {
+          score += 100;
+        }
+        
+        // Boost quick actions
+        if (item.key.startsWith('qa-')) score += 50;
+        
+        return { item, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(({ item }) => item)
+      .slice(0, 20); // Limit to top 20 results
+    
+    return scoredItems;
+  }, [processedItems, searchTerm, allSearchItems, role]);
 
   const totalQuickCount = processedCustomQuickActions.length;
   const filteredQuickActions = useMemo(() => {

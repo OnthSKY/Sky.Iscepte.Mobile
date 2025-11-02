@@ -16,6 +16,7 @@ export type RolePermissionsMap = {
 export const permissionsRegistry: ModulePermissionConfig[] = [
   { module: 'sales', permissions: ['sales:view', 'sales:create', 'sales:edit'] },
   { module: 'customers', permissions: ['customers:view', 'customers:create', 'customers:edit'] },
+  { module: 'suppliers', permissions: ['suppliers:view', 'suppliers:create', 'suppliers:edit'] },
   { module: 'expenses', permissions: ['expenses:view', 'expenses:create', 'expenses:edit'] },
   { module: 'income', permissions: ['income:view', 'income:create', 'income:edit'] },
   { module: 'revenue', permissions: ['revenue:view', 'revenue:create', 'revenue:edit'] },
@@ -31,6 +32,7 @@ export const rolePermissions: RolePermissionsMap = {
   [Role.OWNER]: [
     'sales:view', 'sales:create', 'sales:edit',
     'customers:view', 'customers:create', 'customers:edit',
+    'suppliers:view', 'suppliers:create', 'suppliers:edit',
     'expenses:view', 'expenses:create', 'expenses:edit',
     'income:view', 'income:create', 'income:edit',
     'revenue:view', 'revenue:create', 'revenue:edit',
@@ -43,6 +45,7 @@ export const rolePermissions: RolePermissionsMap = {
   [Role.STAFF]: [
     'sales:view', 'sales:create',
     'customers:view', 'customers:create',
+    'suppliers:view', 'suppliers:create',
     'expenses:view', 'expenses:create',
     'income:view', 'income:create', // STAFF can also create income
     'reports:view',
