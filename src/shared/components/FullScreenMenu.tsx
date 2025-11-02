@@ -378,7 +378,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   }, [processedItems, availableRoutes, role, t]);
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm.trim()) return processedItems;
+    if (!searchTerm.trim()) return processedItems.map(item => ({ ...item, moduleLabel: null }));
     const term = searchTerm.trim().toLowerCase();
     
     // Smart search with priority scoring
@@ -446,7 +446,23 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     // Convert back to items array, sorted by score
     const uniqueItems = Array.from(uniqueByLabel.values())
       .sort((a, b) => b.score - a.score)
-      .map(({ item }) => item)
+      .map(({ item }) => {
+        // Get module label for each item
+        const routeConfig = allRoutes.find(r => r.name === item.routeName);
+        let moduleLabel: string | null = null;
+        
+        if (routeConfig) {
+          const itemModule = getModuleConfigByRoute(item.routeName) || 
+                            MODULE_CONFIGS.find(m => m.routeName === routeConfig.module || m.key === routeConfig.module);
+          if (itemModule) {
+            moduleLabel = t(`${itemModule.translationNamespace}:${itemModule.translationKey}`, {
+              defaultValue: itemModule.key,
+            });
+          }
+        }
+        
+        return { ...item, moduleLabel };
+      })
       .slice(0, 20); // Limit to top 20 results
     
     // If we have an active module, prioritize its items by moving them to the front
@@ -473,7 +489,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     }
     
     return uniqueItems;
-  }, [processedItems, searchTerm, allSearchItems, role, activeModule]);
+  }, [processedItems, searchTerm, allSearchItems, role, activeModule, t]);
 
   const totalQuickCount = processedCustomQuickActions.length;
   const filteredQuickActions = useMemo(() => {
@@ -638,6 +654,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                          MODULE_CONFIGS.find(m => m.routeName === routeConfig.module || m.key === routeConfig.module))
                       : null;
                     const isActiveModule = activeModule && itemModule && itemModule.key === activeModule.key;
+                    const hasSearchTerm = !!searchTerm.trim();
+                    const moduleLabel = (item as any).moduleLabel;
                     
                     return (
                       <TouchableOpacity
@@ -693,6 +711,9 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                         )}
                       </View>
                       <Text style={[styles.itemLabel, { color: colors.text, fontSize: itemLabelSize }]} numberOfLines={1}>{item.label}</Text>
+                      {hasSearchTerm && moduleLabel && (
+                        <Text style={[styles.moduleSubLabel, { color: colors.muted }]} numberOfLines={1}>{moduleLabel}</Text>
+                      )}
                     </TouchableOpacity>
                     );
                   })}
@@ -968,6 +989,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.2,
     lineHeight: 14,
+  },
+  moduleSubLabel: {
+    fontSize: 9,
+    fontWeight: '400',
+    marginTop: 2,
+    textAlign: 'center',
+    letterSpacing: 0.1,
+    lineHeight: 11,
+    opacity: 0.6,
   },
   locked: {
     opacity: 0.6,
