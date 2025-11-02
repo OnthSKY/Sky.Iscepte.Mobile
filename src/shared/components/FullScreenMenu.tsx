@@ -178,13 +178,15 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         const hasAccess = !qa.requiredPermission || hasPermission(role, qa.requiredPermission);
         const routeName = (qa as any).routeName;
         // Check if the route or its fallback is available
-        const isAvailable = availableRoutes?.includes(routeName) ?? false;
+        // If availableRoutes is not provided or empty, assume all routes are available
+        const routesAvailable = !availableRoutes || availableRoutes.length === 0;
+        const isAvailable = routesAvailable ? true : (availableRoutes?.includes(routeName) ?? false);
         const fallback = getQuickActionFallback(routeName);
-        const fallbackAvailable = fallback && (availableRoutes?.includes(fallback) ?? false);
+        const fallbackAvailable = routesAvailable ? false : (fallback && (availableRoutes?.includes(fallback) ?? false));
         const label = quickActionLabelByRoute[routeName] ?? qa.label;
         return { ...qa, label, isLocked: !hasAccess, isAvailable: isAvailable || fallbackAvailable } as any;
       })
-      .filter((qa: any) => !qa.isLocked && qa.isAvailable);
+      .filter((qa: any) => !qa.isLocked && (qa.isAvailable || !availableRoutes || availableRoutes.length === 0));
   }, [customQuickActions, role, quickActionLabelByRoute, availableRoutes]);
 
   const canAddQuick = useMemo(() => {
@@ -200,7 +202,37 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         const saved = await storage.get<string>('customQuickActions');
         if (mounted && saved != null) {
           const parsed = JSON.parse(saved) as MenuItem[];
-          setCustomQuickActions(parsed);
+          // If saved array is empty or too short, add defaults
+          if (parsed.length === 0 || (parsed.length < 3 && mounted)) {
+            // Build defaults
+            const defaults: MenuItem[] = [];
+            const commonRoutes = ['StockCreate', 'SalesCreate', 'PurchaseCreate', 'CustomerCreate', 'ExpenseCreate', 'SupplierCreate'];
+            commonRoutes.forEach(route => {
+              const qa = ALL_QUICK_ACTIONS.find(a => a.routeName === route && hasPermission(role, a.requiredPermission));
+              if (qa && defaults.length < QUICK_MAX) {
+                // Check if this quick action already exists in parsed
+                const exists = parsed.find(p => p.key === qa.key);
+                if (!exists) {
+                  defaults.push({
+                    key: qa.key,
+                    label: quickActionLabelByRoute[qa.routeName] || qa.routeName,
+                    icon: qa.icon,
+                    routeName: qa.routeName,
+                    requiredPermission: qa.requiredPermission,
+                  });
+                }
+              }
+            });
+            // Merge with existing ones, up to QUICK_MAX
+            const merged = [...parsed, ...defaults].slice(0, QUICK_MAX);
+            if (mounted && merged.length > parsed.length) {
+              setCustomQuickActions(merged);
+            } else if (mounted && parsed.length > 0) {
+              setCustomQuickActions(parsed);
+            }
+          } else if (mounted && parsed.length > 0) {
+            setCustomQuickActions(parsed);
+          }
         } else {
           // First time setup: add default quick actions for common items
           const defaults: MenuItem[] = [];
