@@ -37,21 +37,16 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 }) => {
   const { colors, activeTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const isDark = activeTheme === 'dark';
   const { navigate } = useNavigationHandler();
-  
-  const headerGradientColors = isDark
-    ? ['#0F172A', '#1E3A8A']
-    : ['#1D4ED8', '#3B82F6'];
 
   return (
     <LinearGradient
-      colors={headerGradientColors as any}
+      colors={colors.gradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.gradient, { paddingTop: insets.top + spacing.sm, paddingBottom: spacing.lg }]}
     >
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: isDark ? '#00000010' : '#FFFFFF10' }]} />
+      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: activeTheme === 'dark' ? colors.overlayDark : colors.overlayLight }]} />
       
       <View style={styles.header}>
         <DashboardTopBar variant={role} />

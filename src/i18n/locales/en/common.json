@@ -20,6 +20,10 @@
   "back": "Back",
   "new": "New",
   "view": "View",
+  "permission_view": "View",
+  "permission_create": "Create",
+  "permission_edit": "Edit",
+  "permission_delete": "Delete",
   "close": "Close",
   "confirm": "Confirm",
   "thanks": "Thanks",
@@ -180,6 +184,21 @@
   "version": "Version {{version}}",
   "add": "Add",
   "remove_quick_action": "Remove Quick Action",
-  "remove_quick_action_message": "Are you sure you want to remove this quick action?"
+  "remove_quick_action_message": "Are you sure you want to remove this quick action?",
+  "select_all": "Select All",
+  "deselect_all": "Deselect All",
+  "give_all": "Give All",
+  "remove_all": "Remove All",
+  "category": "Category",
+  "price": "Price",
+  "group": "Group",
+  "expenseType": "Expense Type",
+  "amount": "Amount",
+  "dateRange": "Date Range",
+  "dailyReport": "Daily Report",
+  "lowStock": "Low Stock",
+  "create": "Create",
+  "edit": "Edit",
+  "delete": "Delete"
 }
 

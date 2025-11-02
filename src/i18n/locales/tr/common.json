@@ -20,6 +20,10 @@
   "back": "Geri",
   "new": "Yeni",
   "view": "Görüntüle",
+  "permission_view": "Görüntüleme",
+  "permission_create": "Oluşturma",
+  "permission_edit": "Düzenleme",
+  "permission_delete": "Silme",
   "close": "Kapat",
   "confirm": "Onayla",
   "thanks": "Teşekkürler",
@@ -180,6 +184,21 @@
   "version": "Sürüm {{version}}",
   "add": "Ekle",
   "remove_quick_action": "Hızlı İşlemi Kaldır",
-  "remove_quick_action_message": "Bu hızlı işlemi kaldırmak istediğinize emin misiniz?"
+  "remove_quick_action_message": "Bu hızlı işlemi kaldırmak istediğinize emin misiniz?",
+  "select_all": "Tümünü Ver",
+  "deselect_all": "Tümünü Kaldır",
+  "give_all": "Tümünü Ver",
+  "remove_all": "Tümünü Kaldır",
+  "category": "Kategori",
+  "price": "Fiyat",
+  "group": "Grup",
+  "expenseType": "Gider Tipi",
+  "amount": "Tutar",
+  "dateRange": "Tarih Aralığı",
+  "dailyReport": "Günlük Rapor",
+  "lowStock": "Düşük Stok",
+  "create": "Oluştur",
+  "edit": "Düzenle",
+  "delete": "Sil"
 }
 

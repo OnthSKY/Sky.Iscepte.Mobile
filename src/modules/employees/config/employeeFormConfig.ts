@@ -13,8 +13,7 @@ export const employeeFormFields: DynamicField[] = [
   { name: 'lastName', labelKey: 'last_name', type: 'text', required: true },
   { name: 'email', labelKey: 'email', type: 'text' },
   { name: 'phone', labelKey: 'phone', type: 'text' },
-  { name: 'department', labelKey: 'department', type: 'text' },
-  { name: 'role', labelKey: 'position', type: 'text' },
+  { name: 'position', labelKey: 'position', type: 'text' },
   { name: 'salary', labelKey: 'salary', type: 'number' }, // Not required
   { name: 'hireDate', labelKey: 'hire_date', type: 'date' },
 ];

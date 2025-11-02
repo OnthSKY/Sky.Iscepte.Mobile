@@ -23,8 +23,7 @@ import { useNavigation } from '@react-navigation/native';
  */
 export default function ProductsDashboardScreen() {
   const { t } = useTranslation(['stock', 'common', 'settings']);
-  const { activeTheme, colors } = useTheme();
-  const isDark = activeTheme === 'dark';
+  const { colors } = useTheme();
   const role = useAppStore((s) => s.role);
   const permissions = usePermissions(role);
   const navigation = useNavigation<any>();
@@ -42,7 +41,7 @@ export default function ProductsDashboardScreen() {
         label: t('stock:total_stock_items', { defaultValue: 'Toplam Ürün' }),
         value: stats.totalStockItems ?? 0,
         icon: 'cube-outline',
-        color: isDark ? '#60A5FA' : '#1D4ED8',
+        color: colors.statPrimary,
         route: 'StockList',
       },
       {
@@ -50,7 +49,7 @@ export default function ProductsDashboardScreen() {
         label: t('stock:low_stock', { defaultValue: 'Düşük Stok' }),
         value: stats.lowStock ?? 0,
         icon: 'warning-outline',
-        color: isDark ? '#F87171' : '#DC2626',
+        color: colors.statError,
         route: 'StockList',
       },
       {
@@ -58,11 +57,11 @@ export default function ProductsDashboardScreen() {
         label: t('stock:total_categories', { defaultValue: 'Toplam Kategori' }),
         value: stats.totalCategories ?? 0,
         icon: 'apps-outline',
-        color: isDark ? '#34D399' : '#059669',
+        color: colors.statSuccess,
         route: 'StockList',
       },
     ];
-  }, [stats, t, isDark]);
+  }, [stats, t, colors]);
 
   // Define related modules
   const relatedModules: RelatedModule[] = React.useMemo(() => {
@@ -71,18 +70,18 @@ export default function ProductsDashboardScreen() {
         key: 'sales',
         label: t('sales:sales', { defaultValue: 'Satışlar' }),
         icon: 'receipt-outline',
-        color: isDark ? '#60A5FA' : '#1D4ED8',
+        color: colors.statPrimary,
         route: 'SalesDashboard',
       },
       {
         key: 'customers',
         label: t('customers:customers', { defaultValue: 'Müşteriler' }),
         icon: 'people-outline',
-        color: isDark ? '#34D399' : '#059669',
+        color: colors.statSuccess,
         route: 'CustomersDashboard',
       },
     ];
-  }, [t, isDark]);
+  }, [t, colors]);
 
   // Define quick actions - Stock management focused
   // Logical order: Create → Quick Operations → Management → View
@@ -93,14 +92,14 @@ export default function ProductsDashboardScreen() {
         key: 'add-product',
         label: t('stock:new_stock', { defaultValue: 'Ürün Ekle' }),
         icon: 'add-circle-outline',
-        color: isDark ? '#34D399' : '#059669',
+        color: colors.statSuccess,
         route: 'StockCreate',
       },
       {
         key: 'category-management',
         label: t('stock:category_management', { defaultValue: 'Kategori Yönetimi' }),
         icon: 'apps-outline',
-        color: isDark ? '#60A5FA' : '#1D4ED8',
+        color: colors.statPrimary,
         route: 'CategoryManagement',
       },
       // 2. Quick Operations - Fast sales/purchases
@@ -108,14 +107,14 @@ export default function ProductsDashboardScreen() {
         key: 'quick-sale',
         label: t('stock:quick_sale', { defaultValue: 'Hızlı Satış' }),
         icon: 'receipt-outline',
-        color: isDark ? '#A78BFA' : '#7C3AED',
+        color: colors.statPurple,
         route: 'QuickSale',
       },
       {
         key: 'quick-purchase',
         label: t('stock:quick_purchase', { defaultValue: 'Hızlı Alış' }),
         icon: 'cart-outline',
-        color: isDark ? '#34D399' : '#059669',
+        color: colors.statSuccess,
         route: 'QuickPurchase',
       },
       // 3. Stock Management - Increase/Decrease
@@ -123,14 +122,14 @@ export default function ProductsDashboardScreen() {
         key: 'stock-in',
         label: t('stock:add_stock', { defaultValue: 'Stok Artır' }),
         icon: 'arrow-up-circle-outline',
-        color: isDark ? '#60A5FA' : '#1D4ED8',
+        color: colors.statPrimary,
         route: 'StockList',
       },
       {
         key: 'stock-out',
         label: t('stock:reduce_stock', { defaultValue: 'Stok Düş' }),
         icon: 'arrow-down-circle-outline',
-        color: isDark ? '#F59E0B' : '#D97706',
+        color: colors.statWarning,
         route: 'StockList',
       },
       // 4. Configuration & Management - Categories and Custom Fields
@@ -138,14 +137,14 @@ export default function ProductsDashboardScreen() {
         key: 'manage-global-fields',
         label: t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' }),
         icon: 'grid-outline',
-        color: isDark ? '#60A5FA' : '#1D4ED8',
+        color: colors.statPrimary,
         route: 'GlobalFieldsManagement',
       },
       {
         key: 'stock-alert-settings',
         label: t('settings:stock_alerts', { defaultValue: 'Stok Uyarı Ayarları' }),
         icon: 'notifications-outline',
-        color: isDark ? '#F59E0B' : '#D97706',
+        color: colors.statWarning,
         route: 'LowStockAlertSettings',
         action: () => navigation.navigate('LowStockAlertSettings', { fromModule: 'Stock' }),
       },
@@ -154,7 +153,7 @@ export default function ProductsDashboardScreen() {
         key: 'view-stock-list',
         label: t('stock:view_stock_list', { defaultValue: 'Stok Listesi' }),
         icon: 'list-outline',
-        color: isDark ? '#94A3B8' : '#64748B',
+        color: colors.statMuted,
         route: 'StockList',
       },
     ];
@@ -166,7 +165,7 @@ export default function ProductsDashboardScreen() {
       }
       return true;
     });
-  }, [t, isDark, permissions]);
+  }, [t, colors, permissions]);
 
   // Fetch stats function (for ModuleDashboardScreen compatibility)
   const fetchStats = React.useCallback((): ModuleStat[] => {
@@ -235,8 +234,8 @@ export default function ProductsDashboardScreen() {
               <View style={{ gap: spacing.xs }}>
                 {item.category && (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="apps-outline" size={16} color={isDark ? '#94A3B8' : colors.muted} />
-                    <Text style={{ marginLeft: spacing.xs, fontSize: 14, color: isDark ? '#E2E8F0' : colors.muted }}>
+                    <Ionicons name="apps-outline" size={16} color={colors.statMuted} />
+                    <Text style={{ marginLeft: spacing.xs, fontSize: 14, color: colors.muted }}>
                       {item.category}
                     </Text>
                   </View>

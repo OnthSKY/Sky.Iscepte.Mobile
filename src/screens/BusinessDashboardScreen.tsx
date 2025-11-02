@@ -10,10 +10,9 @@ export default function BusinessDashboardScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation(['dashboard']);
 
-  const headerGradientColors = ['#1D4ED8', '#3B82F6'];
   return (
     <ScreenLayout>
-      <LinearGradient colors={headerGradientColors as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ marginHorizontal: 16, marginTop: 8, borderRadius: 16, padding: 16 }}>
+      <LinearGradient colors={colors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ marginHorizontal: 16, marginTop: 8, borderRadius: 16, padding: 16 }}>
         <DashboardTopBar variant="owner" />
       </LinearGradient>
       <View style={{ padding: 16 }}>

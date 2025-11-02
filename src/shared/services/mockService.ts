@@ -4,6 +4,9 @@ import productsSeed from '../../mocks/products.json'; // Keep import for backwar
 import salesSeed from '../../mocks/sales.json';
 import employeesSeed from '../../mocks/employees.json';
 import expenseTypesSeed from '../../mocks/expenseTypes.json';
+import suppliersSeed from '../../mocks/suppliers.json';
+import purchasesSeed from '../../mocks/purchases.json';
+import revenueSeed from '../../mocks/revenue.json';
 import modules from '../../mocks/modules.json';
 import roles from '../../mocks/roles.json';
 import usersSeed from '../../mocks/users.json';
@@ -14,12 +17,28 @@ type Entity = { id: number | string; [k: string]: any };
 
 function createStore(seed: Entity[]) {
   let data: Entity[] = Array.isArray(seed) ? [...seed] : [];
-  let nextId = (data.reduce((m, x) => (typeof x.id === 'number' ? Math.max(m, x.id) : m), 0) || 0) + 1;
+  // Calculate next ID - handle both string and number IDs
+  const maxId = data.reduce((m, x) => {
+    if (typeof x.id === 'number') {
+      return Math.max(m, x.id);
+    } else if (typeof x.id === 'string') {
+      const numId = parseInt(x.id, 10);
+      return isNaN(numId) ? m : Math.max(m, numId);
+    }
+    return m;
+  }, 0);
+  let nextId = maxId + 1;
+  
   return {
     list: () => data,
     get: (id: string) => data.find((x) => String(x.id) === id),
     create: (input: any) => {
-      const entity = { id: nextId++, ...input } as Entity;
+      // Use string ID if existing data uses strings, otherwise use number
+      const useStringId = data.length > 0 && typeof data[0].id === 'string';
+      const entity = { 
+        id: useStringId ? String(nextId++) : nextId++, 
+        ...input 
+      } as Entity;
       data.push(entity);
       return entity;
     },
@@ -46,6 +65,9 @@ const stores = {
   sales: createStore(salesSeed as unknown as Entity[]),
   employees: createStore(employeesSeed as unknown as Entity[]),
   expenseTypes: createStore(expenseTypesSeed as unknown as Entity[]),
+  suppliers: createStore(suppliersSeed as unknown as Entity[]),
+  purchases: createStore(purchasesSeed as unknown as Entity[]),
+  revenue: createStore(revenueSeed as unknown as Entity[]),
   modules: { list: () => modules },
   roles: { list: () => roles },
   users: createStore(usersSeed as unknown as Entity[]),
@@ -170,8 +192,13 @@ function filterByOwner<T extends Entity>(data: T[], ownerId: number | null): T[]
     // Admin sees all data
     return data;
   }
-  // Filter by ownerId
-  return data.filter((item: any) => item.ownerId === ownerId);
+  // Filter by ownerId - handle both string and number types
+  return data.filter((item: any) => {
+    const itemOwnerId = item.ownerId;
+    if (itemOwnerId == null) return false;
+    // Compare as numbers (handle both string "2" and number 2)
+    return Number(itemOwnerId) === Number(ownerId);
+  });
 }
 
 export async function mockRequest<T>(method: HttpMethod, url: string, body?: any, authToken?: string): Promise<T> {
@@ -279,6 +306,12 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
           delete normalized.active;
         }
         result = normalized;
+      } else if (resource === 'employees') {
+        // Normalize employees: ensure ID is string
+        result = {
+          ...result,
+          id: String(result.id),
+        };
       }
       
       return result as T;
@@ -387,7 +420,8 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
         ...manualRevenueMarked,
       ];
     } else {
-      all = filterByOwner(store.list(), currentOwnerId);
+      const allFromStore = store.list();
+      all = filterByOwner(allFromStore, currentOwnerId);
     }
     if (q) {
       all = all.filter((x) => {
@@ -444,6 +478,12 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
         }
         return normalized;
       });
+    } else if (resource === 'employees') {
+      // Normalize employees: ensure ID is string
+      items = items.map((item: any) => ({
+        ...item,
+        id: String(item.id),
+      }));
     }
     
     const payload: any = { items, total: all.length };
@@ -571,7 +611,8 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
     const productSalesMap = new Map();
     filteredSales.forEach((sale: any) => {
       if (!sale.productId) return;
-      const product = allProducts.find((p: any) => p.id === sale.productId);
+      // Compare as strings to handle both string and number IDs
+      const product = allProducts.find((p: any) => String(p.id) === String(sale.productId));
       if (product) {
         const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0 };
         existing.quantity += sale.quantity || 1;
@@ -628,7 +669,8 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
     const productSalesMap = new Map();
     filteredSales.forEach((sale: any) => {
       if (!sale.productId) return;
-      const product = allProducts.find((p: any) => p.id === sale.productId);
+      // Compare as strings to handle both string and number IDs
+      const product = allProducts.find((p: any) => String(p.id) === String(sale.productId));
       if (product) {
         const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0 };
         existing.quantity += sale.quantity || 1;

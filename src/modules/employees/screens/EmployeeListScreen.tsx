@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useEmployeeStatsQuery } from '../hooks/useEmployeesQuery';
 import { ListScreenContainer } from '../../../shared/components/screens/ListScreenContainer';
 import { employeeEntityService } from '../services/employeeServiceAdapter';
 import Card from '../../../shared/components/Card';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Employee } from '../store/employeeStore';
 import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashboard/ModuleStatsHeader';
 import LoadingState from '../../../shared/components/LoadingState';
@@ -21,14 +21,15 @@ import spacing from '../../../core/constants/spacing';
  */
 export default function EmployeeListScreen() {
   const navigation = useNavigation<any>();
-  const { t } = useTranslation(['settings', 'common']);
-  const { activeTheme, colors } = useTheme();
-  const isDark = activeTheme === 'dark';
+  const route = useRoute<any>();
+  const mode = route.params?.mode; // 'permissions' mode for permissions management
+  const { t } = useTranslation(['settings', 'common', 'employees']);
+  const { colors } = useTheme();
 
   // Fetch stats
   const { data: stats, isLoading: statsLoading } = useEmployeeStatsQuery();
 
-  // Transform stats to ModuleStat format
+  // Transform stats to ModuleStat format (without departments)
   const moduleStats: ModuleStat[] = React.useMemo(() => {
     if (!stats) return [];
     
@@ -38,7 +39,7 @@ export default function EmployeeListScreen() {
         label: t('settings:total_employees', { defaultValue: 'Toplam Çalışan' }),
         value: stats.totalEmployees ?? 0,
         icon: 'people-outline',
-        color: isDark ? '#60A5FA' : '#1D4ED8',
+        color: colors.statPrimary,
         route: 'Employees',
       },
       {
@@ -46,27 +47,18 @@ export default function EmployeeListScreen() {
         label: t('settings:active_employees', { defaultValue: 'Aktif Çalışan' }),
         value: stats.activeEmployees ?? 0,
         icon: 'checkmark-circle-outline',
-        color: isDark ? '#34D399' : '#059669',
-        route: 'Employees',
-      },
-      {
-        key: 'total-departments',
-        label: t('settings:total_departments', { defaultValue: 'Toplam Departman' }),
-        value: stats.totalDepartments ?? 0,
-        icon: 'business-outline',
-        color: isDark ? '#F59E0B' : '#D97706',
+        color: colors.statSuccess,
         route: 'Employees',
       },
     ];
-  }, [stats, t, isDark]);
+  }, [stats, t, colors]);
 
   return (
-    <ScreenLayout noPadding>
-      <ScrollView 
-        style={{ flex: 1, backgroundColor: colors.page }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
+    <ScreenLayout 
+      noPadding
+      title={mode === 'permissions' ? t('employees:manage_permissions', { defaultValue: 'Personel Yetkilerini Yönet' }) : undefined}
+    >
+      <View style={{ flex: 1, backgroundColor: colors.page }}>
         {/* Stats Header */}
         {statsLoading ? (
           <View style={{ padding: spacing.lg }}>
@@ -89,25 +81,39 @@ export default function EmployeeListScreen() {
               translationNamespace: 'employees',
               defaultPageSize: 10,
             }}
+            emptyStateTitle={t('employees:no_employees_found', { defaultValue: 'Henüz çalışan yok' })}
+            emptyStateSubtitle={t('employees:no_employees_found_subtitle', { defaultValue: 'Yeni çalışan eklemek için menüden ilgili seçeneği kullanabilirsiniz.' })}
+            showFilters={false}
             renderItem={(item: Employee) => (
               <Card
                 style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('EmployeeDetail', { 
-                  id: item.id, 
-                  name: item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim(), 
-                  role: item.role 
-                })}
+                onPress={() => {
+                  if (mode === 'permissions') {
+                    // Navigate to permissions screen when in permissions mode
+                    navigation.navigate('EmployeePermissions', {
+                      employeeId: item.id,
+                      employeeName: item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim(),
+                    });
+                  } else {
+                    // Default behavior: navigate to detail screen
+                    navigation.navigate('EmployeeDetail', { 
+                      id: item.id, 
+                      name: item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim(), 
+                      position: item.position 
+                    });
+                  }
+                }}
               >
                 <Text style={{ fontSize: 16, fontWeight: '500' }}>
                   {item.firstName || item.name} {item.lastName}
                 </Text>
-                <Text>{item.role}</Text>
+                <Text>{item.position}</Text>
               </Card>
             )}
             keyExtractor={(item: Employee) => String(item.id)}
           />
         </View>
-      </ScrollView>
+      </View>
     </ScreenLayout>
   );
 }

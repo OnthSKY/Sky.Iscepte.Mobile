@@ -400,7 +400,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         let score = 0;
         const labelLower = item.label.toLowerCase();
         const termLower = term.toLowerCase();
-        
+         
         // Exact match gets highest priority
         if (labelLower === termLower) score += 1000;
         // Starts with gets high priority

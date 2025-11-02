@@ -161,20 +161,11 @@ export default function EmployeesDashboardScreen() {
               </View>
               
               <View style={{ gap: spacing.xs }}>
-                {item.role && (
+                {item.position && (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="briefcase-outline" size={16} color={isDark ? '#94A3B8' : colors.muted} />
                     <Text style={{ marginLeft: spacing.xs, fontSize: 14, color: isDark ? '#E2E8F0' : colors.muted }}>
-                      {item.role}
-                    </Text>
-                  </View>
-                )}
-                
-                {item.department && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="business-outline" size={16} color={isDark ? '#94A3B8' : colors.muted} />
-                    <Text style={{ marginLeft: spacing.xs, fontSize: 14, color: isDark ? '#E2E8F0' : colors.muted }}>
-                      {item.department}
+                      {item.position}
                     </Text>
                   </View>
                 )}

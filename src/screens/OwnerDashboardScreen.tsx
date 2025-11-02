@@ -19,12 +19,6 @@ export default function OwnerDashboardScreen() {
   const navigation = useNavigation<any>();
   const { colors, activeTheme } = useTheme();
 
-  const isDark = activeTheme === 'dark';
-  const headerGradientColors = isDark
-    ? ['#0F172A', '#1E3A8A']
-    : ['#1D4ED8', '#3B82F6'];
-
-  const masked = '••••••';
 
   const {
     activeTab,
@@ -71,7 +65,7 @@ export default function OwnerDashboardScreen() {
       >
         {/* Welcome Header with Gradient, Premium badge and compact totals */}
         <LinearGradient
-          colors={headerGradientColors}
+          colors={colors.gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ marginHorizontal: 16, marginTop: 8, borderRadius: 16, padding: 16 }}

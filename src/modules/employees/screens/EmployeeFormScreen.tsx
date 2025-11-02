@@ -24,6 +24,8 @@ import Input from '../../../shared/components/Input';
 import { Role } from '../../../core/config/appConstants';
 import { MODULE_CONFIGS } from '../../../core/config/moduleConfig';
 import { permissionsRegistry } from '../../../core/config/permissions';
+import { useAppStore } from '../../../store/useAppStore';
+import { getModuleActions, ALL_FIELDS, ALL_NOTIFICATIONS } from '../utils/permissionsUtils';
 
 interface EmployeeFormScreenProps {
   mode?: 'create' | 'edit';
@@ -56,6 +58,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   const route = useRoute<any>();
   const { colors, activeTheme } = useTheme();
   const { t } = useTranslation(['employees', 'common']);
+  const currentUserRole = useAppStore((state) => state.role);
   const [createUserAccount, setCreateUserAccount] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   
@@ -82,35 +85,30 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
         if (action) actions.add(action);
       });
     });
-    // Always include delete action even if not in registry
-    actions.add('delete');
     return Array.from(actions);
   }, []);
 
-  // Get module actions from permissions registry
-  const getModuleActions = (moduleKey: string): string[] => {
-    const modulePerms = permissionsRegistry.find(m => m.module === moduleKey);
-    if (!modulePerms) return ['view', 'create', 'edit', 'delete'];
+  // Role hierarchy: ADMIN > OWNER > STAFF > GUEST
+  // Users can only assign roles equal to or below their own role
+  const roleOptions = useMemo(() => {
+    const allRoles = [
+      { label: t('common:admin', { defaultValue: 'Admin' }), value: Role.ADMIN },
+      { label: t('common:owner', { defaultValue: 'Owner' }), value: Role.OWNER },
+      { label: t('common:staff', { defaultValue: 'Staff' }), value: Role.STAFF },
+    ];
     
-    const actions = modulePerms.permissions
-      .map(p => p.split(':')[1])
-      .filter((a): a is string => !!a);
+    // Filter roles based on current user's role
+    // ADMIN can assign all roles, OWNER can assign OWNER and STAFF, STAFF can only assign STAFF
+    const roleHierarchy: Record<Role, Role[]> = {
+      [Role.ADMIN]: [Role.ADMIN, Role.OWNER, Role.STAFF],
+      [Role.OWNER]: [Role.OWNER, Role.STAFF],
+      [Role.STAFF]: [Role.STAFF],
+      [Role.GUEST]: [], // GUEST cannot assign any roles
+    };
     
-    // Reports only has view
-    if (moduleKey === 'reports') return ['view'];
-    
-    // Always include delete
-    if (!actions.includes('delete')) actions.push('delete');
-    
-    return Array.from(new Set(actions));
-  };
-
-  // Role options for select (NO GUEST)
-  const roleOptions = [
-    { label: t('common:admin', { defaultValue: 'Admin' }), value: Role.ADMIN },
-    { label: t('common:owner', { defaultValue: 'Owner' }), value: Role.OWNER },
-    { label: t('common:staff', { defaultValue: 'Staff' }), value: Role.STAFF },
-  ];
+    const allowedRoles = roleHierarchy[currentUserRole] || [];
+    return allRoles.filter(role => allowedRoles.includes(role.value));
+  }, [currentUserRole, t]);
 
   return (
     <FormScreenContainer
@@ -334,7 +332,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                                       {moduleActions.map((action) => (
                                         <View key={`${moduleKey}_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
                                           <Text style={{ flex: 1, color: colors.text }}>
-                                            {t(`common:${action}`, { defaultValue: action })}
+                                            {t(`common:permission_${action}`, { defaultValue: t(`common:${action}`, { defaultValue: action }) })}
                                           </Text>
                                           <Switch
                                             value={currentPerms.actions?.includes(action) || false}
@@ -412,7 +410,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                                       {moduleActions.map((action) => (
                                         <View key={`${moduleKey}_${action}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
                                           <Text style={{ flex: 1, color: colors.text }}>
-                                            {t(`common:${action}`, { defaultValue: action })}
+                                            {t(`common:permission_${action}`, { defaultValue: t(`common:${action}`, { defaultValue: action }) })}
                                           </Text>
                                           <Switch
                                             value={currentPerms.actions?.includes(action) || false}

@@ -108,6 +108,7 @@
   "categories": "Kategoriler",
   "products": "ürün",
   "category_delete_not_implemented": "Bu özellik henüz eklenmedi.",
-  "low_stock_alert_message": "{{productName}} ürününde düşük stok: {{stock}} (Eşik: {{threshold}})"
+  "low_stock_alert_message": "{{productName}} ürününde düşük stok: {{stock}} (Eşik: {{threshold}})",
+  "add_product_custom_fields": "Özel Ürün Alanları Ekle"
 }
 

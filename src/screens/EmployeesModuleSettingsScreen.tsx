@@ -23,10 +23,10 @@ export default function EmployeesModuleSettingsScreen() {
   const allEmployeesSettings = [
     {
       key: 'employee-permissions',
-      label: t('employees:manage_permissions', { defaultValue: 'Çalışan Yetkilerini Yönet' }),
-      desc: t('settings:manage_employee_permissions_desc', { defaultValue: 'Staff çalışanlarının yetkilerini yönetin' }),
+      label: t('employees:manage_permissions', { defaultValue: 'Personel Yetkilerini Yönet' }),
+      desc: t('settings:manage_employee_permissions_desc', { defaultValue: 'Personel yetkilerini yönetmek için bir personel seçin' }),
       icon: 'people-outline',
-      route: 'Employees',
+      route: 'EmployeePermissions',
       color: '#8B5CF6',
       permission: 'employees:edit',
     },
@@ -98,7 +98,7 @@ export default function EmployeesModuleSettingsScreen() {
             <TouchableOpacity
               key={setting.key}
               style={styles.settingCard}
-              onPress={() => navigation.navigate(setting.route)}
+              onPress={() => navigation.navigate(setting.route, (setting as any).routeParams)}
             >
               <View style={styles.settingContent}>
                 <View style={[styles.iconContainer, { backgroundColor: setting.color + '20' }]}>

@@ -32,7 +32,7 @@
   "password": "Password",
   "user_role": "User Role",
   "create_user_account_desc": "Do you want to create a user account for this employee?",
-  "manage_permissions": "Manage Permissions",
+  "manage_permissions": "Manage Employee Permissions",
   "select": "Select",
   "select_role": "Select Role",
   "employee_name": "Employee",
@@ -56,7 +56,17 @@
     "last_name_required": "Last name is required"
   },
   "module_overview": "Module Overview",
-  "module_description": "Manage employee information, departments, salaries, and permissions with the Employees module. Digitize your human resources management and streamline your business processes."
+  "module_description": "Manage employee information, departments, salaries, and permissions with the Employees module. Digitize your human resources management and streamline your business processes.",
+  "select_employee_to_manage_permissions": "Select the employee whose permissions you want to manage",
+  "edit_permissions": "Edit Permissions",
+  "special_permissions": "Special Permissions",
+  "role": "Role",
+  "no_employees_found": "No employees yet",
+  "no_employees_found_subtitle": "You can add a new employee using the relevant option from the menu.",
+  "no_user_account": "No user account",
+  "total_users": "Users",
+  "users_with_accounts": "Users with Accounts",
+  "permissions_management_info": "You can manage employee permissions from this screen. You can edit permissions for employees with user accounts."
 }
 
 

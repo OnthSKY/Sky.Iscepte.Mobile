@@ -65,12 +65,8 @@ export default function EmployeeDetailScreen() {
                 data.phone
               )}
               {renderRow(
-                t('department', { defaultValue: 'Department' }),
-                data.department
-              )}
-              {renderRow(
                 t('position', { defaultValue: 'Position' }),
-                data.role
+                data.position
               )}
               {renderRow(
                 t('hire_date', { defaultValue: 'Hire Date' }),

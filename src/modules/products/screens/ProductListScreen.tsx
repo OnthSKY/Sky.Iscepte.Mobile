@@ -24,8 +24,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 export default function ProductListScreen() {
   const navigation = useNavigation<any>();
   const { t } = useTranslation(['stock', 'common']);
-  const { activeTheme, colors } = useTheme();
-  const isDark = activeTheme === 'dark';
+  const { colors } = useTheme();
   
   const [adjustmentModalVisible, setAdjustmentModalVisible] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
@@ -44,7 +43,7 @@ export default function ProductListScreen() {
         label: t('stock:total_stock_items', { defaultValue: 'Toplam Stok Ürünü' }),
         value: stats.totalStockItems ?? 0,
         icon: 'cube-outline',
-        color: isDark ? '#60A5FA' : '#1D4ED8',
+        color: colors.statPrimary,
         route: 'StockList',
       },
       {
@@ -52,7 +51,7 @@ export default function ProductListScreen() {
         label: t('stock:total_categories', { defaultValue: 'Toplam Kategori' }),
         value: stats.totalCategories ?? 0,
         icon: 'apps-outline',
-        color: isDark ? '#34D399' : '#059669',
+        color: colors.statSuccess,
         route: 'StockList',
       },
       {
@@ -60,11 +59,11 @@ export default function ProductListScreen() {
         label: t('stock:low_stock', { defaultValue: 'Düşük Stok' }),
         value: stats.lowStock ?? 0,
         icon: 'warning-outline',
-        color: isDark ? '#F87171' : '#DC2626',
+        color: colors.statError,
         route: 'StockList',
       },
     ];
-  }, [stats, t, isDark]);
+  }, [stats, t, colors]);
 
   return (
     <ScreenLayout noPadding>

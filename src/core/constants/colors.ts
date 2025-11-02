@@ -16,7 +16,22 @@ export const lightColors = {
   success: '#00A868',
   error: '#DC2626',
   warning: '#F59E0B',
-  gradient: ['#2563EB', '#1E40AF'], // header gradient mapping
+  gradient: ['#1D4ED8', '#3B82F6'] as const, // header gradient mapping
+  
+  // Stat colors (used in dashboard cards and stats)
+  statPrimary: '#1D4ED8',
+  statSuccess: '#059669',
+  statSuccessVariant: '#059669',
+  statError: '#DC2626',
+  statErrorVariant: '#E11D48',
+  statErrorAlt: '#DC2626',
+  statWarning: '#D97706',
+  statPurple: '#7C3AED',
+  statMuted: '#64748B',
+  
+  // Overlay colors
+  overlayLight: '#FFFFFF10',
+  overlayDark: '#00000010',
 };
 
 export const darkColors = {
@@ -37,7 +52,22 @@ export const darkColors = {
   success: '#00B686',
   error: '#E53935',
   warning: '#FFB020',
-  gradient: ['#1E3A8A', '#0F172A'], // header gradient mapping
+  gradient: ['#0F172A', '#1E3A8A'] as const, // header gradient mapping
+  
+  // Stat colors (used in dashboard cards and stats)
+  statPrimary: '#60A5FA',
+  statSuccess: '#34D399',
+  statSuccessVariant: '#10B981',
+  statError: '#F87171',
+  statErrorVariant: '#FB7185',
+  statErrorAlt: '#EF4444',
+  statWarning: '#F59E0B',
+  statPurple: '#A78BFA',
+  statMuted: '#94A3B8',
+  
+  // Overlay colors
+  overlayLight: '#FFFFFF10',
+  overlayDark: '#00000010',
 };
 
 const colors = lightColors;

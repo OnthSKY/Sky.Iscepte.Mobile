@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { ActivityIndicator, FlatList, ListRenderItem, RefreshControl, View } from 'react-native';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
@@ -19,30 +19,44 @@ type Props<T, Q = void> = {
   ListHeaderComponent?: React.ReactElement | null;
   ListEmptyComponent?: React.ReactElement | null;
   initialSkeletonCount?: number;
+  filterItems?: (items: T[]) => T[];
 };
 
-export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetchPage, renderItem, keyExtractor, ListHeaderComponent, ListEmptyComponent, initialSkeletonCount = 6 }: Props<T, Q>) {
+export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetchPage, renderItem, keyExtractor, ListHeaderComponent, ListEmptyComponent, initialSkeletonCount = 6, filterItems }: Props<T, Q>) {
   const { colors } = useTheme();
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with true for initial load
   const [refreshing, setRefreshing] = useState(false);
+  const loadingRef = useRef(false);
+  const isFirstLoad = useRef(true);
 
-  const canLoadMore = useMemo(() => items.length < total, [items.length, total]);
+  // Filter items if filterItems function is provided
+  const filteredItems = useMemo(() => {
+    return filterItems ? filterItems(items) : items;
+  }, [items, filterItems]);
+
+  const canLoadMore = useMemo(() => {
+    // Use original total before filtering for pagination
+    return items.length < total;
+  }, [items.length, total]);
 
   const load = useCallback(async (nextPage: number, reset = false) => {
-    if (loading) return;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       const res = await fetchPage({ page: nextPage, pageSize, query });
       setTotal(res.total);
       setItems((prev) => (reset ? res.items : [...prev, ...res.items]));
       setPage(nextPage);
+      isFirstLoad.current = false;
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [fetchPage, pageSize, query, loading]);
+  }, [fetchPage, pageSize, query]);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -53,13 +67,19 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
     }
   }, [load]);
 
-  useEffect(() => { load(1, true); }, [query]);
+  // Load initial data when query changes
+  useEffect(() => { 
+    isFirstLoad.current = true;
+    load(1, true); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]); // Query changes should trigger reload
 
-  const isInitialLoading = loading && items.length === 0;
+  // Initial loading check - show loading if first load is in progress or if loading and no items yet
+  const isInitialLoading = (loading && isFirstLoad.current) || (loading && items.length === 0);
 
   return (
     <FlatList
-      data={items}
+      data={filteredItems}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       contentContainerStyle={{ paddingBottom: spacing.xxl }}
@@ -78,7 +98,7 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
       onEndReached={() => { if (canLoadMore) load(page + 1); }}
       onEndReachedThreshold={0.5}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-      ListFooterComponent={loading && items.length > 0 ? (
+      ListFooterComponent={loading && filteredItems.length > 0 ? (
         <View style={{ padding: spacing.md, alignItems: 'center' }}>
           <ActivityIndicator color={colors.primary} />
         </View>

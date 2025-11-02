@@ -32,7 +32,7 @@
   "password": "Şifre",
   "user_role": "Kullanıcı Rolü",
   "create_user_account_desc": "Bu çalışan için kullanıcı hesabı oluşturmak istiyor musunuz?",
-  "manage_permissions": "Yetkileri Yönet",
+  "manage_permissions": "Personel Yetkilerini Yönet",
   "select": "Seçiniz",
   "select_role": "Rol Seçin",
   "employee_name": "Çalışan",
@@ -56,7 +56,17 @@
     "last_name_required": "Soyad zorunludur"
   },
   "module_overview": "Modül Özeti",
-  "module_description": "Çalışan modülü ile personel bilgilerinizi, departmanları, maaşları ve çalışan yetkilerini yönetebilirsiniz. İnsan kaynakları yönetimini dijitalleştirerek iş süreçlerinizi kolaylaştırın."
+  "module_description": "Çalışan modülü ile personel bilgilerinizi, departmanları, maaşları ve çalışan yetkilerini yönetebilirsiniz. İnsan kaynakları yönetimini dijitalleştirerek iş süreçlerinizi kolaylaştırın.",
+  "select_employee_to_manage_permissions": "Yetkilerini yönetmek istediğiniz personeli seçin",
+  "edit_permissions": "Yetkileri Düzenle",
+  "special_permissions": "Özel Yetkiler",
+  "role": "Rol",
+  "no_employees_found": "Henüz çalışan yok",
+  "no_employees_found_subtitle": "Yeni çalışan eklemek için menüden ilgili seçeneği kullanabilirsiniz.",
+  "no_user_account": "Kullanıcı hesabı yok",
+  "total_users": "Kullanıcılar",
+  "users_with_accounts": "Hesabı Olanlar",
+  "permissions_management_info": "Bu ekrandan personellerin yetkilerini yönetebilirsiniz. Kullanıcı hesabı olan personellerin yetkilerini düzenleyebilirsiniz."
 }
 
 

@@ -8,8 +8,7 @@ export interface Employee {
   name?: string; // Full name or firstName + lastName combination
   email?: string;
   phone?: string;
-  role?: string;
-  department?: string;
+  position?: string; // Job position/title
   isActive?: boolean;
   status?: string;
   hireDate?: string;
@@ -18,12 +17,10 @@ export interface Employee {
   // User account fields
   username?: string;
   password?: string; // Only for creation, not stored
-  userRole?: Role;
+  role?: Role; // User role (staff, owner, admin)
   // Permissions
   customPermissions?: Record<string, {
     actions: string[];
-    fields: string[];
-    notifications: string[];
   }>;
 }
 

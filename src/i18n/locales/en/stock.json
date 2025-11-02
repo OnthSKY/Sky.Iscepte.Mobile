@@ -107,6 +107,7 @@
   "categories": "Categories",
   "products": "products",
   "category_delete_not_implemented": "This feature is not yet implemented.",
-  "low_stock_alert_message": "Low stock alert for {{productName}}: {{stock}} (Threshold: {{threshold}})"
+  "low_stock_alert_message": "Low stock alert for {{productName}}: {{stock}} (Threshold: {{threshold}})",
+  "add_product_custom_fields": "Add Product Custom Fields"
 }
 

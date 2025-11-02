@@ -26,6 +26,10 @@ interface ListScreenContainerProps<T extends BaseEntity> {
   title?: string;
   emptyStateTitle?: string;
   emptyStateSubtitle?: string;
+  showFilters?: boolean;
+  hideSearch?: boolean;
+  hideCreate?: boolean;
+  filterItems?: (items: T[]) => T[];
 }
 
 /**
@@ -41,6 +45,10 @@ export function ListScreenContainer<T extends BaseEntity>({
   title,
   emptyStateTitle,
   emptyStateSubtitle,
+  showFilters = true,
+  hideSearch = false,
+  hideCreate = false,
+  filterItems,
 }: ListScreenContainerProps<T>) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -73,7 +81,7 @@ export function ListScreenContainer<T extends BaseEntity>({
       {title && (
         <View style={[styles.header, headerStyle]}>
           <Text style={[styles.title, { color: colors.text }]}>{screenTitle}</Text>
-          {permissions.canCreate && (
+          {!hideCreate && permissions.canCreate && (
             <Button
               title={t('common:create', { defaultValue: 'Create' })}
               onPress={handleCreate}
@@ -83,13 +91,15 @@ export function ListScreenContainer<T extends BaseEntity>({
         </View>
       )}
 
+      {!hideSearch && (
         <SearchBar
           value={query}
           onChangeText={setQuery}
           placeholder={t('common:search', { defaultValue: 'Search' }) as string}
         />
+      )}
 
-        <FiltersEditor value={filters} onChange={setFilters} />
+      {showFilters && !hideSearch && <FiltersEditor value={filters} onChange={setFilters} />}
 
         <PaginatedList
           pageSize={config.defaultPageSize || 10}
@@ -102,6 +112,7 @@ export function ListScreenContainer<T extends BaseEntity>({
           fetchPage={fetchPage}
           keyExtractor={keyExtractor}
           renderItem={({ item }) => renderItem(item)}
+          filterItems={filterItems}
           ListEmptyComponent={
             <EmptyState
               title={emptyStateTitle || (t('common:no_results', { defaultValue: 'No results' }) as string)}

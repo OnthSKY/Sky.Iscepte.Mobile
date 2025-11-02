@@ -66,9 +66,11 @@ export function useListScreen<T extends BaseEntity>(
   // Fetch function for PaginatedList
   const fetchPage = useCallback(async ({ page, pageSize, query: listQuery }: any): Promise<ListResponse<T>> => {
     try {
-      setLoading(true);
       setError(null);
-      const finalQuery = listQuery || buildQuery(page, pageSize);
+      // Merge listQuery with page/pageSize to ensure they're always present
+      const finalQuery: ListQuery = listQuery 
+        ? { ...listQuery, page, pageSize }
+        : buildQuery(page, pageSize);
       const response = await service.list(finalQuery);
       return response;
     } catch (err) {
@@ -81,8 +83,6 @@ export function useListScreen<T extends BaseEntity>(
         page,
         pageSize,
       };
-    } finally {
-      setLoading(false);
     }
   }, [service, buildQuery]);
 
