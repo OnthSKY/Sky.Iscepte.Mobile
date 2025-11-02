@@ -9,21 +9,38 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import ErrorReportModal from '../shared/components/ErrorReportModal';
 import { useAppStore } from '../store/useAppStore';
 import { usePermissions } from '../core/hooks/usePermissions';
+import { MODULE_CONFIGS } from '../core/config/moduleConfig';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { t } = useTranslation(['settings', 'common', 'stock', 'employees']);
+  // Get all translation namespaces from MODULE_CONFIGS
+  const translationNamespaces = useMemo(() => {
+    const namespaces = new Set(['settings', 'common']);
+    MODULE_CONFIGS.forEach((module) => {
+      namespaces.add(module.translationNamespace);
+    });
+    return Array.from(namespaces);
+  }, []);
+  const { t } = useTranslation(translationNamespaces);
   const { colors } = useTheme();
   const [contactModalVisible, setContactModalVisible] = useState(false);
   const role = useAppStore((s) => s.role);
   const permissions = usePermissions(role);
 
-  const modules = useMemo(() => {
-    const modulesList = [];
+  // User Settings (General - dil, tema vb.)
+  const userSettings = useMemo(() => {
+    const userSettingsList: Array<{
+      key: string;
+      title: string;
+      desc: string;
+      icon: string;
+      route: string;
+      requiredPermission: string;
+    }> = [];
     
     // General Settings Module - Always available (settings:view)
     if (permissions.can('settings:view')) {
-      modulesList.push({
+      userSettingsList.push({
         key: 'general',
         title: t('settings:settings', { defaultValue: 'Ayarlar' }),
         desc: t('settings:general_settings_module_desc', { defaultValue: 'Dil, tema ve diğer genel ayarlar' }),
@@ -33,29 +50,46 @@ export default function SettingsScreen() {
       });
     }
 
-    // Stock Module - Requires stock:view
-    if (permissions.can('stock:view')) {
-      modulesList.push({
-        key: 'stock',
-        title: t('stock:stock', { defaultValue: 'Stock' }),
-        desc: t('settings:stock_management', { defaultValue: 'Stok yönetimi ayarları' }),
-        icon: 'cube-outline',
-        route: 'StockModuleSettings',
-        requiredPermission: 'stock:view',
-      });
-    }
+    return userSettingsList;
+  }, [t, permissions]);
 
-    // Employees Module - Requires employees:view
-    if (permissions.can('employees:view')) {
-      modulesList.push({
-        key: 'employees',
-        title: t('employees:employees', { defaultValue: 'Çalışanlar' }),
-        desc: t('settings:employees_management', { defaultValue: 'Çalışan yönetimi ayarları' }),
-        icon: 'people-outline',
-        route: 'EmployeesModuleSettings',
-        requiredPermission: 'employees:view',
-      });
-    }
+  // Module Settings (Tüm modül ayarları)
+  const moduleSettings = useMemo(() => {
+    const modulesList: Array<{
+      key: string;
+      title: string;
+      desc: string;
+      icon: string;
+      route: string;
+      requiredPermission: string;
+    }> = [];
+
+    // Get module settings from MODULE_CONFIGS (same as FullScreenMenu)
+    MODULE_CONFIGS.forEach((module) => {
+      if (permissions.can(module.requiredPermission)) {
+        // Route format: StockModuleSettings, CustomersModuleSettings, etc.
+        const moduleSettingsRoute = `${module.key.charAt(0).toUpperCase() + module.key.slice(1)}ModuleSettings`;
+        
+        // Get module name using same format as FullScreenMenu: t('stock:module_name')
+        const moduleName = t(`${module.translationNamespace}:${module.translationKey}`, {
+          defaultValue: module.key,
+        });
+        
+        // Get module description from translation: settings:stock_management
+        const moduleDesc = t(`settings:${module.key}_management`, { 
+          defaultValue: `${moduleName} ayarları` 
+        });
+        
+        modulesList.push({
+          key: module.key,
+          title: moduleName,
+          desc: moduleDesc,
+          icon: module.icon,
+          route: moduleSettingsRoute,
+          requiredPermission: module.requiredPermission,
+        });
+      }
+    });
 
     return modulesList;
   }, [t, permissions]);
@@ -67,35 +101,93 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{t('common:settings')}</Text>
 
-        {/* Modules Section */}
-        <View style={styles.settingsGroup}>
-          <Text style={styles.groupTitle}>{t('settings:modules', { defaultValue: 'Modüller' })}</Text>
-          
-          {modules.map((module, index) => (
-            <View key={module.key} style={[styles.card, index < modules.length - 1 && { marginBottom: spacing.md }]}>
+        {/* Form Templates Section */}
+        {permissions.canAny(['stock:view', 'customers:view', 'suppliers:view', 'sales:view', 'purchases:view', 'expenses:view', 'revenue:view', 'employees:view']) && (
+          <View style={styles.settingsGroup}>
+            <Text style={styles.groupTitle}>{t('settings:form_templates', { defaultValue: 'Form Şablonları' })}</Text>
+            <View style={styles.card}>
               <TouchableOpacity
                 style={styles.settingItem}
-                onPress={() => navigation.navigate(module.route)}
+                onPress={() => navigation.navigate('FormTemplateManagement')}
               >
                 <View style={styles.settingItemLeft}>
-                  <Ionicons name={module.icon as any} size={22} color={colors.primary} />
+                  <Ionicons name="document-text-outline" size={22} color="#8B5CF6" />
                   <View style={styles.settingItemContent}>
                     <Text style={[styles.settingItemTitle, { color: colors.text }]}>
-                      {module.title}
+                      {t('settings:manage_form_templates', { defaultValue: 'Form Şablonlarını Yönet' })}
                     </Text>
                     <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
-                      {module.desc}
+                      {t('settings:manage_form_templates_desc', { defaultValue: 'Tüm modüller için form şablonlarını oluşturun, düzenleyin ve çoğaltın' })}
                     </Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
               </TouchableOpacity>
             </View>
-          ))}
-        </View>
+          </View>
+        )}
 
-        {/* Contact Section */}
+        {/* User Settings Section - General settings (dil, tema vb.) */}
+        {userSettings.length > 0 && (
+          <View style={styles.settingsGroup}>
+            <Text style={styles.groupTitle}>{t('settings:user_settings', { defaultValue: 'Kullanıcı Ayarları' })}</Text>
+            
+            {userSettings.map((setting, index) => (
+              <View key={setting.key} style={[styles.card, index < userSettings.length - 1 && { marginBottom: spacing.md }]}>
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={() => navigation.navigate(setting.route)}
+                >
+                  <View style={styles.settingItemLeft}>
+                    <Ionicons name={setting.icon as any} size={22} color={colors.primary} />
+                    <View style={styles.settingItemContent}>
+                      <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                        {setting.title}
+                      </Text>
+                      <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                        {setting.desc}
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Module Settings Section - Module-specific settings */}
+        {moduleSettings.length > 0 && (
+          <View style={styles.settingsGroup}>
+            <Text style={styles.groupTitle}>{t('settings:module_settings', { defaultValue: 'Modül Ayarları' })}</Text>
+            
+            {moduleSettings.map((module, index) => (
+              <View key={module.key} style={[styles.card, index < moduleSettings.length - 1 && { marginBottom: spacing.md }]}>
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={() => navigation.navigate(module.route)}
+                >
+                  <View style={styles.settingItemLeft}>
+                    <Ionicons name={module.icon as any} size={22} color={colors.primary} />
+                    <View style={styles.settingItemContent}>
+                      <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                        {module.title}
+                      </Text>
+                      <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                        {module.desc}
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Support Section - Separated from module settings */}
         <View style={styles.settingsGroup}>
+          <Text style={styles.groupTitle}>{t('settings:support', { defaultValue: 'Destek' })}</Text>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.settingItem}

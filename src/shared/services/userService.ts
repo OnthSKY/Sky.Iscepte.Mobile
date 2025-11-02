@@ -19,32 +19,23 @@ export interface UserProfile {
   customPermissions?: Record<string, any>;
 }
 
-// Internal mock service handler
-async function getMockService() {
-  if (appConfig.mode === 'mock') {
-    const mod = await import('./mockService');
-    return mod.mockRequest;
-  }
-  return null;
-}
-
+// Use httpService directly (it handles both mock and real API)
+// httpService already parses BaseControllerResponse format correctly
 async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, body?: any): Promise<T> {
-  const mockService = await getMockService();
-  if (mockService) {
-    // Get token from AsyncStorage for mock service
-    const token = await AsyncStorage.getItem('access_token');
-    return mockService<T>(method, url, body, token || undefined);
-  }
+  // Get token from AsyncStorage for mock service (if in mock mode)
+  // For real API, interceptor in App.tsx will add Authorization header
+  const token = appConfig.mode === 'mock' ? await AsyncStorage.getItem('access_token') : null;
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
   
   switch (method) {
     case 'GET':
-      return httpService.get<T>(url);
+      return httpService.get<T>(url, { headers });
     case 'POST':
-      return httpService.post<T>(url, body);
+      return httpService.post<T>(url, body, { headers });
     case 'PUT':
-      return httpService.put<T>(url, body);
+      return httpService.put<T>(url, body, { headers });
     case 'DELETE':
-      return httpService.delete<T>(url);
+      return httpService.delete<T>(url, { headers });
   }
 }
 

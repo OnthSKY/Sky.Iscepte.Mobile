@@ -63,6 +63,7 @@ export const stockEndpoints = {
   update: (id: string | number) => `/stock/${id}`,
   remove: (id: string | number) => `/stock/${id}`,
   history: (id: string | number) => `/stock/${id}/history`,
+  alertSettings: '/stock/alert-settings',
 } as const;
 
 /**
@@ -173,6 +174,19 @@ export const dashboardEndpoints = {
 } as const;
 
 /**
+ * Form Templates endpoints
+ */
+export const formTemplateEndpoints = {
+  list: (module: string) => `/form-templates/${module}`,
+  get: (module: string, id: string | number) => `/form-templates/${module}/${id}`,
+  create: (module: string) => `/form-templates/${module}`,
+  update: (module: string, id: string | number) => `/form-templates/${module}/${id}`,
+  remove: (module: string, id: string | number) => `/form-templates/${module}/${id}`,
+  clone: (module: string, id: string | number) => `/form-templates/${module}/${id}/clone`,
+  setDefault: (module: string, id: string | number) => `/form-templates/${module}/${id}/set-default`,
+} as const;
+
+/**
  * All endpoints grouped by module
  * 
  * Usage:
@@ -196,6 +210,7 @@ export const apiEndpoints = {
   modules: modulesEndpoints,
   dashboard: dashboardEndpoints,
   permissionGroups: permissionGroupsEndpoints,
+  formTemplates: formTemplateEndpoints,
 } as const;
 
 /**
@@ -218,4 +233,3 @@ export type EndpointFunction = (id: string | number) => string;
  * ```
  */
 export type ApiEndpoints = typeof apiEndpoints;
-

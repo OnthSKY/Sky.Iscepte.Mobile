@@ -20,6 +20,9 @@ export type DynamicField = {
   multiline?: boolean; // override for textarea
   render?: (value: any, onChange: (v: any) => void) => React.ReactNode; // for custom type
   defaultValue?: any; // Default value for the field
+  isActive?: boolean; // Whether this field is active (can be deactivated if used)
+  isUsed?: boolean; // Whether this field is used in any saved data
+  isLocked?: boolean; // Whether this field is locked (cannot be removed from templates, e.g., 'name', 'id')
 };
 
 type DynamicFormProps<T extends Record<string, any>> = {
@@ -57,12 +60,13 @@ export default function DynamicForm<T extends Record<string, any>>({
       {grouped.map((row, idx) => (
         <FormRow key={idx} columns={columns}>
           {row.map((field) => (
-            <FormField key={field.name} label={t(field.labelKey)} required={field.required}>
+            <FormField key={field.name} label={namespace ? t(`${namespace}:${field.labelKey}`) : t(field.labelKey)} required={field.required}>
               {renderField(
                 field, 
                 values[field.name] ?? field.defaultValue ?? '', 
                 (v) => setValue(field.name, v), 
-                t
+                t,
+                namespace
               )}
             </FormField>
           ))}
@@ -76,10 +80,17 @@ function renderField(
   field: DynamicField,
   value: any,
   onChange: (v: any) => void,
-  t: (k: string) => string
+  t: (k: string) => string,
+  namespace?: string
 ) {
+  const getTranslation = (key: string) => {
+    return namespace ? t(`${namespace}:${key}`) : t(key);
+  };
+  
   const common = {
-    placeholder: field.placeholderKey ? t(field.placeholderKey) : t(field.labelKey),
+    placeholder: field.placeholderKey 
+      ? getTranslation(field.placeholderKey)
+      : getTranslation(field.labelKey),
   } as const;
 
   switch (field.type) {

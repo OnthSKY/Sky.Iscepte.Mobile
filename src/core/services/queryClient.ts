@@ -202,5 +202,8 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.suppliers.details(), id] as const,
     stats: () => [...queryKeys.suppliers.all, 'stats'] as const, // Stats are persisted
   },
+  
+  // Modules helper (for form templates and other module-specific queries)
+  modules: (module: string) => [module] as const,
 };
 

@@ -8,11 +8,11 @@ import { Customer } from '../services/customerService';
 import i18n from '../../../i18n';
 
 export const customerFormFields: DynamicField[] = [
-  { name: 'name', labelKey: 'name', type: 'text', required: true },
+  { name: 'name', labelKey: 'name', type: 'text', required: true, isLocked: true }, // Always required, cannot be removed
   { name: 'phone', labelKey: 'phone', type: 'text' },
   { name: 'email', labelKey: 'email', type: 'text' },
   { name: 'address', labelKey: 'address', type: 'text' },
-  { name: 'group', labelKey: 'group', type: 'text' },
+  // Note: 'group' field removed from form - still exists in Customer interface for backward compatibility
   { name: 'debtLimit', labelKey: 'debt_limit', type: 'number', defaultValue: 0 },
 ];
 

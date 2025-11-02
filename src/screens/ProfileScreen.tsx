@@ -18,10 +18,11 @@ import ConfirmDialog from "../shared/components/ConfirmDialog";
 import ErrorReportModal from "../shared/components/ErrorReportModal";
 import ScreenLayout from "../shared/layouts/ScreenLayout";
 import spacing from "../core/constants/spacing";
+import { PACKAGE_LABELS, type UserPackage } from "../core/constants/packages";
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
-  const { t } = useTranslation(["common", "settings"]);
+  const { t } = useTranslation(["common", "settings", "employees"]);
   const navigation = useNavigation<any>();
   const logout = useAppStore((s) => s.logout);
   const user = useAppStore((s) => s.user);
@@ -73,8 +74,27 @@ export default function ProfileScreen() {
         {/* KİŞİSEL BİLGİLER */}
         <Section title={t("settings:personal_info")}>
           <Info icon="person-outline" label={t("common:name")} value={user?.name} />
-          <Info icon="call-outline" label={t("common:phone")} value={user?.phone} />
-          <Info icon="business-outline" label={t("settings:company")} value={user?.company} />
+          {user?.firstName && (
+            <Info icon="person-outline" label={t("employees:first_name")} value={user?.firstName} />
+          )}
+          {user?.lastName && (
+            <Info icon="person-outline" label={t("employees:last_name")} value={user?.lastName} />
+          )}
+          {user?.username && (
+            <Info icon="person-circle-outline" label={t("employees:username")} value={user?.username} />
+          )}
+          {user?.email && (
+            <Info icon="mail-outline" label={t("common:email")} value={user?.email} />
+          )}
+          {user?.phone && (
+            <Info icon="call-outline" label={t("common:phone")} value={user?.phone} />
+          )}
+          {(user?.company || user?.ownerCompanyName) && (
+            <Info icon="business-outline" label={t("settings:company")} value={user?.company || user?.ownerCompanyName} />
+          )}
+          {user?.package && (
+            <Info icon="star-outline" label={t("settings:package")} value={PACKAGE_LABELS[user.package as UserPackage] || user.package} />
+          )}
         </Section>
 
         {/* TERCİHLER */}

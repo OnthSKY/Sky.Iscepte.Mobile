@@ -9,8 +9,8 @@ import i18n from '../../../i18n';
 
 export const employeeFormFields: DynamicField[] = [
   // Basic Information
-  { name: 'firstName', labelKey: 'first_name', type: 'text', required: true },
-  { name: 'lastName', labelKey: 'last_name', type: 'text', required: true },
+  { name: 'firstName', labelKey: 'first_name', type: 'text', required: true, isLocked: true }, // Always required, cannot be removed
+  { name: 'lastName', labelKey: 'last_name', type: 'text', required: true, isLocked: true }, // Always required, cannot be removed
   { name: 'email', labelKey: 'email', type: 'text' },
   { name: 'phone', labelKey: 'phone', type: 'text' },
   { name: 'position', labelKey: 'position', type: 'text' },

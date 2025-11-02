@@ -23,10 +23,11 @@ Bu dokümantasyon, Sky.Template.Mobile projesindeki tüm API endpoint'lerinin re
 11. [Income APIs](#income-apis)
 12. [Reports APIs](#reports-apis)
 13. [Modules APIs](#modules-apis)
-14. [Dashboard APIs](#dashboard-apis)
-15. [Permissions System](#permissions-system)
-16. [Roles & Packages APIs](#roles--packages-apis)
-17. [Common Types](#common-types)
+14. [Form Templates APIs](#form-templates-apis)
+15. [Dashboard APIs](#dashboard-apis)
+16. [Permissions System](#permissions-system)
+17. [Roles & Packages APIs](#roles--packages-apis)
+18. [Common Types](#common-types)
 
 ---
 
@@ -1673,6 +1674,511 @@ Belirli bir modülün detayını döner.
   }
 }
 ```
+
+---
+
+## Form Templates APIs
+
+Form Templates sistemi, her modül için özelleştirilebilir form şablonları oluşturmayı sağlar. Bu sistem, sektörden bağımsız bir yapı sunar ve her modülde farklı form yapıları oluşturulmasına olanak tanır.
+
+### Form Template Yapısı
+
+```typescript
+interface FormTemplate {
+  id: string;
+  module: string;                    // 'stock', 'customers', 'sales', etc.
+  name: string;                     // Template name
+  description?: string;
+  baseFields: DynamicField[];        // Standard fields for the form
+  customFields: DynamicField[];      // Custom fields specific to this template
+  isActive: boolean;                 // Whether this template is active
+  isDefault: boolean;                // Whether this is the default template
+  order: number;                     // Display order
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+interface FormTemplateConfig {
+  module: string;
+  name: string;
+  description?: string;
+  baseFields: DynamicField[];
+  customFields: DynamicField[];
+  isActive?: boolean;
+  isDefault?: boolean;
+  order?: number;
+}
+
+interface DynamicField {
+  name: string;
+  labelKey?: string;
+  label?: string;
+  type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'boolean';
+  required?: boolean;
+  defaultValue?: any;
+  options?: Array<{ label: string; value: any }>;
+  validation?: any;
+}
+```
+
+### GET /form-templates/:module
+
+Belirli bir modül için tüm form template'lerini listeler.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Path Parameters:**
+- `module`: string - Modül adı (örn: 'stock', 'customers', 'sales', 'suppliers', 'purchases', 'expenses', 'revenue', 'employees')
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": [
+    {
+      "id": "1",
+      "module": "stock",
+      "name": "Hızlı Ürün Formu",
+      "description": "Hızlı ürün ekleme için basit form",
+      "baseFields": [
+        {
+          "name": "name",
+          "labelKey": "name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "price",
+          "labelKey": "price",
+          "type": "number",
+          "required": true
+        }
+      ],
+      "customFields": [],
+      "isActive": true,
+      "isDefault": true,
+      "order": 1,
+      "createdAt": "2025-01-15T10:00:00Z",
+      "updatedAt": "2025-01-15T10:00:00Z"
+    },
+    {
+      "id": "2",
+      "module": "stock",
+      "name": "Detaylı Ürün Formu",
+      "description": "Tüm alanları içeren detaylı form",
+      "baseFields": [
+        {
+          "name": "name",
+          "labelKey": "name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "sku",
+          "labelKey": "sku",
+          "type": "text"
+        },
+        {
+          "name": "category",
+          "labelKey": "category",
+          "type": "text"
+        },
+        {
+          "name": "price",
+          "labelKey": "price",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "stock",
+          "labelKey": "stock",
+          "type": "number"
+        }
+      ],
+      "customFields": [
+        {
+          "name": "warranty_period",
+          "labelKey": "warranty_period",
+          "type": "number"
+        }
+      ],
+      "isActive": true,
+      "isDefault": false,
+      "order": 2,
+      "createdAt": "2025-01-15T11:00:00Z",
+      "updatedAt": "2025-01-15T11:00:00Z"
+    }
+  ]
+}
+```
+
+**Not:** Response array veya paginated olabilir. Frontend her iki formatı desteklemelidir.
+
+---
+
+### GET /form-templates/:module/:id
+
+Belirli bir form template'i ID ile getirir.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Path Parameters:**
+- `module`: string - Modül adı
+- `id`: string | number - Template ID
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "1",
+    "module": "stock",
+    "name": "Hızlı Ürün Formu",
+    "description": "Hızlı ürün ekleme için basit form",
+    "baseFields": [
+      {
+        "name": "name",
+        "labelKey": "name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "price",
+        "labelKey": "price",
+        "type": "number",
+        "required": true
+      }
+    ],
+    "customFields": [],
+    "isActive": true,
+    "isDefault": true,
+    "order": 1,
+    "createdAt": "2025-01-15T10:00:00Z",
+    "updatedAt": "2025-01-15T10:00:00Z"
+  }
+}
+```
+
+---
+
+### POST /form-templates/:module
+
+Yeni form template oluşturur.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Path Parameters:**
+- `module`: string - Modül adı
+
+**Request:**
+```json
+{
+  "name": "Yeni Şablon",
+  "description": "Açıklama (opsiyonel)",
+  "baseFields": [
+    {
+      "name": "name",
+      "labelKey": "name",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "price",
+      "labelKey": "price",
+      "type": "number",
+      "required": true
+    }
+  ],
+  "customFields": [],
+  "isActive": true,
+  "isDefault": false,
+  "order": 1
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "3",
+    "module": "stock",
+    "name": "Yeni Şablon",
+    "description": "Açıklama (opsiyonel)",
+    "baseFields": [
+      {
+        "name": "name",
+        "labelKey": "name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "price",
+        "labelKey": "price",
+        "type": "number",
+        "required": true
+      }
+    ],
+    "customFields": [],
+    "isActive": true,
+    "isDefault": false,
+    "order": 1,
+    "createdAt": "2025-01-15T12:00:00Z",
+    "updatedAt": "2025-01-15T12:00:00Z",
+    "createdBy": "2",
+    "updatedBy": "2"
+  }
+}
+```
+
+**Not:** 
+- `module` field'ı path parametresinden alınır, request body'de gönderilse de path parametresi kullanılır
+- Her modül için sadece bir template `isDefault: true` olabilir
+- Eğer yeni template `isDefault: true` olarak oluşturulursa, o modüldeki diğer default template'in `isDefault` değeri `false` yapılmalıdır
+
+---
+
+### PUT /form-templates/:module/:id
+
+Mevcut form template'i günceller.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Path Parameters:**
+- `module`: string - Modül adı
+- `id`: string | number - Template ID
+
+**Request:** (Partial FormTemplateConfig object)
+```json
+{
+  "name": "Güncellenmiş Şablon Adı",
+  "description": "Güncellenmiş açıklama",
+  "isActive": true
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "1",
+    "module": "stock",
+    "name": "Güncellenmiş Şablon Adı",
+    "description": "Güncellenmiş açıklama",
+    "baseFields": [
+      // ... existing baseFields
+    ],
+    "customFields": [
+      // ... existing customFields
+    ],
+    "isActive": true,
+    "isDefault": true,
+    "order": 1,
+    "createdAt": "2025-01-15T10:00:00Z",
+    "updatedAt": "2025-01-15T13:00:00Z",
+    "updatedBy": "2"
+  }
+}
+```
+
+**Not:**
+- Partial update desteklenir (sadece gönderilen field'lar güncellenir)
+- `baseFields` ve `customFields` güncellenebilir
+- Eğer `isDefault: true` yapılırsa, o modüldeki diğer default template'in `isDefault` değeri `false` yapılmalıdır
+
+---
+
+### DELETE /form-templates/:module/:id
+
+Form template'i siler.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Path Parameters:**
+- `module`: string - Modül adı
+- `id`: string | number - Template ID
+
+**Response:** `204 No Content` veya `200 OK`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
+
+**Not:** 
+- Default template silinemez (önce başka bir template'i default yapmak gerekir)
+- Silme işlemi soft delete olabilir (`isActive: false` yapılabilir)
+
+---
+
+### POST /form-templates/:module/:id/clone
+
+Mevcut form template'i klonlar (kopyalar).
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Path Parameters:**
+- `module`: string - Modül adı
+- `id`: string | number - Klonlanacak template ID
+
+**Request:**
+```json
+{
+  "newName": "Klonlanmış Şablon"
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "4",
+    "module": "stock",
+    "name": "Klonlanmış Şablon",
+    "description": "Hızlı ürün ekleme için basit form",
+    "baseFields": [
+      // ... cloned baseFields
+    ],
+    "customFields": [
+      // ... cloned customFields
+    ],
+    "isActive": true,
+    "isDefault": false,
+    "order": 3,
+    "createdAt": "2025-01-15T14:00:00Z",
+    "updatedAt": "2025-01-15T14:00:00Z"
+  }
+}
+```
+
+**Not:**
+- Klonlanan template'in `isDefault` değeri her zaman `false` olur
+- Klonlanan template'in `order` değeri, listedeki son template'in order'ından bir fazla olur
+
+---
+
+### POST /form-templates/:module/:id/set-default
+
+Form template'i varsayılan (default) olarak işaretler.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Path Parameters:**
+- `module`: string - Modül adı
+- `id`: string | number - Template ID
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "2",
+    "module": "stock",
+    "name": "Detaylı Ürün Formu",
+    "description": "Tüm alanları içeren detaylı form",
+    "baseFields": [
+      // ... baseFields
+    ],
+    "customFields": [
+      // ... customFields
+    ],
+    "isActive": true,
+    "isDefault": true,
+    "order": 2,
+    "createdAt": "2025-01-15T11:00:00Z",
+    "updatedAt": "2025-01-15T15:00:00Z",
+    "updatedBy": "2"
+  }
+}
+```
+
+**Not:**
+- Bu işlem, o modüldeki diğer default template'in `isDefault` değerini otomatik olarak `false` yapar
+- Her modül için sadece bir template default olabilir
+- Default template, form oluşturma ekranlarında varsayılan olarak kullanılır
+
+---
+
+### Desteklenen Modüller
+
+Form Templates sistemi şu modüller için kullanılabilir:
+
+- `stock` - Ürün/Stok modülü
+- `customers` - Müşteri modülü
+- `suppliers` - Tedarikçi modülü
+- `sales` - Satış modülü
+- `purchases` - Alış modülü
+- `expenses` - Gider modülü
+- `revenue` - Gelir modülü
+- `employees` - Çalışan modülü
+
+---
+
+### Database Yapısı
+
+#### Form Templates Table
+
+```sql
+CREATE TABLE form_templates (
+    id VARCHAR(50) PRIMARY KEY,
+    module VARCHAR(50) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    base_fields JSON NOT NULL,           -- DynamicField[] array
+    custom_fields JSON NOT NULL,         -- DynamicField[] array
+    is_active BOOLEAN DEFAULT TRUE,
+    is_default BOOLEAN DEFAULT FALSE,
+    order_index INT DEFAULT 0,
+    owner_id INT NOT NULL,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_module_owner (module, owner_id),
+    INDEX idx_module_default (module, owner_id, is_default),
+    UNIQUE KEY unique_module_default (module, owner_id, is_default)  -- Her modül için sadece bir default
+);
+```
+
+**Not:**
+- `base_fields` ve `custom_fields` JSON formatında saklanır
+- `is_default` field'ı için unique constraint, her modül ve owner kombinasyonu için sadece bir default template olmasını sağlar
+- Owner bazlı filtreleme yapılır (admin `owner_id: null` ile tüm veriyi görebilir)
+
+---
+
+### Kullanım Senaryoları
+
+1. **Hızlı Ürün Ekleme Formu:** Sadece temel alanları (isim, fiyat) içeren basit form
+2. **Detaylı Ürün Formu:** Tüm alanları (SKU, kategori, stok, özel alanlar) içeren kapsamlı form
+3. **Sektöre Özel Formlar:** Her sektör için özelleştirilmiş form şablonları
+4. **A/B Test Formları:** Farklı form yapılarını test etmek için klonlama
 
 ---
 

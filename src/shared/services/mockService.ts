@@ -330,14 +330,227 @@ function filterByOwner<T extends Entity>(data: T[], ownerId: number | null): T[]
   });
 }
 
+// Form Templates Store (in-memory)
+let formTemplatesStore: any[] = [];
+let nextFormTemplateId = 1;
+
+// Form Templates handler
+async function handleFormTemplateRequest<T>(
+  method: HttpMethod,
+  url: string,
+  body?: any,
+  ownerId: number | null = null
+): Promise<T> {
+  // Parse URL: /form-templates/:module/:id?/:action
+  const parts = url.replace(/^\/form-templates\//, '').split('/');
+  const module = parts[0]; // e.g., 'stock', 'customers'
+  const id = parts[1]; // Template ID (if exists)
+  const action = parts[2]; // 'clone' or 'set-default' (if exists)
+
+  // Filter templates by module and owner
+  const getModuleTemplates = () => {
+    return formTemplatesStore.filter((t: any) => {
+      if (t.module !== module) return false;
+      if (ownerId === null) return true; // Admin sees all
+      return Number(t.ownerId) === Number(ownerId);
+    });
+  };
+
+  // Import module base fields helper
+  let moduleBaseFields: any[] = [];
+  try {
+    const moduleFieldsMod = await import('../utils/moduleFormFields');
+    moduleBaseFields = moduleFieldsMod.getModuleBaseFields(module);
+  } catch (error) {
+    console.warn(`Could not load base fields for module ${module}:`, error);
+  }
+
+  if (method === 'GET') {
+    if (id) {
+      // GET /form-templates/:module/:id
+      const template = formTemplatesStore.find(
+        (t: any) => String(t.id) === String(id) && t.module === module
+      );
+      if (!template) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+      // Check owner access
+      if (ownerId !== null && Number(template.ownerId) !== Number(ownerId)) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+      return wrapResponse(template, 200, 'OperationSuccessful') as T;
+    } else {
+      // GET /form-templates/:module (list)
+      const templates = getModuleTemplates();
+      return wrapResponse(templates, 200, 'OperationSuccessful') as T;
+    }
+  }
+
+  if (method === 'POST') {
+    if (action === 'clone') {
+      // POST /form-templates/:module/:id/clone
+      const template = formTemplatesStore.find(
+        (t: any) => String(t.id) === String(id) && t.module === module
+      );
+      if (!template) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+      // Check owner access
+      if (ownerId !== null && Number(template.ownerId) !== Number(ownerId)) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+
+      const newName = body?.newName || body?.name || `${template.name} (Copy)`;
+      const clonedTemplate = {
+        ...template,
+        id: String(nextFormTemplateId++),
+        name: newName,
+        isDefault: false, // Cloned templates are never default
+        order: getModuleTemplates().length + 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      delete (clonedTemplate as any).createdBy;
+      delete (clonedTemplate as any).updatedBy;
+
+      formTemplatesStore.push(clonedTemplate);
+      return wrapResponse(clonedTemplate, 201, 'OperationSuccessful') as T;
+    } else if (action === 'set-default') {
+      // POST /form-templates/:module/:id/set-default
+      const template = formTemplatesStore.find(
+        (t: any) => String(t.id) === String(id) && t.module === module
+      );
+      if (!template) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+      // Check owner access
+      if (ownerId !== null && Number(template.ownerId) !== Number(ownerId)) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+
+      // Unset other default templates for this module and owner
+      const moduleTemplates = getModuleTemplates();
+      moduleTemplates.forEach((t: any) => {
+        if (t.id !== template.id && t.isDefault) {
+          t.isDefault = false;
+          t.updatedAt = new Date().toISOString();
+        }
+      });
+
+      // Set this template as default
+      template.isDefault = true;
+      template.updatedAt = new Date().toISOString();
+
+      return wrapResponse(template, 200, 'OperationSuccessful') as T;
+    } else {
+      // POST /form-templates/:module (create)
+      const newTemplate = {
+        id: String(nextFormTemplateId++),
+        module: module,
+        name: body?.name || `Template ${nextFormTemplateId - 1}`,
+        description: body?.description || '',
+        baseFields: body?.baseFields || moduleBaseFields || [],
+        customFields: body?.customFields || [],
+        isActive: body?.isActive !== undefined ? body.isActive : true,
+        isDefault: body?.isDefault || false,
+        order: body?.order || getModuleTemplates().length + 1,
+        ownerId: ownerId || 2, // Default to owner 2 if no ownerId
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // If setting as default, unset other defaults
+      if (newTemplate.isDefault) {
+        const moduleTemplates = getModuleTemplates();
+        moduleTemplates.forEach((t: any) => {
+          t.isDefault = false;
+          t.updatedAt = new Date().toISOString();
+        });
+      }
+
+      formTemplatesStore.push(newTemplate);
+      return wrapResponse(newTemplate, 201, 'OperationSuccessful') as T;
+    }
+  }
+
+  if (method === 'PUT') {
+    if (action === 'set-default') {
+      // PUT /form-templates/:module/:id/set-default (same as POST)
+      return handleFormTemplateRequest<T>('POST', url, body, ownerId);
+    } else {
+      // PUT /form-templates/:module/:id (update)
+      const template = formTemplatesStore.find(
+        (t: any) => String(t.id) === String(id) && t.module === module
+      );
+      if (!template) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+      // Check owner access
+      if (ownerId !== null && Number(template.ownerId) !== Number(ownerId)) {
+        throw wrapErrorResponse('Form template not found', 404);
+      }
+
+      // Update template
+      Object.assign(template, {
+        ...body,
+        id: template.id, // Preserve ID
+        module: template.module, // Preserve module
+        ownerId: template.ownerId, // Preserve ownerId
+        updatedAt: new Date().toISOString(),
+      });
+
+      // If setting as default, unset other defaults
+      if (body?.isDefault) {
+        const moduleTemplates = getModuleTemplates();
+        moduleTemplates.forEach((t: any) => {
+          if (t.id !== template.id && t.isDefault) {
+            t.isDefault = false;
+            t.updatedAt = new Date().toISOString();
+          }
+        });
+      }
+
+      return wrapResponse(template, 200, 'OperationSuccessful') as T;
+    }
+  }
+
+  if (method === 'DELETE') {
+    // DELETE /form-templates/:module/:id
+    const template = formTemplatesStore.find(
+      (t: any) => String(t.id) === String(id) && t.module === module
+    );
+    if (!template) {
+      throw wrapErrorResponse('Form template not found', 404);
+    }
+    // Check owner access
+    if (ownerId !== null && Number(template.ownerId) !== Number(ownerId)) {
+      throw wrapErrorResponse('Form template not found', 404);
+    }
+
+    // Don't allow deleting default templates
+    if (template.isDefault) {
+      throw wrapErrorResponse('Cannot delete default template', 400);
+    }
+
+    const index = formTemplatesStore.findIndex((t: any) => t.id === template.id);
+    if (index !== -1) {
+      formTemplatesStore.splice(index, 1);
+    }
+
+    return wrapResponse(undefined, 204, 'OperationSuccessful') as T;
+  }
+
+  throw wrapErrorResponse('Method not supported', 405);
+}
+
 export async function mockRequest<T>(method: HttpMethod, url: string, body?: any, authToken?: string): Promise<T> {
   // Handle auth endpoints
   if (url.startsWith('/auth/')) {
     return handleAuthRequest<T>(method, url, body, authToken);
   }
 
-  // Handle profile endpoint - GET /users/me or GET /profile
-  if ((url === '/users/me' || url === '/profile') && method === 'GET') {
+  // Handle profile endpoints - GET /users/me or GET /profile, PUT /users/me
+  if ((url === '/users/me' || url === '/profile')) {
     const userId = extractUserIdFromToken(authToken || null);
     if (!userId) {
       throw wrapErrorResponse('Unauthorized', 401);
@@ -348,8 +561,34 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
       throw wrapErrorResponse('User not found', 404);
     }
     
-    // Return user profile with all details wrapped in response
-    return wrapResponse(user, 200, 'OperationSuccessful') as T;
+    if (method === 'GET') {
+      // Normalize user profile: ensure id is number (API returns as number, not string)
+      const normalizedUser = {
+        ...user,
+        id: user.id, // Keep as number per API documentation
+      };
+      
+      // Return user profile with all details wrapped in response
+      return wrapResponse(normalizedUser, 200, 'OperationSuccessful') as T;
+    }
+    
+    if (method === 'PUT') {
+      // Update user profile with provided fields
+      const updatedUser = {
+        ...user,
+        ...body, // Update with provided fields (firstName, lastName, email, phone)
+        id: user.id, // Preserve ID
+      };
+      
+      // Update in seed data (in-memory update)
+      const userIndex = (usersSeed as any[]).findIndex((u: any) => u.id === userId);
+      if (userIndex !== -1) {
+        (usersSeed as any[])[userIndex] = updatedUser;
+      }
+      
+      // Return updated user profile wrapped in response
+      return wrapResponse(updatedUser, 200, 'OperationSuccessful') as T;
+    }
   }
 
   // Get current owner ID from token
@@ -359,6 +598,16 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   if (url.startsWith('/dashboard/owner/')) {
     const summary = calculateOwnerDashboardSummary(url, currentOwnerId);
     return wrapResponse(summary, 200, 'OperationSuccessful') as T;
+  }
+
+  // Handle form templates endpoints: /form-templates/:module, /form-templates/:module/:id, etc.
+  if (url.startsWith('/form-templates/')) {
+    return handleFormTemplateRequest<T>(method, url, body, currentOwnerId);
+  }
+
+  // Handle stock alert settings endpoints: GET /stock/alert-settings, PUT /stock/alert-settings
+  if (url === '/stock/alert-settings') {
+    return handleStockAlertSettingsRequest<T>(method, url, body, currentOwnerId);
   }
 
   // Supports: /resource?page=1&pageSize=20, /resource/:id
@@ -657,6 +906,51 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
     const ok = store.remove(id);
     // Return NoContent response for successful delete
     return wrapResponse(undefined, 204, 'OperationSuccessful') as T;
+  }
+
+  throw wrapErrorResponse('Unsupported method', 405);
+}
+
+// Stock Alert Settings Store (in-memory, per owner)
+let stockAlertSettingsStore: Record<number, any> = {};
+
+// Stock Alert Settings handler
+async function handleStockAlertSettingsRequest<T>(
+  method: HttpMethod,
+  url: string,
+  body?: any,
+  ownerId: number | null = null
+): Promise<T> {
+  // Use ownerId as key (or 0 for admin/global)
+  const key = ownerId || 0;
+
+  if (method === 'GET') {
+    // Return existing settings or default values
+    const settings = stockAlertSettingsStore[key] || {
+      enabled: true,
+      threshold: 10,
+      reminderFrequency: 'day',
+      reminderLimit: 3,
+    };
+    return wrapResponse(settings, 200, 'OperationSuccessful') as T;
+  }
+
+  if (method === 'PUT') {
+    // Update settings
+    const existing = stockAlertSettingsStore[key] || {
+      enabled: true,
+      threshold: 10,
+      reminderFrequency: 'day',
+      reminderLimit: 3,
+    };
+    
+    const updated = {
+      ...existing,
+      ...body, // Update with provided fields
+    };
+    
+    stockAlertSettingsStore[key] = updated;
+    return wrapResponse(updated, 200, 'OperationSuccessful') as T;
   }
 
   throw wrapErrorResponse('Unsupported method', 405);

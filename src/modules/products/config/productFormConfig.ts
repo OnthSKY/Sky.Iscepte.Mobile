@@ -8,7 +8,7 @@ import { Product } from '../services/productService';
 import i18n from '../../../i18n';
 
 export const productFormFields: DynamicField[] = [
-  { name: 'name', labelKey: 'name', type: 'text', required: true },
+  { name: 'name', labelKey: 'name', type: 'text', required: true, isLocked: true }, // Always required, cannot be removed
   { name: 'sku', labelKey: 'sku', type: 'text' },
   { name: 'category', labelKey: 'category', type: 'custom' }, // Will be rendered as CategorySelect in ProductFormScreen
   { name: 'price', labelKey: 'price', type: 'number' },

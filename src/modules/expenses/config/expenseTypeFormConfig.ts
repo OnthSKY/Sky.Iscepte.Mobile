@@ -7,7 +7,7 @@ import { DynamicField } from '../../../shared/components/DynamicForm';
 import { ExpenseType } from '../services/expenseTypeService';
 
 export const expenseTypeFormFields: DynamicField[] = [
-  { name: 'name', labelKey: 'expense_type_name', type: 'text', required: true },
+  { name: 'name', labelKey: 'expense_type_name', type: 'text', required: true, isLocked: true }, // Always required, cannot be removed
 ];
 
 export const expenseTypeValidator = (data: Partial<ExpenseType>): Record<string, string> => {

@@ -7,9 +7,10 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../core/contexts/ThemeContext';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { productEntityService } from '../services/productServiceAdapter';
 import DynamicForm from '../../../shared/components/DynamicForm';
@@ -23,6 +24,10 @@ import { useProductsQuery } from '../hooks/useProductsQuery';
 import CategorySelect from '../components/CategorySelect';
 import CurrencySelect from '../components/CurrencySelect';
 import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
+import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
+import { useQuery } from '@tanstack/react-query';
+import { FormTemplate } from '../../../shared/types/formTemplate';
+import Select from '../../../shared/components/Select';
 
 interface ProductFormScreenProps {
   mode?: 'create' | 'edit';
@@ -31,6 +36,7 @@ interface ProductFormScreenProps {
 export default function ProductFormScreen({ mode }: ProductFormScreenProps = {}) {
   const route = useRoute<any>();
   const { t } = useTranslation(['stock', 'common']);
+  const { colors } = useTheme();
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
@@ -46,6 +52,35 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
 
   // Global fields state
   const [globalFields, setGlobalFields] = useState<ProductCustomField[]>([]);
+
+  // Form template state
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | number | null>(null);
+  
+  // Load form templates for stock module
+  const formTemplateService = useMemo(() => createFormTemplateService('stock'), []);
+  const { data: templates = [] } = useQuery({
+    queryKey: ['stock', 'form-templates', 'list'],
+    queryFn: () => formTemplateService.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Get default template or first template
+  const defaultTemplate = useMemo(() => {
+    const defaultT = templates.find((t: FormTemplate) => t.isDefault && t.isActive);
+    return defaultT || (templates.length > 0 ? templates[0] : null);
+  }, [templates]);
+
+  // Set default template on mount if available
+  useEffect(() => {
+    if (defaultTemplate && !selectedTemplateId) {
+      setSelectedTemplateId(defaultTemplate.id);
+    }
+  }, [defaultTemplate, selectedTemplateId]);
+
+  // Get selected template
+  const selectedTemplate = useMemo(() => {
+    return templates.find((t: FormTemplate) => String(t.id) === String(selectedTemplateId)) || defaultTemplate;
+  }, [templates, selectedTemplateId, defaultTemplate]);
 
   // Load products to extract unique categories
   const { data: productsData } = useProductsQuery();
@@ -136,9 +171,14 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
           updateField('customFields' as keyof Product, fields);
         };
 
+        // Get fields from template or default fields
+        const templateFields = selectedTemplate 
+          ? [...(selectedTemplate.baseFields || []), ...(selectedTemplate.customFields || [])]
+          : productFormFields;
+
         // Build form fields with custom category and currency fields
         const fieldsWithCustoms = useMemo(() => {
-          return productFormFields.map((field) => {
+          return templateFields.map((field) => {
             if (field.name === 'category') {
               return {
                 ...field,
@@ -167,10 +207,44 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
             }
             return field;
           });
-        }, [categoryOptions, handleCategoryAdded]);
+        }, [templateFields, categoryOptions, handleCategoryAdded]);
+
+        // Template options for dropdown
+        const templateOptions = useMemo(() => {
+          return templates
+            .filter((t: FormTemplate) => t.isActive)
+            .map((t: FormTemplate) => ({
+              label: t.name,
+              value: String(t.id),
+            }));
+        }, [templates]);
 
         return (
           <View style={{ gap: spacing.md }}>
+            {/* Template Selector */}
+            {templates.length > 0 && (
+              <Card style={{ padding: spacing.md }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: spacing.xs, color: colors.text }}>
+                  {t('stock:form_template', { defaultValue: 'Form Şablonu' })}
+                </Text>
+                <Select
+                  value={selectedTemplateId ? String(selectedTemplateId) : ''}
+                  options={templateOptions}
+                  onChange={(value) => {
+                    setSelectedTemplateId(value ? Number(value) : null);
+                  }}
+                  placeholder={t('stock:select_template', { defaultValue: 'Şablon seçin' })}
+                />
+                {selectedTemplate?.description && (
+                  <View style={{ marginTop: spacing.xs }}>
+                    <Text style={{ fontSize: 12, color: colors.muted }}>
+                      {selectedTemplate.description}
+                    </Text>
+                  </View>
+                )}
+              </Card>
+            )}
+
             <DynamicForm
               namespace="stock"
               columns={2}

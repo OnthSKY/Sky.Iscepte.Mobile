@@ -12,9 +12,11 @@ type Props = {
   options: Option[];
   placeholder?: string;
   onChange?: (value: string) => void;
+  disabled?: boolean;
+  label?: string;
 };
 
-export default function Select({ value, options, placeholder = 'Seçiniz', onChange }: Props) {
+export default function Select({ value, options, placeholder = 'Seçiniz', onChange, disabled = false, label }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
   const selected = options.find((o) => o.value === value)?.label || placeholder;
@@ -22,7 +24,16 @@ export default function Select({ value, options, placeholder = 'Seçiniz', onCha
   const data = useMemo(() => options, [options]);
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={() => setOpen(true)}>
+      {label && (
+        <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: spacing.xs, color: colors.text }}>
+          {label}
+        </Text>
+      )}
+      <TouchableOpacity 
+        style={[styles.button, disabled && { opacity: 0.5 }]} 
+        onPress={() => !disabled && setOpen(true)}
+        disabled={disabled}
+      >
         <Text style={styles.text} numberOfLines={1}>{selected}</Text>
         <Ionicons name="chevron-down" size={20} color={colors.muted} />
       </TouchableOpacity>

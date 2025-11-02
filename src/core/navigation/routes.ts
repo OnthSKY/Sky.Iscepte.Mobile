@@ -69,6 +69,7 @@ const QuickSaleScreen = React.lazy(() => import('../../modules/products/screens/
 const QuickPurchaseScreen = React.lazy(() => import('../../modules/products/screens/QuickPurchaseScreen'));
 const GlobalFieldsManagementScreen = React.lazy(() => import('../../modules/products/screens/GlobalFieldsManagementScreen'));
 const CategoryManagementScreen = React.lazy(() => import('../../modules/products/screens/CategoryManagementScreen'));
+const FormTemplateManagementScreen = React.lazy(() => import('../../screens/FormTemplateManagementScreen'));
 const PurchaseCreateScreen = React.lazy(() => import('../../modules/purchases/screens/PurchaseCreateScreen'));
 const PurchaseEditScreen = React.lazy(() => import('../../modules/purchases/screens/PurchaseEditScreen'));
 
@@ -77,6 +78,12 @@ const SettingsScreen = React.lazy(() => import('../../screens/SettingsScreen'));
 const GeneralModuleSettingsScreen = React.lazy(() => import('../../screens/GeneralModuleSettingsScreen'));
 const StockModuleSettingsScreen = React.lazy(() => import('../../screens/StockModuleSettingsScreen'));
 const EmployeesModuleSettingsScreen = React.lazy(() => import('../../screens/EmployeesModuleSettingsScreen'));
+const CustomersModuleSettingsScreen = React.lazy(() => import('../../screens/CustomersModuleSettingsScreen'));
+const SuppliersModuleSettingsScreen = React.lazy(() => import('../../screens/SuppliersModuleSettingsScreen'));
+const SalesModuleSettingsScreen = React.lazy(() => import('../../screens/SalesModuleSettingsScreen'));
+const PurchasesModuleSettingsScreen = React.lazy(() => import('../../screens/PurchasesModuleSettingsScreen'));
+const ExpensesModuleSettingsScreen = React.lazy(() => import('../../screens/ExpensesModuleSettingsScreen'));
+const RevenueModuleSettingsScreen = React.lazy(() => import('../../screens/RevenueModuleSettingsScreen'));
 const LanguageSettingsScreen = React.lazy(() => import('../../screens/LanguageSettingsScreen'));
 const ThemeSettingsScreen = React.lazy(() => import('../../screens/ThemeSettingsScreen'));
 const OwnerSettingsScreen = React.lazy(() => import('../../screens/AdminSettingsScreen'));
@@ -142,6 +149,7 @@ export const allRoutes: RouteConfig[] = [
   { name: 'QuickPurchase', module: 'stock', component: QuickPurchaseScreen, requiredPermission: 'purchases:create', options: { title: i18n.t('stock:quick_purchase', { defaultValue: 'Quick Purchase' }) } },
   { name: 'GlobalFieldsManagement', module: 'stock', component: GlobalFieldsManagementScreen, requiredPermission: 'stock:manage_global_fields', options: { title: i18n.t('stock:manage_global_fields', { defaultValue: 'Manage Global Fields' }) } },
   { name: 'CategoryManagement', module: 'stock', component: CategoryManagementScreen, requiredPermission: 'stock:view', options: { title: i18n.t('stock:category_management', { defaultValue: 'Category Management' }) } },
+  { name: 'FormTemplateManagement', module: 'settings', component: FormTemplateManagementScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:form_templates', { defaultValue: 'Form Templates' }) } },
   
   // Edit screens
   { name: 'SalesEdit', module: 'sales', component: SalesEditScreen, requiredPermission: 'sales:edit', options: { title: i18n.t('sales:edit_sale') } },
@@ -162,6 +170,12 @@ export const allRoutes: RouteConfig[] = [
   { name: 'GeneralModuleSettings', module: 'settings', component: GeneralModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:general_settings', { defaultValue: 'Genel Ayarlar' }) } },
   { name: 'StockModuleSettings', module: 'settings', component: StockModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('stock:stock', { defaultValue: 'Stock Modülü' }) } },
   { name: 'EmployeesModuleSettings', module: 'settings', component: EmployeesModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('employees:employees', { defaultValue: 'Çalışanlar Modülü' }) } },
+  { name: 'CustomersModuleSettings', module: 'settings', component: CustomersModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('customers:customers', { defaultValue: 'Müşteriler Modülü' }) } },
+  { name: 'SuppliersModuleSettings', module: 'settings', component: SuppliersModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('suppliers:suppliers', { defaultValue: 'Tedarikçiler Modülü' }) } },
+  { name: 'SalesModuleSettings', module: 'settings', component: SalesModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('sales:sales', { defaultValue: 'Satışlar Modülü' }) } },
+  { name: 'PurchasesModuleSettings', module: 'settings', component: PurchasesModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('purchases:purchases', { defaultValue: 'Alışlar Modülü' }) } },
+  { name: 'ExpensesModuleSettings', module: 'settings', component: ExpensesModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('expenses:expenses', { defaultValue: 'Giderler Modülü' }) } },
+  { name: 'RevenueModuleSettings', module: 'settings', component: RevenueModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('revenue:revenue', { defaultValue: 'Gelirler Modülü' }) } },
   { name: 'LanguageSettings', module: 'settings', component: LanguageSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:language', { defaultValue: 'Dil' }) } },
   { name: 'ThemeSettings', module: 'settings', component: ThemeSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:theme', { defaultValue: 'Tema' }) } },
   { name: 'OwnerSettings', module: 'settings', component: OwnerSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:owner_settings', { defaultValue: 'Satıcı Ayarları' }) } },

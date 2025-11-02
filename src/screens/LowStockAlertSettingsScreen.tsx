@@ -7,7 +7,10 @@ import { useTheme, AppTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Input from '../shared/components/Input';
+import Button from '../shared/components/Button';
 import { useLowStockAlertStore } from '../core/store/lowStockAlertStore';
+import stockAlertSettingsService from '../modules/products/services/stockAlertSettingsService';
+import notificationService from '../shared/services/notificationService';
 
 /**
  * Low Stock Alert Settings Screen
@@ -43,6 +46,7 @@ export default function LowStockAlertSettingsScreen() {
     hydrate 
   } = useLowStockAlertStore();
   const [thresholdInput, setThresholdInput] = useState(String(threshold));
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     hydrate();
@@ -81,6 +85,24 @@ export default function LowStockAlertSettingsScreen() {
     { value: 5, label: '5' },
     { value: 10, label: '10' },
   ] as const;
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await stockAlertSettingsService.update({
+        enabled,
+        threshold,
+        reminderFrequency,
+        reminderLimit,
+      });
+      notificationService.success(t('settings:save_success', { defaultValue: 'Ayarlar başarıyla kaydedildi' }));
+    } catch (error) {
+      console.error('Failed to save stock alert settings:', error);
+      notificationService.error(t('settings:save_error', { defaultValue: 'Ayarlar kaydedilirken bir hata oluştu' }));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const styles = getStyles(colors);
 
@@ -212,8 +234,49 @@ export default function LowStockAlertSettingsScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* Save Button */}
+            <View style={styles.settingsGroup}>
+              <Button
+                title={isSaving ? t('settings:saving', { defaultValue: 'Kaydediliyor...' }) : t('settings:save', { defaultValue: 'Kaydet' })}
+                onPress={handleSave}
+                disabled={isSaving}
+                style={styles.saveButton}
+              />
+            </View>
           </>
         )}
+
+        {/* Product-Based Notification Settings - Coming Soon */}
+        <View style={styles.settingsGroup}>
+          <Text style={styles.groupTitle}>{t('settings:product_based_notifications', { defaultValue: 'Ürün Bazlı Bildirim Ayarları' })}</Text>
+          <View style={styles.card}>
+            <View style={styles.settingItem}>
+              <View style={styles.settingItemLeft}>
+                <Ionicons name="cube-outline" size={24} color={colors.muted} />
+                <View style={styles.settingItemContent}>
+                  <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                    {t('settings:product_based_notifications', { defaultValue: 'Ürün Bazlı Bildirim Ayarları' })}
+                  </Text>
+                  <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                    {t('settings:product_based_notifications_desc', { defaultValue: 'Her ürün için özel bildirim ayarlarını yapılandırın' })}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.comingSoonBadge}>
+                <Text style={[styles.comingSoonText, { color: colors.muted }]}>
+                  {t('settings:coming_soon', { defaultValue: 'Yakında gelecek' })}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.comingSoonMessage, { backgroundColor: colors.page }]}>
+              <Ionicons name="time-outline" size={16} color={colors.muted} />
+              <Text style={[styles.comingSoonDesc, { color: colors.muted }]}>
+                {t('settings:coming_soon_desc', { defaultValue: 'Bu özellik yakında eklenecektir' })}
+              </Text>
+            </View>
+          </View>
+        </View>
       </ScrollView>
     </ScreenLayout>
   );
@@ -292,6 +355,32 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  saveButton: {
+    marginTop: spacing.md,
+  },
+  comingSoonBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  comingSoonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  comingSoonMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    padding: spacing.sm,
+    borderRadius: 8,
+    marginTop: spacing.md,
+  },
+  comingSoonDesc: {
+    fontSize: 12,
+    flex: 1,
   },
 });
 

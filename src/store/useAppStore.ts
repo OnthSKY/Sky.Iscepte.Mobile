@@ -45,9 +45,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const { userService } = await import('../shared/services/userService');
       const profile = await userService.getProfile();
-      set({ user: profile });
+      if (profile) {
+        set({ user: profile });
+      }
     } catch (error) {
       // Profile fetch failed, but don't block login
+      console.error('Failed to fetch profile:', error);
+      // Try to log error details for debugging
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+      }
     }
   },
   async login(u: string, p: string) {
