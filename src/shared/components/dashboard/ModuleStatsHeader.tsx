@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, useWindowDimensions, Platform } from 'react-nat
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
+import { getColumnsForStats } from '../../../core/constants/breakpoints';
 import { StatCard } from './StatCard';
 
 export interface ModuleStat {
@@ -32,20 +33,7 @@ export function ModuleStatsHeader({ stats, mainStatKey, translationNamespace }: 
 
   // Responsive layout calculations
   const layoutConfig = useMemo(() => {
-    // Breakpoints for stat cards:
-    // Mobile (< 640px): 1 column
-    // Tablet (640-980px): 2 columns
-    // Desktop (980-1280px): 3 columns
-    // Large Desktop (> 1280px): 4 columns
-    let numColumns = 1;
-    if (width > 1280) {
-      numColumns = 4;
-    } else if (width > 980) {
-      numColumns = 3;
-    } else if (width > 640) {
-      numColumns = 2;
-    }
-
+    const numColumns = getColumnsForStats(width);
     const cardMargin = spacing.md;
     const containerPadding = spacing.lg;
     const availableWidth = width - containerPadding * 2;

@@ -8,39 +8,39 @@
 import { useApiQuery } from './useApiQuery';
 import { queryKeys } from '../services/queryClient';
 import { apiEndpoints } from '../config/apiEndpoints';
-import { OwnerTodaySummary, OwnerTotalSummary, OwnerEmployeeSummary } from '../services/ownerDashboardService';
+import { OwnerStoreSummary, OwnerEmployeeSummary, OwnerTopProducts } from '../services/ownerDashboardService';
 
 /**
- * Hook for fetching owner today summary
+ * Hook for fetching owner store summary
  */
-export function useOwnerTodaySummary() {
-  return useApiQuery<OwnerTodaySummary>({
-    url: apiEndpoints.dashboard.owner.todaySummary,
-    queryKey: ['dashboard', 'owner', 'today-summary'],
+export function useOwnerStoreSummary(period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all') {
+  return useApiQuery<OwnerStoreSummary>({
+    url: apiEndpoints.dashboard.owner.storeSummary(period),
+    queryKey: ['dashboard', 'owner', 'store-summary', period],
     staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-}
-
-/**
- * Hook for fetching owner total summary
- */
-export function useOwnerTotalSummary() {
-  return useApiQuery<OwnerTotalSummary>({
-    url: apiEndpoints.dashboard.owner.totalSummary,
-    queryKey: ['dashboard', 'owner', 'total-summary'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
 /**
  * Hook for fetching owner employee summary
  */
-export function useOwnerEmployeeSummary(employeeId?: string | number, period: 'today' | 'all' = 'today') {
+export function useOwnerEmployeeSummary(employeeId?: string | number, period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all') {
   return useApiQuery<OwnerEmployeeSummary>({
     url: apiEndpoints.dashboard.owner.employeeSummary(employeeId, period),
     queryKey: ['dashboard', 'owner', 'employee-summary', employeeId || 'total', period],
     enabled: true,
     staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * Hook for fetching owner top products
+ */
+export function useOwnerTopProducts(period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all', limit: number = 10) {
+  return useApiQuery<OwnerTopProducts>({
+    url: apiEndpoints.dashboard.owner.topProducts(period, limit),
+    queryKey: ['dashboard', 'owner', 'top-products', period, limit],
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

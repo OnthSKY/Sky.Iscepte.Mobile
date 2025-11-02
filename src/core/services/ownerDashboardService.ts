@@ -4,13 +4,14 @@
  * Single Responsibility: Provides owner-specific dashboard summary data
  */
 
-export interface OwnerTodaySummary {
-  sales: number;
-  expenses: number;
-  total: number;
+export interface ProductSaleDetail {
+  productId: number;
+  productName: string;
+  quantity: number;
+  totalAmount: number;
 }
 
-export interface OwnerTotalSummary {
+export interface OwnerStoreSummary {
   sales: number;
   expenses: number;
   total: number;
@@ -21,6 +22,13 @@ export interface OwnerEmployeeSummary {
   expenses: number;
   total: number;
   employeeId?: string | number;
+  productSales?: ProductSaleDetail[];
+  productCount?: number;
+}
+
+export interface OwnerTopProducts {
+  products: ProductSaleDetail[];
+  totalCount: number;
 }
 
 import httpService from '../../shared/services/httpService';
@@ -58,14 +66,14 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
 }
 
 export const ownerDashboardService = {
-  getTodaySummary: () => 
-    request<OwnerTodaySummary>('GET', apiEndpoints.dashboard.owner.todaySummary),
+  getStoreSummary: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all') => 
+    request<OwnerStoreSummary>('GET', apiEndpoints.dashboard.owner.storeSummary(period)),
 
-  getTotalSummary: () => 
-    request<OwnerTotalSummary>('GET', apiEndpoints.dashboard.owner.totalSummary),
-
-  getEmployeeSummary: (employeeId?: string | number, period: 'today' | 'all' = 'today') => 
+  getEmployeeSummary: (employeeId?: string | number, period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all') => 
     request<OwnerEmployeeSummary>('GET', apiEndpoints.dashboard.owner.employeeSummary(employeeId, period)),
+
+  getTopProducts: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all', limit: number = 10) => 
+    request<OwnerTopProducts>('GET', apiEndpoints.dashboard.owner.topProducts(period, limit)),
 };
 
 export default ownerDashboardService;

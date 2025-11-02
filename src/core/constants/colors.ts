@@ -9,7 +9,7 @@ export const lightColors = {
   background: '#F8FAFC',
   surface: '#FFFFFF',
   page: '#F8FAFC',
-  card: '#F1F5F9',
+  card: '#E2E7EF',
   text: '#0F172A',
   muted: '#475569', // textSecondary
   border: '#E2E8F0',

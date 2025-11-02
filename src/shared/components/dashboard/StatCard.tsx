@@ -51,7 +51,7 @@ export const StatCard: React.FC<StatCardProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: colors.surface,
+          backgroundColor: isDark ? colors.surface : colors.card,
           width,
           marginRight,
         },

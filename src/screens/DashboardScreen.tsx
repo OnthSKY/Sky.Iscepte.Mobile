@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
+import { getColumnsForStats } from '../core/constants/breakpoints';
 import { useDashboard } from '../core/hooks/useDashboard';
 import { DashboardHeader } from '../shared/components/dashboard/DashboardHeader';
 import { StatCard } from '../shared/components/dashboard/StatCard';
@@ -31,10 +32,10 @@ const DashboardScreen: React.FC = () => {
 
   // Layout calculations
   const layoutConfig = useMemo(() => {
-    const numColumns = width > 650 ? 2 : 1;
+    const numColumns = getColumnsForStats(width);
     const cardMargin = spacing.md;
     const statCardWidth = numColumns > 1 
-      ? (width - spacing.lg * 2 - cardMargin) / 2 
+      ? (width - spacing.lg * 2 - cardMargin) / numColumns
       : width - spacing.lg * 2;
     return { numColumns, cardMargin, statCardWidth };
   }, [width]);

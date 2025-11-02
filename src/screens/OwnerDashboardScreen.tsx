@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
-import SummaryCard from '../shared/components/SummaryCard';
 import DashboardTopBar from '../shared/components/DashboardTopBar';
 import LoadingState from '../shared/components/LoadingState';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +16,6 @@ import { useOwnerDashboard } from '../core/hooks/useOwnerDashboard';
  */
 export default function OwnerDashboardScreen() {
   const { colors, activeTheme } = useTheme();
-  const { width } = useWindowDimensions();
 
   const isDark = activeTheme === 'dark';
   const headerGradientColors = isDark
@@ -29,19 +27,23 @@ export default function OwnerDashboardScreen() {
   const {
     activeTab,
     setActiveTab,
-    showValues,
-    setShowValues,
+    showStoreIncomeValues,
+    setShowStoreIncomeValues,
+    showStoreExpenseValues,
+    setShowStoreExpenseValues,
     selectedEmployeeId,
     setSelectedEmployeeId,
-    showEmpValues,
-    setShowEmpValues,
+    showEmpIncomeValues,
+    setShowEmpIncomeValues,
+    showEmpExpenseValues,
+    setShowEmpExpenseValues,
     employeePickerVisible,
     setEmployeePickerVisible,
-    ownerName,
-    companyName,
     employeeCards,
     stats,
     employeeStats,
+    topProducts,
+    topProductsCount,
     isLoading,
     t,
   } = useOwnerDashboard();
@@ -56,93 +58,143 @@ export default function OwnerDashboardScreen() {
 
   return (
     <ScreenLayout>
-      {/* Welcome Header with Gradient, Premium badge and compact totals */}
-      <LinearGradient
-        colors={headerGradientColors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ marginHorizontal: 16, marginTop: 8, borderRadius: 16, padding: 16 }}
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
-            <DashboardTopBar variant="owner" />
+        {/* Welcome Header with Gradient, Premium badge and compact totals */}
+        <LinearGradient
+          colors={headerGradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ marginHorizontal: 16, marginTop: 8, borderRadius: 16, padding: 16 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <DashboardTopBar variant="owner" />
+            </View>
           </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
 
-      {/* Tabs: Today vs All-time */}
-      <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+        {/* Tabs: Day, Week, Month, Year, All */}
+        <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+        <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 6, fontWeight: '500' }}>
+          {t('dashboard:all_data_period', { defaultValue: 'Tüm veriler için dönem' })}
+        </Text>
         <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 4 }}>
-          <TouchableOpacity style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: activeTab === 'today' ? colors.primary : 'transparent' }} onPress={() => setActiveTab('today')} activeOpacity={0.8}>
-            <Text style={{ textAlign: 'center', color: activeTab === 'today' ? '#ffffff' : colors.text, fontWeight: '600', fontSize: 12 }}>
-              {t('dashboard:tab_today', { defaultValue: 'Bugün' })}
+          <TouchableOpacity style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: activeTab === 'day' ? colors.primary : 'transparent' }} onPress={() => setActiveTab('day')} activeOpacity={0.8}>
+            <Text style={{ textAlign: 'center', color: activeTab === 'day' ? '#ffffff' : colors.text, fontWeight: '600', fontSize: 11 }}>
+              {t('dashboard:tab_day', { defaultValue: 'Gün' })}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: activeTab === 'all' ? colors.primary : 'transparent' }} onPress={() => setActiveTab('all')} activeOpacity={0.8}>
-            <Text style={{ textAlign: 'center', color: activeTab === 'all' ? '#ffffff' : colors.text, fontWeight: '600', fontSize: 12 }}>
+          <TouchableOpacity style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: activeTab === 'week' ? colors.primary : 'transparent' }} onPress={() => setActiveTab('week')} activeOpacity={0.8}>
+            <Text style={{ textAlign: 'center', color: activeTab === 'week' ? '#ffffff' : colors.text, fontWeight: '600', fontSize: 11 }}>
+              {t('dashboard:tab_week', { defaultValue: 'Hafta' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: activeTab === 'month' ? colors.primary : 'transparent' }} onPress={() => setActiveTab('month')} activeOpacity={0.8}>
+            <Text style={{ textAlign: 'center', color: activeTab === 'month' ? '#ffffff' : colors.text, fontWeight: '600', fontSize: 11 }}>
+              {t('dashboard:tab_month', { defaultValue: 'Ay' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: activeTab === 'year' ? colors.primary : 'transparent' }} onPress={() => setActiveTab('year')} activeOpacity={0.8}>
+            <Text style={{ textAlign: 'center', color: activeTab === 'year' ? '#ffffff' : colors.text, fontWeight: '600', fontSize: 11 }}>
+              {t('dashboard:tab_year', { defaultValue: 'Yıl' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: activeTab === 'all' ? colors.primary : 'transparent' }} onPress={() => setActiveTab('all')} activeOpacity={0.8}>
+            <Text style={{ textAlign: 'center', color: activeTab === 'all' ? '#ffffff' : colors.text, fontWeight: '600', fontSize: 11 }}>
               {t('dashboard:tab_all', { defaultValue: 'Tümü' })}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Compact stats row with eye icon to toggle all */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 16, marginBottom: 24 }}>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          {/* Sales small card */}
-          <View style={{ flex: 1 }}>
-            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_sales', { defaultValue: 'Satış' })}</Text>
-              <Text style={{ color: showValues ? colors.success : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-                {showValues ? stats.sales : masked}
+      {/* Dükkan Overview */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+        {/* Store Summary card */}
+        <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Ionicons name="storefront-outline" size={18} color={colors.muted} />
+            <Text style={{ color: colors.text, fontWeight: '700', marginLeft: 8, flex: 1 }} numberOfLines={1}>
+              {t('dashboard:store_summary', { defaultValue: 'Dükkan' })}
+            </Text>
+            <TouchableOpacity onPress={() => {
+              const bothVisible = showStoreIncomeValues && showStoreExpenseValues;
+              setShowStoreIncomeValues(!bothVisible);
+              setShowStoreExpenseValues(!bothVisible);
+            }} accessibilityRole="button">
+              <Ionicons name={showStoreIncomeValues && showStoreExpenseValues ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowStoreIncomeValues((v) => !v)} activeOpacity={0.8}>
+              <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
+                <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:income', { defaultValue: 'Gelir' })}</Text>
+                <Text style={{ color: showStoreIncomeValues ? colors.success : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                  {showStoreIncomeValues ? stats.sales : '••••••'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowStoreExpenseValues((v) => !v)} activeOpacity={0.8}>
+              <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
+                <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:expenses', { defaultValue: 'Gider' })}</Text>
+                <Text style={{ color: showStoreExpenseValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                  {showStoreExpenseValues ? stats.expenses : '••••••'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
+              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:total', { defaultValue: 'Net Kar' })}</Text>
+              <Text style={{ color: colors.text, fontSize: 24, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                {showStoreIncomeValues && showStoreExpenseValues ? stats.total : '••••••'}
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:income_desc', { defaultValue: 'Gelir' })}</Text>
             </View>
           </View>
-
-          {/* Expense small card */}
-          <View style={{ flex: 1 }}>
-            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Gelir / Gider' })}</Text>
-              <Text style={{ color: showValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-                {showValues ? stats.expenses : masked}
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:expense_desc', { defaultValue: 'Gelir / Gider' })}</Text>
-            </View>
-          </View>
-
-          {/* Total small card */}
-          <View style={{ flex: 1 }}>
-            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_total', { defaultValue: 'Toplam' })}</Text>
-              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-                {showValues ? stats.total : masked}
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{t('dashboard:net_desc', { defaultValue: 'Net' })}</Text>
-            </View>
-          </View>
-
-          {/* Eye icon to toggle all */}
-          <TouchableOpacity 
-            style={{ justifyContent: 'center', paddingHorizontal: 8 }}
-            onPress={() => setShowValues((v) => !v)}
-            activeOpacity={0.8}
-          >
-            <Ionicons 
-              name={showValues ? 'eye-off-outline' : 'eye-outline'} 
-              size={24} 
-              color={colors.muted} 
-            />
-          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Employees: total count + selectable list + summary card */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-        <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 8 }}>
-          {t('dashboard:employee_overview', { defaultValue: 'Çalışan özeti' })} • {t('dashboard:total', { defaultValue: 'Toplam' })}: {employeeCards.length}
-        </Text>
+      {/* Top Products Sales */}
+      {topProducts && topProducts.length > 0 && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Ionicons name="cube-outline" size={18} color={colors.muted} />
+              <Text style={{ color: colors.text, fontWeight: '700', marginLeft: 8, flex: 1 }} numberOfLines={1}>
+                {t('dashboard:top_products', { defaultValue: 'En Çok Satan Ürünler' })}
+              </Text>
+              <Text style={{ color: colors.muted, fontSize: 11 }}>
+                {topProductsCount} {t('dashboard:products', { defaultValue: 'ürün' })}
+              </Text>
+            </View>
+            {topProducts.map((product: any, index: number) => (
+              <View key={product.productId || index} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: index < 4 ? 1 : 0, borderBottomColor: colors.border }}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                      <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>#{index + 1}</Text>
+                    </View>
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 }} numberOfLines={1}>{product.productName}</Text>
+                  </View>
+                  <Text style={{ color: colors.muted, fontSize: 12, marginLeft: 32 }}>
+                    {product.quantity} {t('dashboard:quantity', { defaultValue: 'adet satış' })}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ color: colors.success, fontSize: 16, fontWeight: '700' }}>
+                    ₺{product.totalAmount.toLocaleString('tr-TR')}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
+      {/* Employees: selectable list + summary card */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
         {/* Names as chips, horizontal scroll + More */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }}>
           <TouchableOpacity
@@ -151,7 +203,9 @@ export default function OwnerDashboardScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="people-outline" size={14} color={selectedEmployeeId === 'total' ? '#fff' : colors.muted} />
-            <Text style={{ color: selectedEmployeeId === 'total' ? '#fff' : colors.text, fontWeight: '600', fontSize: 12, marginLeft: 6 }} numberOfLines={1}>{t('dashboard:all_employees', { defaultValue: 'Tüm çalışanlar' })}</Text>
+            <Text style={{ color: selectedEmployeeId === 'total' ? '#fff' : colors.text, fontWeight: '600', fontSize: 12, marginLeft: 6 }} numberOfLines={1}>
+              {t('dashboard:all_employees', { defaultValue: 'Tüm çalışanlar' })} ({employeeCards.length})
+            </Text>
           </TouchableOpacity>
 
           {employeeCards.map((e: any) => (
@@ -180,31 +234,63 @@ export default function OwnerDashboardScreen() {
             <Ionicons name={selectedEmployeeId === 'total' ? 'people-outline' : 'person-circle-outline'} size={18} color={colors.muted} />
             <Text style={{ color: colors.text, fontWeight: '700', marginLeft: 8, flex: 1 }} numberOfLines={1}>
               {selectedEmployeeId === 'total' ? (t('dashboard:all_employees', { defaultValue: 'Tüm çalışanlar' }) as any) : (employeeCards.find((e: any) => e.id === selectedEmployeeId)?.name || '')}
+              {employeeStats.productCount > 0 && (
+                <Text style={{ color: colors.muted, fontSize: 12, marginLeft: 4 }}> • {employeeStats.productCount} {t('dashboard:products', { defaultValue: 'ürün' })}</Text>
+              )}
             </Text>
-            <TouchableOpacity onPress={() => setShowEmpValues(v => !v)} accessibilityRole="button">
-              <Ionicons name={showEmpValues ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.muted} />
+            <TouchableOpacity onPress={() => {
+              const bothVisible = showEmpIncomeValues && showEmpExpenseValues;
+              setShowEmpIncomeValues(!bothVisible);
+              setShowEmpExpenseValues(!bothVisible);
+            }} accessibilityRole="button">
+              <Ionicons name={showEmpIncomeValues && showEmpExpenseValues ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <View style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_sales', { defaultValue: 'Bugün satış' })}</Text>
-              <Text style={{ color: showEmpValues ? colors.success : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {showEmpValues ? employeeStats.sales : '••••••'}
-              </Text>
-            </View>
-            <View style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_expenses', { defaultValue: 'Bugünkü Gelir / Gider' })}</Text>
-              <Text style={{ color: showEmpValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {showEmpValues ? employeeStats.expenses : '••••••'}
-              </Text>
-            </View>
-            <View style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
-              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:today_total', { defaultValue: 'Bugün toplam' })}</Text>
-              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {showEmpValues ? employeeStats.total : '••••••'}
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowEmpIncomeValues((v) => !v)} activeOpacity={0.8}>
+              <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
+                <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:income', { defaultValue: 'Gelir' })}</Text>
+                <Text style={{ color: showEmpIncomeValues ? colors.success : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                  {showEmpIncomeValues ? employeeStats.sales : '••••••'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowEmpExpenseValues((v) => !v)} activeOpacity={0.8}>
+              <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
+                <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:expenses', { defaultValue: 'Gider' })}</Text>
+                <Text style={{ color: showEmpExpenseValues ? colors.error : colors.muted, fontSize: 18, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                  {showEmpExpenseValues ? employeeStats.expenses : '••••••'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }}>
+              <Text style={{ color: colors.muted, fontSize: 11 }}>{t('dashboard:total', { defaultValue: 'Net Kar' })}</Text>
+              <Text style={{ color: colors.text, fontSize: 24, fontWeight: '700', marginTop: 4, width: '100%', flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                {showEmpIncomeValues && showEmpExpenseValues ? employeeStats.total : '••••••'}
               </Text>
             </View>
           </View>
+
+          {/* Product Sales Details */}
+          {employeeStats.productSales && employeeStats.productSales.length > 0 && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 8, fontWeight: '600' }}>
+                {t('dashboard:product_sales_details', { defaultValue: 'Ürün satış detayları' })}
+              </Text>
+              {employeeStats.productSales.map((product: any, index: number) => (
+                <View key={product.productId || index} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>{product.productName}</Text>
+                    <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
+                      {product.quantity} {t('dashboard:quantity', { defaultValue: 'adet' })} • {t('dashboard:amount', { defaultValue: 'Tutar' })}: {showEmpIncomeValues ? product.totalAmount.toLocaleString('tr-TR') : '••••••'} ₺
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Employee picker modal (for many employees) */}
@@ -228,6 +314,7 @@ export default function OwnerDashboardScreen() {
           </Modal>
         )}
       </View>
+      </ScrollView>
     </ScreenLayout>
   );
 }

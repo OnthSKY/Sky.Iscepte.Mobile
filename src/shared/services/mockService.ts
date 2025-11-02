@@ -506,103 +506,146 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
   // Parse URL to determine which summary to return
   const urlParts = url.replace(/^\//, '').split('/');
   const endpoint = urlParts[urlParts.length - 1].split('?')[0]; // Remove query string
+  
+  // Parse period and other params from query string
+  const urlParts2 = url.split('?');
+  const queryParams = new URLSearchParams(urlParts2[1] || '');
+  const period = queryParams.get('period') || 'all';
 
-  if (endpoint === 'today-summary') {
-    // Calculate today's summary
-    const todaySales = allSales
-      .filter((s: any) => s.date === today && s.status === 'completed')
-      .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+  // Helper function to get week number
+  function getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+  
+  // Helper function to filter data by period
+  function filterByPeriod(data: any[], period: string, checkStatus: boolean = true): any[] {
+    const now = new Date();
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const currentWeek = getWeekNumber(now);
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
     
-    const todayExpenses = allExpenses
-      .filter((e: any) => e.date === today)
-      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-    
-    const todayTotal = todaySales - todayExpenses;
-
-    return {
-      sales: todaySales,
-      expenses: todayExpenses,
-      total: todayTotal,
-    };
+    return data.filter((item: any) => {
+      if (checkStatus && item.status !== 'completed') return false;
+      if (!item.date) return false;
+      
+      const itemDate = new Date(item.date);
+      
+      switch (period) {
+        case 'day':
+          return itemDate.toDateString() === currentDate.toDateString();
+        case 'week':
+          return getWeekNumber(itemDate) === currentWeek && itemDate.getFullYear() === currentYear;
+        case 'month':
+          return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+        case 'year':
+          return itemDate.getFullYear() === currentYear;
+        case 'all':
+        default:
+          return true;
+      }
+    });
   }
 
-  if (endpoint === 'total-summary') {
-    // Calculate total summary
-    const totalSales = allSales
-      .filter((s: any) => s.status === 'completed')
-      .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+  if (endpoint === 'store-summary') {
+    const filteredSales = filterByPeriod(allSales, period, true);
+    const filteredExpenses = filterByPeriod(allExpenses, period, false);
+    const sales = filteredSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+    const expenses = filteredExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+    const total = sales - expenses;
     
-    const totalExpenses = allExpenses
-      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-    
-    const totalTotal = totalSales - totalExpenses;
+    return { sales, expenses, total };
+  }
 
-    return {
-      sales: totalSales,
-      expenses: totalExpenses,
-      total: totalTotal,
-    };
+  if (endpoint === 'top-products') {
+    const limit = parseInt(queryParams.get('limit') || '10', 10);
+    const filteredSales = filterByPeriod(allSales, period, true);
+    
+    const productsStore: any = (stores as any).products;
+    const allProducts: any[] = productsStore ? productsStore.list() : [];
+    
+    const productSalesMap = new Map();
+    filteredSales.forEach((sale: any) => {
+      if (!sale.productId) return;
+      const product = allProducts.find((p: any) => p.id === sale.productId);
+      if (product) {
+        const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0 };
+        existing.quantity += sale.quantity || 1;
+        existing.totalAmount += sale.amount || sale.total || 0;
+        productSalesMap.set(sale.productId, existing);
+      }
+    });
+    
+    const products = Array.from(productSalesMap.values()).sort((a, b) => b.totalAmount - a.totalAmount).slice(0, limit);
+    
+    return { products, totalCount: productSalesMap.size };
   }
 
   if (endpoint === 'employee-summary') {
-    // Parse employeeId and period from query string
-    const urlParts2 = url.split('?');
-    const queryParams = new URLSearchParams(urlParts2[1] || '');
     const employeeIdParam = queryParams.get('employeeId');
-    const period = queryParams.get('period') || 'today';
     const employeeId = employeeIdParam ? parseInt(employeeIdParam, 10) : null;
 
     let employeeSales = 0;
     let employeeExpenses = 0;
+    let filteredSales: any[] = [];
 
+    // First filter by period
+    const periodFilteredSales = filterByPeriod(allSales, period, true);
+    const periodFilteredExpenses = filterByPeriod(allExpenses, period, false);
+    
     if (employeeId) {
       // Filter by specific employee
-      const filteredSales = allSales.filter((s: any) => {
+      filteredSales = periodFilteredSales.filter((s: any) => {
         const saleEmployeeId = s.employeeId ? parseInt(String(s.employeeId), 10) : null;
-        const matchesEmployee = saleEmployeeId === employeeId;
-        const matchesDate = period === 'today' ? s.date === today : true;
-        const matchesStatus = s.status === 'completed';
-        return matchesEmployee && matchesDate && matchesStatus;
+        return saleEmployeeId === employeeId;
       });
       
       employeeSales = filteredSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
       
-      const filteredExpenses = allExpenses.filter((e: any) => {
+      const filteredExpenses = periodFilteredExpenses.filter((e: any) => {
         const expEmployeeId = e.employeeId ? parseInt(String(e.employeeId), 10) : null;
-        const matchesEmployee = expEmployeeId === employeeId;
-        const matchesDate = period === 'today' ? e.date === today : true;
-        return matchesEmployee && matchesDate;
+        return expEmployeeId === employeeId;
       });
       
       employeeExpenses = filteredExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
     } else {
       // All employees summary
-      if (period === 'today') {
-        employeeSales = allSales
-          .filter((s: any) => s.date === today && s.status === 'completed')
-          .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
-        
-        employeeExpenses = allExpenses
-          .filter((e: any) => e.date === today)
-          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-      } else {
-        // All time
-        employeeSales = allSales
-          .filter((s: any) => s.status === 'completed')
-          .reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
-        
-        employeeExpenses = allExpenses
-          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-      }
+      filteredSales = periodFilteredSales;
+      employeeSales = filteredSales.reduce((sum: number, s: any) => sum + (s.amount || s.total || 0), 0);
+      employeeExpenses = periodFilteredExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
     }
 
     const employeeTotal = employeeSales - employeeExpenses;
+
+    // Calculate product sales details
+    const productsStore: any = (stores as any).products;
+    const allProducts: any[] = productsStore ? productsStore.list() : [];
+    
+    const productSalesMap = new Map();
+    filteredSales.forEach((sale: any) => {
+      if (!sale.productId) return;
+      const product = allProducts.find((p: any) => p.id === sale.productId);
+      if (product) {
+        const existing = productSalesMap.get(sale.productId) || { productId: sale.productId, productName: product.name, quantity: 0, totalAmount: 0 };
+        existing.quantity += sale.quantity || 1;
+        existing.totalAmount += sale.amount || sale.total || 0;
+        productSalesMap.set(sale.productId, existing);
+      }
+    });
+    
+    const productSales = Array.from(productSalesMap.values()).sort((a, b) => b.totalAmount - a.totalAmount);
 
     return {
       sales: employeeSales,
       expenses: employeeExpenses,
       total: employeeTotal,
       employeeId: employeeId || undefined,
+      productSales,
+      productCount: productSales.length,
     };
   }
 

@@ -137,14 +137,14 @@ export const modulesEndpoints = {
  */
 export const dashboardEndpoints = {
   owner: {
-    todaySummary: '/dashboard/owner/today-summary',
-    totalSummary: '/dashboard/owner/total-summary',
-    employeeSummary: (employeeId?: string | number, period: 'today' | 'all' = 'today') => {
+    storeSummary: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all') => `/dashboard/owner/store-summary?period=${period}`,
+    employeeSummary: (employeeId?: string | number, period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all') => {
       const params = new URLSearchParams();
       if (employeeId) params.append('employeeId', String(employeeId));
       params.append('period', period);
       return `/dashboard/owner/employee-summary?${params.toString()}`;
     },
+    topProducts: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all', limit: number = 10) => `/dashboard/owner/top-products?period=${period}&limit=${limit}`,
   },
 } as const;
 

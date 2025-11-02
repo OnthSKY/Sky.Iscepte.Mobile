@@ -11,6 +11,7 @@ import { BaseEntity, ListScreenConfig } from '../../../core/types/screen.types';
 import { BaseEntityService } from '../../../core/services/baseEntityService.types';
 import { useListScreen } from '../../../core/hooks/useListScreen';
 import spacing from '../../../core/constants/spacing';
+import { isSmallScreen } from '../../../core/constants/breakpoints';
 
 /**
  * Single Responsibility: Composes list screen UI
@@ -59,11 +60,11 @@ export function ListScreenContainer<T extends BaseEntity>({
 
   // Responsive layout for header
   const headerStyle = React.useMemo(() => {
-    const isSmallScreen = width < 640;
+    const isSmall = isSmallScreen(width);
     return {
-      flexDirection: isSmallScreen ? 'column' : 'row' as 'row' | 'column',
-      alignItems: isSmallScreen ? 'stretch' : 'center' as 'stretch' | 'center',
-      gap: isSmallScreen ? spacing.sm : spacing.md,
+      flexDirection: isSmall ? 'column' : 'row' as 'row' | 'column',
+      alignItems: isSmall ? 'stretch' : 'center' as 'stretch' | 'center',
+      gap: isSmall ? spacing.sm : spacing.md,
     };
   }, [width]);
 

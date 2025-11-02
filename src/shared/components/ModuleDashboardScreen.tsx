@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
+import { getColumnsForStats } from '../../core/constants/breakpoints';
 import { StatCard } from './dashboard/StatCard';
 import { QuickActionCard } from './dashboard/QuickActionCard';
 import { RelatedModuleCard, RelatedModule } from './dashboard/RelatedModuleCard';
@@ -126,10 +127,10 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
 
   // Layout calculations
   const layoutConfig = useMemo(() => {
-    const numColumns = width > 650 ? 2 : 1;
+    const numColumns = getColumnsForStats(width);
     const cardMargin = spacing.md;
     const statCardWidth = numColumns > 1 
-      ? (width - spacing.lg * 2 - cardMargin) / 2 
+      ? (width - spacing.lg * 2 - cardMargin) / numColumns
       : width - spacing.lg * 2;
     return { numColumns, cardMargin, statCardWidth };
   }, [width]);
@@ -218,7 +219,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
         {/* Module Description */}
         {config.description && (
           <View style={[styles.descriptionSection, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
-            <View style={[styles.descriptionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.descriptionCard, { backgroundColor: isDark ? colors.surface : colors.card, borderColor: colors.border }]}>
               <View style={styles.descriptionHeader}>
                 <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
                 <Text style={[styles.descriptionTitle, { color: colors.text }]}>
@@ -279,7 +280,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
                   style={[
                     styles.quickAccessButton,
                     { 
-                      backgroundColor: colors.surface,
+                      backgroundColor: isDark ? colors.surface : colors.card,
                       borderColor: colors.border,
                       flex: config.createRoute ? 1 : 0,
                       marginRight: config.createRoute ? spacing.sm : 0,

@@ -32,7 +32,7 @@ export const RelatedModuleCard: React.FC<RelatedModuleCardProps> = ({ module, on
       style={[
         styles.card,
         {
-          backgroundColor: colors.surface,
+          backgroundColor: isDark ? colors.surface : colors.card,
           borderColor: colors.border,
         },
         isDark ? styles.cardDarkShadow : styles.cardLightShadow,

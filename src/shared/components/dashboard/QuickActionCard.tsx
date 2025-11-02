@@ -27,7 +27,7 @@ export const QuickActionCard: React.FC<QuickActionCardProps> = ({ action, onPres
       style={[
         styles.card,
         {
-          backgroundColor: colors.surface,
+          backgroundColor: isDark ? colors.surface : colors.card,
           borderColor: colors.border,
         },
         isDark ? styles.cardDarkShadow : styles.cardLightShadow,

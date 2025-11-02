@@ -9,15 +9,12 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../store/useAppStore';
 import { useEmployeesQuery } from '../../modules/employees/hooks/useEmployeesQuery';
-import { useOwnerTodaySummary, useOwnerTotalSummary, useOwnerEmployeeSummary } from './useOwnerDashboardSummary';
+import { useOwnerStoreSummary, useOwnerEmployeeSummary, useOwnerTopProducts } from './useOwnerDashboardSummary';
 
 export interface OwnerDashboardStats {
-  todaySales: string;
-  todayExpenses: string;
-  todayTotal: string;
-  allSales: string;
-  allExpenses: string;
-  allTotal: string;
+  sales: string;
+  expenses: string;
+  total: string;
 }
 
 export interface EmployeeCard {
@@ -33,14 +30,16 @@ export function useOwnerDashboard() {
   const { t } = useTranslation(['dashboard', 'sales', 'reports', 'common']);
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
+  const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month' | 'year' | 'all'>('all');
   
   // Value visibility state
-  const [showValues, setShowValues] = useState(false);
+  const [showStoreIncomeValues, setShowStoreIncomeValues] = useState(false);
+  const [showStoreExpenseValues, setShowStoreExpenseValues] = useState(false);
   
   // Employee selection state
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<'total' | string>('total');
-  const [showEmpValues, setShowEmpValues] = useState(false);
+  const [showEmpIncomeValues, setShowEmpIncomeValues] = useState(false);
+  const [showEmpExpenseValues, setShowEmpExpenseValues] = useState(false);
   const [employeePickerVisible, setEmployeePickerVisible] = useState(false);
   
   // User data
@@ -51,24 +50,12 @@ export function useOwnerDashboard() {
   const { data: employeesData, isLoading: employeesLoading } = useEmployeesQuery();
   
   // Fetch dashboard summaries
-  const { data: todaySummary, isLoading: todaySummaryLoading } = useOwnerTodaySummary();
-  const { data: totalSummary, isLoading: totalSummaryLoading } = useOwnerTotalSummary();
-  
-  // Fetch employee summary (with employeeId or total, based on activeTab)
+  const { data: storeSummary, isLoading: storeSummaryLoading } = useOwnerStoreSummary(activeTab);
   const { data: employeeSummary, isLoading: employeeSummaryLoading } = useOwnerEmployeeSummary(
     selectedEmployeeId !== 'total' ? selectedEmployeeId : undefined,
     activeTab
   );
-  
-  // Get owner name from token (extracted from token in mock service)
-  const ownerName = useMemo(() => {
-    // Try to get from token user info - will be handled by mock service
-    return t('dashboard:owner', { defaultValue: 'Owner' });
-  }, [t]);
-  
-  const companyName = useMemo(() => {
-    return t('common:default_company', { defaultValue: 'Your Company' });
-  }, [t]);
+  const { data: topProducts, isLoading: topProductsLoading } = useOwnerTopProducts(activeTab, 10);
   
   // Transform employees data
   const employeeCards: EmployeeCard[] = useMemo(() => {
@@ -83,24 +70,17 @@ export function useOwnerDashboard() {
   }, [employeesData, t]);
   
   // Calculate stats from API data
-  const stats: OwnerDashboardStats = useMemo(() => {
-    const todaySalesAmount = todaySummary?.sales || 0;
-    const todayExpensesAmount = todaySummary?.expenses || 0;
-    const todayTotalAmount = todaySummary?.total || 0;
-    
-    const allSalesAmount = totalSummary?.sales || 0;
-    const allExpensesAmount = totalSummary?.expenses || 0;
-    const allTotalAmount = totalSummary?.total || 0;
+  const stats = useMemo(() => {
+    const salesAmount = storeSummary?.sales || 0;
+    const expensesAmount = storeSummary?.expenses || 0;
+    const totalAmount = storeSummary?.total || 0;
     
     return {
-      todaySales: `₺${todaySalesAmount.toLocaleString('tr-TR')}`,
-      todayExpenses: `₺${todayExpensesAmount.toLocaleString('tr-TR')}`,
-      todayTotal: `₺${todayTotalAmount.toLocaleString('tr-TR')}`,
-      allSales: `₺${allSalesAmount.toLocaleString('tr-TR')}`,
-      allExpenses: `₺${allExpensesAmount.toLocaleString('tr-TR')}`,
-      allTotal: `₺${allTotalAmount.toLocaleString('tr-TR')}`,
+      sales: `₺${salesAmount.toLocaleString('tr-TR')}`,
+      expenses: `₺${expensesAmount.toLocaleString('tr-TR')}`,
+      total: `₺${totalAmount.toLocaleString('tr-TR')}`,
     };
-  }, [todaySummary, totalSummary]);
+  }, [storeSummary]);
   
   // Employee stats - from API
   const employeeStats = useMemo(() => {
@@ -112,46 +92,36 @@ export function useOwnerDashboard() {
       sales: `₺${empSales.toLocaleString('tr-TR')}`,
       expenses: `₺${empExpenses.toLocaleString('tr-TR')}`,
       total: `₺${empTotal.toLocaleString('tr-TR')}`,
+      productSales: employeeSummary?.productSales || [],
+      productCount: employeeSummary?.productCount || 0,
     };
   }, [employeeSummary]);
   
-  // Get current stats based on active tab
-  const currentStats = useMemo(() => {
-    if (activeTab === 'today') {
-      return {
-        sales: stats.todaySales,
-        expenses: stats.todayExpenses,
-        total: stats.todayTotal,
-      };
-    }
-    return {
-      sales: stats.allSales,
-      expenses: stats.allExpenses,
-      total: stats.allTotal,
-    };
-  }, [activeTab, stats]);
-  
-  const isLoading = employeesLoading || todaySummaryLoading || totalSummaryLoading || employeeSummaryLoading;
+  const isLoading = employeesLoading || storeSummaryLoading || employeeSummaryLoading || topProductsLoading;
   
   return {
     // State
     activeTab,
     setActiveTab,
-    showValues,
-    setShowValues,
+    showStoreIncomeValues,
+    setShowStoreIncomeValues,
+    showStoreExpenseValues,
+    setShowStoreExpenseValues,
     selectedEmployeeId,
     setSelectedEmployeeId,
-    showEmpValues,
-    setShowEmpValues,
+    showEmpIncomeValues,
+    setShowEmpIncomeValues,
+    showEmpExpenseValues,
+    setShowEmpExpenseValues,
     employeePickerVisible,
     setEmployeePickerVisible,
     
     // Data
-    ownerName,
-    companyName,
     employeeCards,
-    stats: currentStats,
+    stats,
     employeeStats,
+    topProducts: topProducts?.products || [],
+    topProductsCount: topProducts?.totalCount || 0,
     isLoading,
     
     // Translation
