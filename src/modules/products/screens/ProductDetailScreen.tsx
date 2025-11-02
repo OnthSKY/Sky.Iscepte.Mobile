@@ -25,6 +25,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ProductCustomField } from '../services/productService';
 import { isSmallScreen } from '../../../core/constants/breakpoints';
 import { formatCurrency as formatCurrencyHelper } from '../utils/currency';
+import { useFormTemplate } from '../../../shared/hooks/useFormTemplate';
+import { getDetailFields, formatFieldValue } from '../../../shared/utils/renderFieldsFromTemplate';
 
 export default function ProductDetailScreen() {
   const { colors } = useTheme();
@@ -38,6 +40,9 @@ export default function ProductDetailScreen() {
 
   const productId = route.params?.id;
   const [historyModalVisible, setHistoryModalVisible] = React.useState(false);
+
+  // Get form template for stock module
+  const { defaultTemplate } = useFormTemplate('stock');
 
   // Use React Query for caching and better performance
   const { data, isLoading, error, refetch } = useProductQuery(productId);
@@ -116,39 +121,34 @@ export default function ProductDetailScreen() {
     }
   };
 
-  // Basic Info Fields
-  const basicFields = [
-    {
-      label: t('stock:name', { defaultValue: 'Ad' }),
-      value: data.name,
-    },
-    {
-      label: t('stock:sku', { defaultValue: 'SKU' }),
-      value: data.sku,
-    },
-    {
-      label: t('stock:category', { defaultValue: 'Kategori' }),
-      value: data.category,
-    },
-    {
-      label: t('stock:price', { defaultValue: 'Fiyat' }),
-      value: data.price ? formatCurrency(data.price) : undefined,
-    },
-    {
-      label: t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' }),
-      value: data.stock,
-    },
-    data.moq && {
-      label: t('stock:moq', { defaultValue: 'MOQ' }),
-      value: data.moq,
-    },
-    {
-      label: t('stock:status', { defaultValue: 'Durum' }),
-      value: data.isActive !== undefined 
-        ? (data.isActive ? t('common:active', { defaultValue: 'Aktif' }) : t('common:inactive', { defaultValue: 'Pasif' }))
-        : undefined,
-    },
-  ].filter(Boolean);
+  // Get detail fields from template
+  const detailFieldsData = getDetailFields(defaultTemplate, 'stock', data);
+  
+  // Format currency helper
+  const formatCurrency = (value: number) => {
+    return formatCurrencyHelper(value, data.currency || 'TRY');
+  };
+  
+  // Convert detail fields to DetailSection format
+  const basicFields = detailFieldsData.map(fieldInfo => {
+    let value = fieldInfo.value;
+    
+    // Special formatting for specific fields
+    if (fieldInfo.field.name === 'price' && value && data.currency) {
+      value = formatCurrency(value as number);
+    } else if (fieldInfo.field.name === 'currency' && value) {
+      value = value; // Already formatted
+    } else if (fieldInfo.field.name === 'isActive' && value !== undefined) {
+      value = value ? t('common:active', { defaultValue: 'Aktif' }) : t('common:inactive', { defaultValue: 'Pasif' });
+    } else {
+      value = formatFieldValue(fieldInfo.field, value, (key) => t(`stock:${key}`), 'stock');
+    }
+    
+    return {
+      label: t(`stock:${fieldInfo.labelKey}`, { defaultValue: fieldInfo.labelKey }),
+      value: value === '—' ? undefined : value,
+    };
+  }).filter(field => field.value !== undefined);
 
   // Custom Fields
   const customFields = data.customFields || [];

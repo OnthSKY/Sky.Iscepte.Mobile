@@ -14,11 +14,11 @@ import { useTheme } from "../core/contexts/ThemeContext";
 import { useAppStore } from "../store/useAppStore";
 import LanguagePicker from "../shared/components/LanguagePicker";
 import ThemeGradientToggle from "../shared/components/ThemeGradientToggle";
-import ConfirmDialog from "../shared/components/ConfirmDialog";
 import ErrorReportModal from "../shared/components/ErrorReportModal";
 import ScreenLayout from "../shared/layouts/ScreenLayout";
 import spacing from "../core/constants/spacing";
 import { PACKAGE_LABELS, type UserPackage } from "../core/constants/packages";
+import notificationService from "../shared/services/notificationService";
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
@@ -27,8 +27,36 @@ export default function ProfileScreen() {
   const logout = useAppStore((s) => s.logout);
   const user = useAppStore((s) => s.user);
   const role = useAppStore((s) => s.role);
-  const [logoutVisible, setLogoutVisible] = React.useState(false);
   const [contactVisible, setContactVisible] = React.useState(false);
+
+  const handleLogoutPress = () => {
+    // Modern warning toast göster (ekran ortasında)
+    notificationService.warning(
+      t("common:logout_confirm_message"),
+      {
+        duration: 0, // Otomatik kapanmasın, manuel kapatılsın
+        priority: 10,
+        isCenter: true, // Ekran ortasında göster
+        onAction: async () => {
+          // "Çıkış yapılıyor" toast'ını ekran ortasında göster
+          notificationService.info(
+            t("common:logout_in_progress"),
+            { 
+              duration: 0, // Otomatik kapanmasın, login ekranına geçince kapanacak
+              priority: 20,
+              isCenter: true, // Ekran ortasında göster
+            }
+          );
+          
+          // Kısa bir gecikme ile logout işlemini başlat (takılmış gibi görünmemesi için)
+          setTimeout(async () => {
+            await logout();
+          }, 500);
+        },
+        actionText: t("common:logout_confirm_title"),
+      }
+    );
+  };
 
   const initials =
     user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "U";
@@ -127,7 +155,7 @@ export default function ProfileScreen() {
         <Section title={t("settings:account")}>
           <TouchableOpacity
             style={styles.logoutBtn}
-            onPress={() => setLogoutVisible(true)}
+            onPress={handleLogoutPress}
           >
             <LinearGradient
               colors={["#ff5f6d", "#ffc371"]}
@@ -153,14 +181,6 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* MODALS */}
-      <ConfirmDialog
-        visible={logoutVisible}
-        title={t("common:logout_confirm_title")}
-        message={t("common:logout_confirm_message")}
-        onCancel={() => setLogoutVisible(false)}
-        onConfirm={logout}
-      />
-
       <ErrorReportModal
         visible={contactVisible}
         onClose={() => setContactVisible(false)}

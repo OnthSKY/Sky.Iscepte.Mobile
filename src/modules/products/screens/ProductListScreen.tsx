@@ -18,7 +18,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../core/services/queryClient';
 import { apiEndpoints } from '../../../core/config/apiEndpoints';
 import httpService from '../../../shared/services/httpService';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency as formatCurrencyHelper } from '../utils/currency';
+import { useFormTemplate } from '../../../shared/hooks/useFormTemplate';
+import { getListFields, formatFieldValue } from '../../../shared/utils/renderFieldsFromTemplate';
 
 /**
  * ProductListScreen - SOLID Principles Applied
@@ -30,6 +32,9 @@ export default function ProductListScreen() {
   const navigation = useNavigation<any>();
   const { t } = useTranslation(['stock', 'common']);
   const { colors } = useTheme();
+  
+  // Get form template for stock module
+  const { defaultTemplate } = useFormTemplate('stock');
   const queryClient = useQueryClient();
   
   const [adjustmentModalVisible, setAdjustmentModalVisible] = React.useState(false);
@@ -238,6 +243,14 @@ export default function ProductListScreen() {
               const isLowStock = (item.stock ?? 0) < 10;
               const stockValue = item.stock ?? 0;
               
+              // Get list fields from template
+              const listFields = getListFields(defaultTemplate, 'stock', item);
+              
+              // Format currency helper
+              const formatCurrency = (value: number, currency: string = 'TRY') => {
+                return formatCurrencyHelper(value, currency);
+              };
+              
               return (
                 <View style={{ marginBottom: 12 }}>
                   <Card
@@ -255,7 +268,12 @@ export default function ProductListScreen() {
                               </Text>
                             </View>
                           )}
-                          <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginTop: isLowStock ? spacing.xs : 0 }}>{item.name}</Text>
+                          {/* First field is usually name - render prominently */}
+                          {listFields.length > 0 && listFields[0] && (
+                            <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginTop: isLowStock ? spacing.xs : 0 }}>
+                              {formatFieldValue(listFields[0].field, listFields[0].value, (key) => t(`stock:${key}`), 'stock')}
+                            </Text>
+                          )}
                         </View>
                         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                           <TouchableOpacity
@@ -306,22 +324,28 @@ export default function ProductListScreen() {
                           </TouchableOpacity>
                         </View>
                       </View>
-                      <Text style={{ fontSize: 14, color: colors.muted }}>
-                        {item.category || t('stock:uncategorized', { defaultValue: 'Kategori yok' })}
-                      </Text>
-                      <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
-                        <Text style={{ fontSize: 14, color: colors.text }}>
-                          {t('stock:price', { defaultValue: 'Fiyat' })}: {item.price !== undefined ? formatCurrency(item.price, item.currency || 'TRY') : '—'}
-                        </Text>
-                        <Text style={{ fontSize: 14, color: colors.text }}>
-                          {t('stock:stock_quantity', { defaultValue: 'Stok Miktarı' })}: {item.stock ?? '—'}
-                        </Text>
-                        {item.moq && (
-                          <Text style={{ fontSize: 14, color: colors.primary }}>
-                            {t('stock:moq', { defaultValue: 'MOQ' })}: {item.moq}
-                          </Text>
-                        )}
-                      </View>
+                      
+                      {/* Render other list fields (skip first one which is name) */}
+                      {listFields.length > 1 && (
+                        <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
+                          {listFields.slice(1).map((fieldInfo, idx) => {
+                            // Special handling for currency fields
+                            if (fieldInfo.field.name === 'price' && item.currency) {
+                              return (
+                                <Text key={idx} style={{ fontSize: 14, color: colors.text }}>
+                                  {t(`stock:${fieldInfo.labelKey}`, { defaultValue: fieldInfo.labelKey })}: {formatCurrency(fieldInfo.value as number, item.currency)}
+                                </Text>
+                              );
+                            }
+                            
+                            return (
+                              <Text key={idx} style={{ fontSize: 14, color: colors.text }}>
+                                {t(`stock:${fieldInfo.labelKey}`, { defaultValue: fieldInfo.labelKey })}: {formatFieldValue(fieldInfo.field, fieldInfo.value, (key) => t(`stock:${key}`), 'stock')}
+                              </Text>
+                            );
+                          })}
+                        </View>
+                      )}
                     </View>
                   </Card>
                 </View>

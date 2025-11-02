@@ -5,7 +5,7 @@
  * Accessible from Settings
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput, Modal, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -126,6 +126,7 @@ export default function FormTemplateManagementScreen() {
   
   // Custom field form state
   const [isAddingCustomField, setIsAddingCustomField] = useState(false);
+  const [editingCustomField, setEditingCustomField] = useState<DynamicField | null>(null);
   const [newCustomFieldName, setNewCustomFieldName] = useState('');
   const [newCustomFieldLabel, setNewCustomFieldLabel] = useState('');
   const [newCustomFieldType, setNewCustomFieldType] = useState<DynamicField['type']>('text');
@@ -329,7 +330,11 @@ export default function FormTemplateManagementScreen() {
     const isAlreadyAdded = templateCustomFields.some(f => f.name === dynamicField.name);
     
     if (isAlreadyAdded) {
-      handleRemoveCustomField(dynamicField.name);
+      // Find the field and remove it
+      const fieldToRemove = templateCustomFields.find(f => f.name === dynamicField.name);
+      if (fieldToRemove) {
+        handleRemoveCustomField(fieldToRemove);
+      }
     } else {
       setTemplateCustomFields(prev => [...prev, dynamicField]);
     }
@@ -352,7 +357,7 @@ export default function FormTemplateManagementScreen() {
         { text: t('common:cancel', { defaultValue: 'İptal' }), style: 'cancel' },
         {
           text: t('common:clone', { defaultValue: 'Çoğalt' }),
-          onPress: async (newName) => {
+          onPress: async (newName?: string) => {
             if (!newName || newName.trim() === '') {
               Alert.alert(t('common:error', { defaultValue: 'Hata' }), t('common:template_name_required', { defaultValue: 'Şablon adı gereklidir' }));
               return;
@@ -486,6 +491,19 @@ export default function FormTemplateManagementScreen() {
   const lockedFields = useMemo(() => {
     return moduleBaseFields.filter(f => f.isLocked).map(f => f.name);
   }, [moduleBaseFields]);
+  
+  // ScrollView ref for auto-scroll when adding custom field
+  const modalScrollViewRef = useRef<ScrollView>(null);
+  
+  // Auto-scroll to custom field form when it opens
+  useEffect(() => {
+    if (isAddingCustomField && modalVisible && modalScrollViewRef.current) {
+      // Small delay to ensure form is rendered
+      setTimeout(() => {
+        modalScrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 300);
+    }
+  }, [isAddingCustomField, modalVisible]);
 
   const styles = getStyles(colors);
 
@@ -631,10 +649,10 @@ export default function FormTemplateManagementScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDelete(template)}
-                    style={[styles.actionButton, { backgroundColor: colors.danger + '20' }]}
+                    style={[styles.actionButton, { backgroundColor: colors.error + '20' }]}
                   >
-                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                    <Text style={[styles.actionButtonText, { color: colors.danger }]}>
+                    <Ionicons name="trash-outline" size={18} color={colors.error} />
+                    <Text style={[styles.actionButtonText, { color: colors.error }]}>
                       {t('common:delete', { defaultValue: 'Sil' })}
                     </Text>
                   </TouchableOpacity>
@@ -665,11 +683,16 @@ export default function FormTemplateManagementScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
+            <ScrollView 
+              ref={modalScrollViewRef}
+              style={styles.modalBody}
+              contentContainerStyle={{ paddingBottom: spacing.xl }}
+              showsVerticalScrollIndicator={true}
+            >
               <View style={styles.formField}>
                 <Text style={[styles.formLabel, { color: colors.text }]}>
                   {t('common:template_name', { defaultValue: 'Şablon Adı' })}
-                  <Text style={{ color: colors.danger }}> *</Text>
+                  <Text style={{ color: colors.error }}> *</Text>
                 </Text>
                 <TextInput
                   style={[styles.textInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
@@ -704,7 +727,7 @@ export default function FormTemplateManagementScreen() {
               <View style={styles.formField}>
                 <Text style={[styles.formLabel, { color: colors.text }]}>
                   {t('common:base_fields', { defaultValue: 'Temel Alanlar' })}
-                  <Text style={{ color: colors.danger }}> *</Text>
+                  <Text style={{ color: colors.error }}> *</Text>
                 </Text>
                 <View style={styles.fieldsContainer}>
                   {moduleBaseFields.map((field) => {
@@ -762,7 +785,15 @@ export default function FormTemplateManagementScreen() {
                     {t('common:custom_fields', { defaultValue: 'Özel Alanlar' })}
                   </Text>
                   <TouchableOpacity
-                    onPress={() => setIsAddingCustomField(true)}
+                    onPress={() => {
+                      setEditingCustomField(null);
+                      setNewCustomFieldName('');
+                      setNewCustomFieldLabel('');
+                      setNewCustomFieldType('text');
+                      setNewCustomFieldRequired(false);
+                      setNewCustomFieldOptions('');
+                      setIsAddingCustomField(true);
+                    }}
                     style={[styles.addFieldButton, { backgroundColor: colors.primary }]}
                   >
                     <Ionicons name="add-outline" size={18} color="#fff" />
@@ -871,9 +902,9 @@ export default function FormTemplateManagementScreen() {
                                   ) : (
                                     <TouchableOpacity
                                       onPress={() => handleRemoveCustomField(field)}
-                                      style={[styles.removeButton, { backgroundColor: colors.danger + '20' }]}
+                                      style={[styles.removeButton, { backgroundColor: colors.error + '20' }]}
                                     >
-                                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                                      <Ionicons name="trash-outline" size={16} color={colors.error} />
                                     </TouchableOpacity>
                                   )}
                                 </>
@@ -1023,33 +1054,39 @@ export default function FormTemplateManagementScreen() {
                       </Text>
                     </View>
                     
-                    <Input
-                      label={t('common:field_label', { defaultValue: 'Alan Etiketi (Gösterim Adı)' })}
-                      value={newCustomFieldLabel}
-                      onChangeText={(text) => {
-                        setNewCustomFieldLabel(text);
-                        // Auto-generate field name from label if not editing
-                        if (!editingCustomField) {
-                          const generated = generateFieldName(text);
-                          setNewCustomFieldName(generated);
-                        }
-                      }}
-                      placeholder={t('common:enter_field_label', { defaultValue: 'Örn: Ürün Adı' })}
-                      style={{ marginTop: spacing.sm }}
-                    />
+                    <View style={{ marginTop: spacing.sm }}>
+                      <Text style={[styles.formLabel, { color: colors.text, marginBottom: spacing.xs }]}>
+                        {t('common:field_label', { defaultValue: 'Alan Etiketi (Gösterim Adı)' })}
+                      </Text>
+                      <Input
+                        value={newCustomFieldLabel}
+                        onChangeText={(text) => {
+                          setNewCustomFieldLabel(text);
+                          // Auto-generate field name from label if not editing
+                          if (!editingCustomField) {
+                            const generated = generateFieldName(text);
+                            setNewCustomFieldName(generated);
+                          }
+                        }}
+                        placeholder={t('common:enter_field_label', { defaultValue: 'Örn: Ürün Adı' })}
+                      />
+                    </View>
                     
-                    <Input
-                      label={t('common:field_name', { defaultValue: 'Alan Adı (Teknik)' })}
-                      value={newCustomFieldName}
-                      onChangeText={(text) => {
-                        // Normalize on change
-                        const normalized = normalizeFieldName(text);
-                        setNewCustomFieldName(normalized);
-                      }}
-                      placeholder={getFieldNameExample()}
-                      editable={!editingCustomField || !editingCustomField.isUsed} // Can't edit name if field is used
-                      style={{ marginTop: spacing.sm }}
-                    />
+                    <View style={{ marginTop: spacing.sm }}>
+                      <Text style={[styles.formLabel, { color: colors.text, marginBottom: spacing.xs }]}>
+                        {t('common:field_name', { defaultValue: 'Alan Adı (Teknik)' })}
+                      </Text>
+                      <Input
+                        value={newCustomFieldName}
+                        onChangeText={(text) => {
+                          // Normalize on change
+                          const normalized = normalizeFieldName(text);
+                          setNewCustomFieldName(normalized);
+                        }}
+                        placeholder={getFieldNameExample()}
+                        editable={!editingCustomField || !editingCustomField.isUsed} // Can't edit name if field is used
+                      />
+                    </View>
                     {editingCustomField?.isUsed && (
                       <Text style={[styles.warningText, { color: colors.warning }]}>
                         {t('common:field_name_locked', { defaultValue: 'Bu alan kullanıldığı için adı değiştirilemez' })}
@@ -1081,13 +1118,16 @@ export default function FormTemplateManagementScreen() {
                     </View>
                     
                     {newCustomFieldType === 'select' && (
-                      <Input
-                        label={t('common:options', { defaultValue: 'Seçenekler' })}
-                        value={newCustomFieldOptions}
-                        onChangeText={setNewCustomFieldOptions}
-                        placeholder={t('common:options_placeholder', { defaultValue: 'Seçenek1, Seçenek2, Seçenek3' })}
-                        style={{ marginTop: spacing.sm }}
-                      />
+                      <View style={{ marginTop: spacing.sm }}>
+                        <Text style={[styles.formLabel, { color: colors.text, marginBottom: spacing.xs }]}>
+                          {t('common:options', { defaultValue: 'Seçenekler' })}
+                        </Text>
+                        <Input
+                          value={newCustomFieldOptions}
+                          onChangeText={setNewCustomFieldOptions}
+                          placeholder={t('common:options_placeholder', { defaultValue: 'Seçenek1, Seçenek2, Seçenek3' })}
+                        />
+                      </View>
                     )}
                     
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
@@ -1146,7 +1186,7 @@ export default function FormTemplateManagementScreen() {
                 title={t('common:save', { defaultValue: 'Kaydet' })}
                 onPress={handleSaveTemplate}
                 style={styles.modalButton}
-                loading={createMutation.isPending || updateMutation.isPending}
+                disabled={createMutation.isPending || updateMutation.isPending}
               />
             </View>
           </View>

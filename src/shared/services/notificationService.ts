@@ -18,11 +18,17 @@ export interface NotificationEvent {
   duration?: number;
   category?: ErrorCategory;
   details?: any;
+  onAction?: () => void; // Optional action callback for toast buttons
+  actionText?: string; // Optional text for action button
+  isCenter?: boolean; // If true, toast will be shown in center of screen
 }
 
 export interface ToastOptions {
   duration?: number;
   priority?: number; // Daha yüksek priority önce gösterilir
+  onAction?: () => void; // Optional action callback for toast buttons
+  actionText?: string; // Optional text for action button
+  isCenter?: boolean; // If true, toast will be shown in center of screen
 }
 
 /**
@@ -45,6 +51,9 @@ interface QueuedToast extends NotificationEvent {
   priority: number;
   timestamp: number;
   errorKey?: string; // For deduplication
+  onAction?: () => void; // Optional action callback
+  actionText?: string; // Optional action button text
+  isCenter?: boolean; // If true, toast will be shown in center
 }
 
 const toastQueue: QueuedToast[] = [];
@@ -120,6 +129,9 @@ const show = (message: string, type: NotificationType = 'info', options?: ToastO
       category: options?.category,
       details: options?.details,
       errorKey,
+      onAction: options?.onAction,
+      actionText: options?.actionText,
+      isCenter: options?.isCenter,
     };
 
     // Priority'ye göre sıralı ekleme (yüksek priority önce)
@@ -143,6 +155,9 @@ const show = (message: string, type: NotificationType = 'info', options?: ToastO
       timestamp: Date.now(),
       category: options?.category,
       details: options?.details,
+      onAction: options?.onAction,
+      actionText: options?.actionText,
+      isCenter: options?.isCenter,
     };
 
     // Priority'ye göre sıralı ekleme (yüksek priority önce)
@@ -174,6 +189,11 @@ const processQueue = () => {
       type: nextToast.type,
       id: nextToast.id,
       duration: nextToast.duration,
+      category: nextToast.category,
+      details: nextToast.details,
+      onAction: nextToast.onAction,
+      actionText: nextToast.actionText,
+      isCenter: nextToast.isCenter,
     };
     
     // Tüm listener'lara bildir

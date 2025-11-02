@@ -153,6 +153,7 @@
   "no_cancel": "Hayır, iptal et",
   "logout_confirm_title": "Çıkış Yap",
   "logout_confirm_message": "Çıkış yapmak istediğinizden emin misiniz?",
+  "logout_in_progress": "Çıkış yapılıyor...",
   "buy_now": "Satın al",
   "upgrade_needed": "Yükseltme gerekli",
   "upgrade_message": "{{feature}} özelliğini kullanmak için bir paket yükseltmesi yapmanız gerekiyor.",

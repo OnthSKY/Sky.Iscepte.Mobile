@@ -152,6 +152,7 @@
   "no_cancel": "No, cancel",
   "logout_confirm_title": "Logout",
   "logout_confirm_message": "Are you sure you want to log out?",
+  "logout_in_progress": "Logging out...",
   "buy_now": "Buy now",
   "upgrade_needed": "Upgrade required",
   "upgrade_message": "You need to upgrade your package to use the {{feature}} feature.",
