@@ -1,333 +1,207 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { LinearGradient } from 'expo-linear-gradient';
-
-import ScreenLayout from '../shared/layouts/ScreenLayout';
-import { useTheme } from '../core/contexts/ThemeContext';
-import spacing from '../core/constants/spacing';
-import { useAppStore } from '../store/useAppStore';
-import { useProfileQuery } from '../core/hooks/useProfileQuery';
-import LanguagePicker from '../shared/components/LanguagePicker';
-import ThemeGradientToggle from '../shared/components/ThemeGradientToggle';
-import ConfirmDialog from '../shared/components/ConfirmDialog';
-import LoadingState from '../shared/components/LoadingState';
-import ErrorReportModal from '../shared/components/ErrorReportModal';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import React from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../core/contexts/ThemeContext";
+import { useAppStore } from "../store/useAppStore";
+import LanguagePicker from "../shared/components/LanguagePicker";
+import ThemeGradientToggle from "../shared/components/ThemeGradientToggle";
+import ConfirmDialog from "../shared/components/ConfirmDialog";
+import ErrorReportModal from "../shared/components/ErrorReportModal";
+import ScreenLayout from "../shared/layouts/ScreenLayout";
+import spacing from "../core/constants/spacing";
 
 export default function ProfileScreen() {
-  const { t } = useTranslation(['common', 'settings']);
-  const { colors, activeTheme } = useTheme();
-  const logout = useAppStore((s: any) => s.logout);
+  const { colors } = useTheme();
+  const { t } = useTranslation(["common", "settings"]);
+  const logout = useAppStore((s) => s.logout);
+  const user = useAppStore((s) => s.user);
+  const role = useAppStore((s) => s.role);
   const [logoutVisible, setLogoutVisible] = React.useState(false);
-  const [contactModalVisible, setContactModalVisible] = React.useState(false);
-  
-  // Fetch profile from API
-  const { data: profile, isLoading: isLoadingProfile } = useProfileQuery();
-  const userFromStore = useAppStore((s: any) => s.user);
-  const setUser = useAppStore((s: any) => s.setUser);
-  const user = userFromStore || profile;
-  const role = useAppStore((s: any) => s.role);
-  
-  // Update store when profile is fetched
-  React.useEffect(() => {
-    if (profile && !userFromStore) {
-      setUser(profile);
-    }
-  }, [profile, userFromStore, setUser]);
-  
-  const isLoading = isLoadingProfile && !userFromStore;
+  const [contactVisible, setContactVisible] = React.useState(false);
 
-  const styles = getStyles({ colors });
-  const initials = user?.firstName && user?.lastName 
-    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-    : user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
-  
-  const displayName = user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
-    : user?.name || t('common:default_user');
-  
-  const companyName = user?.company || user?.ownerCompanyName || null;
+  const initials =
+    user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "U";
 
-  if (isLoading && !user) {
-    return (
-      <ScreenLayout title={t('profile')}>
-        <LoadingState />
-      </ScreenLayout>
-    );
-  }
+  const styles = getStyles(colors);
+
+  // ---- Section component (içte tanımlandı, styles erişebilir)
+  const Section = ({ title, children }: any) => (
+    <View style={[styles.section, { backgroundColor: colors.surface }]}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionBody}>{children}</View>
+    </View>
+  );
+
+  // ---- Info row component (içte tanımlandı)
+  const Info = ({ icon, label, value }: any) => (
+    <View style={styles.infoRow}>
+      <Ionicons name={icon} size={20} color={colors.primary} />
+      <View style={styles.infoText}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue}>{value || "-"}</Text>
+      </View>
+    </View>
+  );
 
   return (
-    <ScreenLayout title={t('profile')} headerRight={<LanguagePicker showLabel={false} variant="compact" />}>
+    <ScreenLayout title={t("profile")}>
       <ScrollView contentContainerStyle={styles.container}>
+        {/* HEADER */}
         <LinearGradient
           colors={colors.gradient}
+          style={styles.header}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.header}
         >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.email}>{user?.email || ''}</Text>
-          {companyName && (
-            <Text style={styles.company}>{companyName}</Text>
-          )}
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>{role?.toUpperCase() || t('common:guest')}</Text>
-          </View>
+          <Text style={styles.name}>{user?.name}</Text>
+          <Text style={styles.role}>{role?.toUpperCase() || t("common:guest")}</Text>
         </LinearGradient>
 
-        <View style={styles.settingsGroup}>
-          <Text style={styles.groupTitle}>{t('settings:personal_info')}</Text>
-          <View style={styles.card}>
-            <View style={styles.infoRow}>
-              <Ionicons name="person-outline" size={20} color={colors.muted} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>{t('common:name')}</Text>
-                <Text style={styles.infoValue}>{displayName}</Text>
-              </View>
-            </View>
-            {user?.phone && (
-              <View style={[styles.infoRow, styles.infoRowMargin]}>
-                <Ionicons name="call-outline" size={20} color={colors.muted} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>{t('common:phone')}</Text>
-                  <Text style={styles.infoValue}>{user.phone}</Text>
-                </View>
-              </View>
-            )}
-            {companyName && (
-              <View style={[styles.infoRow, styles.infoRowMargin]}>
-                <Ionicons name="business-outline" size={20} color={colors.muted} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>
-                    {user?.role === 'owner' 
-                      ? t('settings:company')
-                      : t('settings:works_for')}
-                  </Text>
-                  <Text style={styles.infoValue}>{companyName}</Text>
-                </View>
-              </View>
-            )}
-          </View>
-        </View>
+        {/* KİŞİSEL BİLGİLER */}
+        <Section title={t("settings:personal_info")}>
+          <Info icon="person-outline" label={t("common:name")} value={user?.name} />
+          <Info icon="call-outline" label={t("common:phone")} value={user?.phone} />
+          <Info icon="business-outline" label={t("settings:company")} value={user?.company} />
+        </Section>
 
-        <View style={styles.settingsGroup}>
-          <Text style={styles.groupTitle}>{t('settings:preferences')}</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t('settings:language')}</Text>
-            <LanguagePicker showLabel={false} />
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t('settings:theme')}</Text>
-            <ThemeGradientToggle />
-          </View>
-        </View>
-        
-        <View style={styles.settingsGroup}>
-          <Text style={styles.groupTitle}>{t('settings:account')}</Text>
-          <TouchableOpacity style={styles.card} onPress={() => setLogoutVisible(true)}>
-            <View style={styles.logoutButton}>
-              <Ionicons name="log-out-outline" size={22} color={colors.error} />
-              <Text style={styles.logoutButtonText}>{t('common:logout')}</Text>
+        {/* TERCİHLER */}
+        <Section title={t("settings:preferences")}>
+          <View style={styles.rowBetween}>
+            <View style={styles.prefItem}>
+              <Text style={styles.prefLabel}>{t("settings:language")}</Text>
+              <LanguagePicker showLabel={false} />
             </View>
-          </TouchableOpacity>
-        </View>
+            <View style={styles.prefItem}>
+              <Text style={styles.prefLabel}>{t("settings:theme")}</Text>
+              <ThemeGradientToggle />
+            </View>
+          </View>
+        </Section>
 
-        <View style={styles.settingsGroup}>
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={() => setContactModalVisible(true)}
+        {/* HESAP */}
+        <Section title={t("settings:account")}>
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={() => setLogoutVisible(true)}
+          >
+            <LinearGradient
+              colors={["#ff5f6d", "#ffc371"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoutGradient}
             >
-              <View style={styles.settingItemLeft}>
-                <Ionicons name="mail-outline" size={22} color={colors.primary} />
-                <View style={styles.settingItemContent}>
-                  <Text style={[styles.settingItemTitle, { color: colors.text }]}>
-                    {t('common:contact_us', { defaultValue: 'Bizimle İletişime Geç' })}
-                  </Text>
-                  <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
-                    {t('common:contact_us_desc', { defaultValue: 'Sorularınız, önerileriniz veya sorunlarınız için bize ulaşın' })}
-                  </Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
-            </TouchableOpacity>
-          </View>
-        </View>
+              <Ionicons name="log-out-outline" size={20} color="#fff" />
+              <Text style={styles.logoutText}>{t("common:logout")}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-        <View style={styles.footer}>
-          <Text style={styles.versionText}>{t('common:version', { version: '1.0.0' })}</Text>
-        </View>
+          <TouchableOpacity
+            style={styles.contactRow}
+            onPress={() => setContactVisible(true)}
+          >
+            <Ionicons name="mail-outline" size={20} color={colors.primary} />
+            <Text style={styles.contactText}>{t("common:contact_us")}</Text>
+          </TouchableOpacity>
+        </Section>
+
+        <Text style={styles.footerText}>İşÇepte v1.0.0 © 2025</Text>
       </ScrollView>
 
+      {/* MODALS */}
       <ConfirmDialog
         visible={logoutVisible}
-        title={t('common:logout_confirm_title')}
-        message={t('common:logout_confirm_message')}
-        confirmText={t('common:logout')}
-        cancelText={t('common:cancel')}
+        title={t("common:logout_confirm_title")}
+        message={t("common:logout_confirm_message")}
         onCancel={() => setLogoutVisible(false)}
         onConfirm={logout}
       />
 
       <ErrorReportModal
-        visible={contactModalVisible}
-        onClose={() => setContactModalVisible(false)}
-        errorCategory="business"
-        errorMessage={t('common:contact_form', { defaultValue: 'İletişim Formu' })}
-        context="profile-contact"
+        visible={contactVisible}
+        onClose={() => setContactVisible(false)}
         mode="contact"
       />
     </ScreenLayout>
   );
 }
 
-const getStyles = ({ colors }: { colors: any }) =>
+// ---- STYLES
+const getStyles = (colors: any) =>
   StyleSheet.create({
-    container: {
-      paddingBottom: spacing.lg,
-    },
+    container: { padding: spacing.lg, gap: spacing.lg },
     header: {
-      alignItems: 'center',
-      paddingTop: spacing.xl,
-      paddingBottom: spacing.lg,
-      paddingHorizontal: spacing.lg,
-      borderBottomLeftRadius: 24,
-      borderBottomRightRadius: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 20,
+      paddingVertical: spacing.xl,
     },
     avatar: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: spacing.md,
+      width: 90,
+      height: 90,
+      borderRadius: 45,
+      backgroundColor: "rgba(255,255,255,0.25)",
+      alignItems: "center",
+      justifyContent: "center",
       borderWidth: 2,
-      borderColor: 'rgba(255,255,255,0.4)',
+      borderColor: "rgba(255,255,255,0.5)",
     },
-    avatarText: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: '#fff',
-    },
-    name: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      color: '#fff',
-      textShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
-    },
-    email: {
-      fontSize: 16,
-      color: 'rgba(255,255,255,0.8)',
-      marginTop: 4,
-    },
-    roleBadge: {
-      marginTop: spacing.sm,
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-      borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-    },
-    roleText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: '#fff',
-    },
-    settingsGroup: {
-      paddingHorizontal: spacing.lg,
-      marginTop: spacing.xl,
-      gap: spacing.sm,
-    },
-    groupTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.muted,
-      textTransform: 'uppercase',
-      marginBottom: 4,
-      paddingHorizontal: spacing.xs,
-      letterSpacing: 0.5,
-    },
-    card: {
-      backgroundColor: colors.surface,
+    avatarText: { fontSize: 34, fontWeight: "bold", color: "#fff" },
+    name: { color: "#fff", fontWeight: "700", fontSize: 20, marginTop: spacing.md },
+    role: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 4 },
+
+    section: {
       borderRadius: 16,
       padding: spacing.lg,
+      shadowColor: "#000",
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
     },
-    cardTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: spacing.md,
-    },
-    logoutButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-    },
-    logoutButtonText: {
-      color: colors.error,
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-    footer: {
-      marginTop: spacing.xl,
-      alignItems: 'center',
-    },
-    versionText: {
-      color: colors.muted,
-      fontSize: 12,
-    },
-    company: {
+    sectionTitle: {
+      fontWeight: "700",
       fontSize: 14,
-      color: 'rgba(255,255,255,0.7)',
-      marginTop: 4,
+      color: colors.muted,
+      marginBottom: spacing.md,
+      textTransform: "uppercase",
     },
-    infoRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
+    sectionBody: { gap: spacing.md },
+
+    infoRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+    infoText: { flex: 1 },
+    infoLabel: { fontSize: 12, color: colors.muted },
+    infoValue: { fontSize: 16, color: colors.text, fontWeight: "500" },
+
+    rowBetween: { flexDirection: "row", justifyContent: "space-between", gap: spacing.lg },
+    prefItem: { flex: 1, gap: spacing.sm },
+    prefLabel: { fontWeight: "600", color: colors.text },
+
+    logoutBtn: { marginTop: spacing.md },
+    logoutGradient: {
+      borderRadius: 12,
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingVertical: 12,
     },
-    infoRowMargin: {
-      marginTop: spacing.md,
-    },
-    infoContent: {
-      flex: 1,
-    },
-    infoLabel: {
+    logoutText: { color: "#fff", fontWeight: "bold" },
+
+    contactRow: { flexDirection: "row", alignItems: "center", marginTop: spacing.md, gap: 8 },
+    contactText: { color: colors.primary, fontWeight: "500" },
+    footerText: {
+      textAlign: "center",
       fontSize: 12,
       color: colors.muted,
-      marginBottom: 4,
-    },
-    infoValue: {
-      fontSize: 16,
-      color: colors.text,
-      fontWeight: '500',
-    },
-    settingItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: spacing.md,
-    },
-    settingItemLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-      gap: spacing.md,
-    },
-    settingItemContent: {
-      flex: 1,
-    },
-    settingItemTitle: {
-      fontSize: 16,
-      fontWeight: '500',
-      marginBottom: spacing.xs / 2,
-    },
-    settingItemDesc: {
-      fontSize: 12,
+      marginTop: spacing.lg,
     },
   });
-
