@@ -400,11 +400,25 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         
         return { item, score };
       })
+      .sort((a, b) => b.score - a.score);
+    
+    // Remove duplicates by label (keep the one with highest score)
+    const uniqueByLabel = new Map<string, typeof scoredItems[0]>();
+    scoredItems.forEach(({ item, score }) => {
+      const labelKey = item.label.toLowerCase();
+      const existing = uniqueByLabel.get(labelKey);
+      if (!existing || existing.score < score) {
+        uniqueByLabel.set(labelKey, { item, score });
+      }
+    });
+    
+    // Convert back to items array, sorted by score
+    const uniqueItems = Array.from(uniqueByLabel.values())
       .sort((a, b) => b.score - a.score)
       .map(({ item }) => item)
       .slice(0, 20); // Limit to top 20 results
     
-    return scoredItems;
+    return uniqueItems;
   }, [processedItems, searchTerm, allSearchItems, role]);
 
   const totalQuickCount = processedCustomQuickActions.length;
