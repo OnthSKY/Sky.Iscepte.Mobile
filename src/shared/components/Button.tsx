@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, GestureResponderEvent, ViewStyle, Platform } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, GestureResponderEvent, ViewStyle, Platform, StyleProp } from 'react-native';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 import { typography } from '../../core/constants/typography';
@@ -8,7 +8,7 @@ type Props = {
   title: string;
   onPress?: (event: GestureResponderEvent) => void;
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Button({ title, onPress, disabled, style }: Props) {
