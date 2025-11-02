@@ -5,7 +5,8 @@
 
 import { BaseEntityService } from './baseEntityService.types';
 import { BaseEntity, ListQuery, ListResponse } from '../types/screen.types';
-import { GridRequest, Paginated } from '../../shared/types/grid';
+import { GridRequest } from '../../shared/types/grid';
+import { Paginated } from '../../shared/types/module';
 import { toQueryParams } from '../../shared/utils/query';
 
 /**

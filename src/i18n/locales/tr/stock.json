@@ -109,6 +109,16 @@
   "products": "ürün",
   "category_delete_not_implemented": "Bu özellik henüz eklenmedi.",
   "low_stock_alert_message": "{{productName}} ürününde düşük stok: {{stock}} (Eşik: {{threshold}})",
-  "add_product_custom_fields": "Özel Ürün Alanları Ekle"
+  "add_product_custom_fields": "Özel Ürün Alanları Ekle",
+  "price_min": "Min Fiyat",
+  "price_max": "Max Fiyat",
+  "stock_min": "Min Stok",
+  "active_status": "Aktif Durum",
+  "quantity_hint": "Miktarı değiştirmek için tıklayın",
+  "erp_recommendation_title": "Doğru Raporlama İçin Öneri",
+  "erp_recommendation_decrease": "Doğru raporlama ve muhasebe kontrolü için stok düşürme işleminizi Hızlı Satış ekranından yapmanız gerekmektedir. Bu şekilde satış işleminiz raporlara yansır ve muhasebe kayıtları doğru şekilde oluşturulur.",
+  "erp_recommendation_increase": "Doğru raporlama ve muhasebe kontrolü için stok artırma işleminizi Hızlı Alış ekranından yapmanız gerekmektedir. Bu şekilde alış işleminiz raporlara yansır ve muhasebe kayıtları doğru şekilde oluşturulur.",
+  "use_quick_sale": "Hızlı Satış Kullan",
+  "use_quick_purchase": "Hızlı Alış Kullan"
 }
 

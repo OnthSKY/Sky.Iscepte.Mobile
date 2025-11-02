@@ -15,4 +15,5 @@ export { useListScreen, type ListScreenConfig } from './useListScreen';
 export { useDashboardPrefetch } from './useDashboardPrefetch';
 export { useNavigationPrefetch } from './useNavigationPrefetch';
 export { useDetailPrefetch } from './useDetailPrefetch';
+export { useDebounce } from './useDebounce';
 

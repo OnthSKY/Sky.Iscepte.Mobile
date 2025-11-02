@@ -38,6 +38,12 @@ export interface ListScreenConfig<T extends BaseEntity> {
   defaultPageSize?: number;
   defaultFilters?: Record<string, any>;
   filterOptions?: FilterOption[];
+  // Optional route name overrides (if not provided, will be generated from entityName)
+  routeNames?: {
+    create?: string;
+    edit?: string;
+    detail?: string;
+  };
 }
 
 export interface DetailScreenConfig {

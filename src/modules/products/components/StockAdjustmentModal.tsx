@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 import Modal from '../../../shared/components/Modal';
 import Input from '../../../shared/components/Input';
 import Button from '../../../shared/components/Button';
@@ -28,7 +29,8 @@ type Props = {
 export default function StockAdjustmentModal({ visible, product, mode, onClose, onSuccess }: Props) {
   const { t } = useTranslation(['stock', 'common']);
   const { colors } = useTheme();
-  const [quantity, setQuantity] = useState('');
+  const navigation = useNavigation<any>();
+  const [quantity, setQuantity] = useState('1');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -36,7 +38,7 @@ export default function StockAdjustmentModal({ visible, product, mode, onClose, 
 
   React.useEffect(() => {
     if (visible) {
-      setQuantity('');
+      setQuantity('1');
       setNotes('');
     }
   }, [visible]);
@@ -85,6 +87,15 @@ export default function StockAdjustmentModal({ visible, product, mode, onClose, 
     }
   };
 
+  const handleUseERPMethod = () => {
+    onClose();
+    if (mode === 'decrease') {
+      navigation.navigate('QuickSale', { productId: product?.id });
+    } else {
+      navigation.navigate('QuickPurchase', { productId: product?.id });
+    }
+  };
+
   if (!product) return null;
 
   const currentStock = product.stock || 0;
@@ -107,6 +118,42 @@ export default function StockAdjustmentModal({ visible, product, mode, onClose, 
           </TouchableOpacity>
         </View>
 
+        {/* ERP Recommendation Banner */}
+        <View style={[styles.erpBanner, { backgroundColor: colors.primary + '15', borderLeftColor: colors.primary }]}>
+          <Ionicons 
+            name="bulb-outline" 
+            size={20} 
+            color={colors.primary} 
+            style={{ marginRight: spacing.sm }}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.erpTitle, { color: colors.text }]}>
+              {t('stock:erp_recommendation_title', { defaultValue: 'ERP Önerisi' })}
+            </Text>
+            <Text style={[styles.erpText, { color: colors.muted }]}>
+              {mode === 'decrease' 
+                ? t('stock:erp_recommendation_decrease', { 
+                    defaultValue: 'Stok düşürmek için Hızlı Satış ekranını kullanmanızı öneririz. Bu şekilde satış kaydı otomatik oluşturulur ve muhasebe kayıtları düzenli tutulur.' 
+                  })
+                : t('stock:erp_recommendation_increase', { 
+                    defaultValue: 'Stok artırmak için Hızlı Alış ekranını kullanmanızı öneririz. Bu şekilde alış kaydı otomatik oluşturulur ve muhasebe kayıtları düzenli tutulur.' 
+                  })
+              }
+            </Text>
+            <TouchableOpacity 
+              onPress={handleUseERPMethod}
+              style={[styles.erpButton, { backgroundColor: colors.primary }]}
+            >
+              <Text style={[styles.erpButtonText, { color: '#fff' }]}>
+                {mode === 'decrease' 
+                  ? t('stock:use_quick_sale', { defaultValue: 'Hızlı Satış Kullan' })
+                  : t('stock:use_quick_purchase', { defaultValue: 'Hızlı Alış Kullan' })
+                }
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.content}>
           {/* Product Info */}
           <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
@@ -126,11 +173,19 @@ export default function StockAdjustmentModal({ visible, product, mode, onClose, 
 
           {/* Quantity Input */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              {mode === 'increase' 
-                ? t('stock:increase_by', { defaultValue: 'Artırılacak Miktar' })
-                : t('stock:decrease_by', { defaultValue: 'Azaltılacak Miktar' })}
-            </Text>
+            <View style={styles.labelContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                {mode === 'increase' 
+                  ? t('stock:increase_by', { defaultValue: 'Artırılacak Miktar' })
+                  : t('stock:decrease_by', { defaultValue: 'Azaltılacak Miktar' })}
+              </Text>
+              <View style={styles.editableIndicator}>
+                <Ionicons name="create-outline" size={14} color={colors.primary} />
+                <Text style={[styles.editableText, { color: colors.primary }]}>
+                  {t('stock:quantity_hint', { defaultValue: 'Düzenlenebilir' })}
+                </Text>
+              </View>
+            </View>
             <Input
               value={quantity}
               onChangeText={setQuantity}
@@ -202,6 +257,34 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
+  erpBanner: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    borderRadius: 12,
+    marginBottom: spacing.lg,
+    borderLeftWidth: 4,
+    alignItems: 'flex-start',
+  },
+  erpTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  erpText: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: spacing.sm,
+  },
+  erpButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  erpButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   content: {
     gap: spacing.md,
   },
@@ -236,8 +319,22 @@ const styles = StyleSheet.create({
   inputGroup: {
     gap: spacing.xs,
   },
+  labelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   label: {
     fontSize: 14,
+    fontWeight: '500',
+  },
+  editableIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  editableText: {
+    fontSize: 11,
     fontWeight: '500',
   },
   input: {

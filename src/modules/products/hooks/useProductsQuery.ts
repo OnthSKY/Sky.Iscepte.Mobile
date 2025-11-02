@@ -10,7 +10,7 @@ import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
 import { apiEndpoints } from '../../../core/config/apiEndpoints';
-import { Product, ProductStats } from '../services/productService';
+import { Product, ProductStats, ProductHistoryItem } from '../services/productService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
 import { toQueryParams } from '../../../shared/utils/query';
@@ -156,6 +156,21 @@ export function useDeleteProductMutation() {
       },
       rollbackFn: (oldData) => oldData,
     },
+  });
+}
+
+/**
+ * Hook for fetching product history/timeline
+ */
+export function useProductHistoryQuery(
+  id: string | number | undefined,
+  options: { enabled?: boolean } = {}
+) {
+  return useApiQuery<ProductHistoryItem[]>({
+    url: id ? apiEndpoints.stock.history(id) : '',
+    queryKey: queryKeys.stock.history(id!),
+    enabled: !!id && (options.enabled !== false),
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 

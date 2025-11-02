@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { BaseEntityService } from '../services/baseEntityService.types';
 import { ListQuery, ListResponse, ListScreenConfig, BaseEntity } from '../types/screen.types';
 import { useNavigationHandler } from './useNavigationHandler';
+import { useDebounce } from './useDebounce';
 
 /**
  * Single Responsibility: Handles list screen logic (data fetching, search, filters, pagination)
@@ -27,6 +28,9 @@ export function useListScreen<T extends BaseEntity>(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Debounce search value to avoid excessive API calls (500ms delay)
+  const debouncedQuery = useDebounce(query, 500);
+
   // Permission checks
   const screenPermissions = useMemo(() => ({
     canView: can(`${config.entityName}:view`),
@@ -37,31 +41,31 @@ export function useListScreen<T extends BaseEntity>(
 
   // Navigation handlers
   const handleCreate = useCallback(() => {
-    const routeName = `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Create`;
+    const routeName = config.routeNames?.create || `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Create`;
     navHandler.navigate(routeName);
-  }, [navHandler, config.entityName]);
+  }, [navHandler, config.entityName, config.routeNames?.create]);
 
   const handleViewDetail = useCallback((item: T) => {
-    const routeName = `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Detail`;
+    const routeName = config.routeNames?.detail || `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Detail`;
     navHandler.navigate(routeName, { id: item.id });
-  }, [navHandler, config.entityName]);
+  }, [navHandler, config.entityName, config.routeNames?.detail]);
 
   const handleEdit = useCallback((item: T) => {
-    const routeName = `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Edit`;
+    const routeName = config.routeNames?.edit || `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Edit`;
     navHandler.navigate(routeName, { id: item.id });
-  }, [navHandler, config.entityName]);
+  }, [navHandler, config.entityName, config.routeNames?.edit]);
 
-  // Query builder
+  // Query builder - uses debounced query for API calls
   const buildQuery = useCallback((page: number, pageSize: number): ListQuery => {
     return {
       page,
       pageSize,
-      searchValue: query || undefined,
+      searchValue: debouncedQuery || undefined,
       orderColumn: 'CreatedAt',
       orderDirection: 'DESC',
       filters: Object.keys(filters).length > 0 ? filters : undefined,
     };
-  }, [query, filters]);
+  }, [debouncedQuery, filters]);
 
   // Fetch function for PaginatedList
   const fetchPage = useCallback(async ({ page, pageSize, query: listQuery }: any): Promise<ListResponse<T>> => {

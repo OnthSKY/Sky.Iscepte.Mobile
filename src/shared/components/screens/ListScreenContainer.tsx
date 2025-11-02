@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native';
 import ScreenLayout from '../../layouts/ScreenLayout';
 import SearchBar from '../SearchBar';
 import FiltersEditor from '../FiltersEditor';
+import FiltersModal from '../FiltersModal';
 import PaginatedList from '../PaginatedList';
 import EmptyState from '../EmptyState';
 import Button from '../Button';
@@ -12,6 +13,7 @@ import { BaseEntityService } from '../../../core/services/baseEntityService.type
 import { useListScreen } from '../../../core/hooks/useListScreen';
 import spacing from '../../../core/constants/spacing';
 import { isSmallScreen } from '../../../core/constants/breakpoints';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 /**
  * Single Responsibility: Composes list screen UI
@@ -30,6 +32,7 @@ interface ListScreenContainerProps<T extends BaseEntity> {
   hideSearch?: boolean;
   hideCreate?: boolean;
   filterItems?: (items: T[]) => T[];
+  ListHeaderComponent?: React.ReactElement | null;
 }
 
 /**
@@ -49,9 +52,12 @@ export function ListScreenContainer<T extends BaseEntity>({
   hideSearch = false,
   hideCreate = false,
   filterItems,
+  ListHeaderComponent,
 }: ListScreenContainerProps<T>) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const [filtersModalVisible, setFiltersModalVisible] = React.useState(false);
+  
   const {
     query,
     setQuery,
@@ -65,6 +71,7 @@ export function ListScreenContainer<T extends BaseEntity>({
   } = useListScreen(service, config);
 
   const screenTitle = title || t(`${config.translationNamespace}:${config.entityName}`, { defaultValue: config.entityName });
+  const activeFilterCount = filters ? Object.keys(filters).length : 0;
 
   // Responsive layout for header
   const headerStyle = React.useMemo(() => {
@@ -92,19 +99,86 @@ export function ListScreenContainer<T extends BaseEntity>({
       )}
 
       {!hideSearch && (
-        <SearchBar
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('common:search', { defaultValue: 'Search' }) as string}
-        />
+        <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <SearchBar
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('common:search', { defaultValue: 'Search' }) as string}
+            />
+          </View>
+          {showFilters && config.filterOptions && config.filterOptions.length > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                {
+                  backgroundColor: activeFilterCount > 0 ? colors.primary : colors.surface,
+                  borderColor: activeFilterCount > 0 ? colors.primary : colors.border,
+                }
+              ]}
+              onPress={() => setFiltersModalVisible(true)}
+            >
+              <Ionicons 
+                name="filter-outline" 
+                size={20} 
+                color={activeFilterCount > 0 ? '#fff' : colors.text} 
+              />
+              {activeFilterCount > 0 && (
+                <View style={[styles.badge, { backgroundColor: '#fff' }]}>
+                  <Text style={[styles.badgeText, { color: colors.primary }]}>
+                    {activeFilterCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
-      {showFilters && !hideSearch && <FiltersEditor value={filters} onChange={setFilters} />}
+      {/* Active Filters Chips */}
+      {showFilters && activeFilterCount > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {Object.entries(filters || {}).map(([key, val]) => {
+            const filterOption = config.filterOptions?.find(opt => opt.key === key);
+            const label = filterOption?.label || key;
+            const displayValue = filterOption?.type === 'select' 
+              ? filterOption.options?.find(opt => opt.value === val)?.label || String(val)
+              : String(val);
+            
+            return (
+              <TouchableOpacity
+                key={key}
+                onPress={() => {
+                  const next = { ...filters };
+                  delete next[key];
+                  setFilters(Object.keys(next).length ? next : undefined);
+                }}
+                style={[styles.filterChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              >
+                <Text style={[styles.filterChipText, { color: colors.text }]}>
+                  {t(label, { defaultValue: label })}: {displayValue} ×
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity
+            onPress={() => {
+              setFilters(undefined);
+              setFiltersModalVisible(true);
+            }}
+            style={[styles.filterChip, styles.editFiltersChip, { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}
+          >
+            <Text style={[styles.filterChipText, { color: colors.primary }]}>
+              {t('common:edit_filters', { defaultValue: 'Düzenle' })} ✎
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
         <PaginatedList
           pageSize={config.defaultPageSize || 10}
           query={{
-            searchValue: query,
+            searchValue: query, // Will be debounced in buildQuery inside fetchPage
             orderColumn: 'CreatedAt',
             orderDirection: 'DESC',
             filters,
@@ -113,6 +187,7 @@ export function ListScreenContainer<T extends BaseEntity>({
           keyExtractor={keyExtractor}
           renderItem={({ item }) => renderItem(item)}
           filterItems={filterItems}
+          ListHeaderComponent={ListHeaderComponent}
           ListEmptyComponent={
             <EmptyState
               title={emptyStateTitle || (t('common:no_results', { defaultValue: 'No results' }) as string)}
@@ -120,6 +195,18 @@ export function ListScreenContainer<T extends BaseEntity>({
             />
           }
         />
+
+        {/* Filters Modal */}
+        {showFilters && config.filterOptions && config.filterOptions.length > 0 && (
+          <FiltersModal
+            visible={filtersModalVisible}
+            onClose={() => setFiltersModalVisible(false)}
+            value={filters}
+            onChange={setFilters}
+            filterOptions={config.filterOptions}
+            translationNamespace={config.translationNamespace}
+          />
+        )}
     </View>
   );
 }
@@ -142,6 +229,42 @@ const styles = StyleSheet.create({
   createButtonFullWidth: {
     width: '100%',
     minWidth: '100%',
+  },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  filterChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  filterChipText: {
+    fontSize: 14,
+  },
+  editFiltersChip: {
+    paddingHorizontal: spacing.sm,
   },
 });
 

@@ -108,6 +108,16 @@
   "products": "products",
   "category_delete_not_implemented": "This feature is not yet implemented.",
   "low_stock_alert_message": "Low stock alert for {{productName}}: {{stock}} (Threshold: {{threshold}})",
-  "add_product_custom_fields": "Add Product Custom Fields"
+  "add_product_custom_fields": "Add Product Custom Fields",
+  "price_min": "Min Price",
+  "price_max": "Max Price",
+  "stock_min": "Min Stock",
+  "active_status": "Active Status",
+  "quantity_hint": "Tap to edit quantity",
+  "erp_recommendation_title": "Recommendation for Proper Reporting",
+  "erp_recommendation_decrease": "For proper reporting and accounting control, you should perform stock decrease operations from the Quick Sale screen. This way, your sales transactions are reflected in reports and accounting records are created correctly.",
+  "erp_recommendation_increase": "For proper reporting and accounting control, you should perform stock increase operations from the Quick Purchase screen. This way, your purchase transactions are reflected in reports and accounting records are created correctly.",
+  "use_quick_sale": "Use Quick Sale",
+  "use_quick_purchase": "Use Quick Purchase"
 }
 

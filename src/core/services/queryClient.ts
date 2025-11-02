@@ -119,6 +119,8 @@ export const queryKeys = {
     details: () => [...queryKeys.stock.all, 'detail'] as const,
     detail: (id: string | number) => [...queryKeys.stock.details(), id] as const,
     stats: () => [...queryKeys.stock.all, 'stats'] as const, // Stats are persisted (useful for offline)
+    histories: () => [...queryKeys.stock.all, 'history'] as const,
+    history: (id: string | number) => [...queryKeys.stock.histories(), id] as const,
   },
   
   // Sales (NON-CRITICAL - memory only, except stats)

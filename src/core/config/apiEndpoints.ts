@@ -62,6 +62,7 @@ export const stockEndpoints = {
   create: '/stock',
   update: (id: string | number) => `/stock/${id}`,
   remove: (id: string | number) => `/stock/${id}`,
+  history: (id: string | number) => `/stock/${id}/history`,
 } as const;
 
 /**

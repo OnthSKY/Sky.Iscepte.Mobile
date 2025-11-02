@@ -64,6 +64,15 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
   }
 }
 
+export interface ProductHistoryItem {
+  id: string | number;
+  action: string;
+  description?: string;
+  user?: string;
+  timestamp: string;
+  changes?: Record<string, { old: any; new: any }>;
+}
+
 export const productService = {
   list: (req: GridRequest) =>
     request<Paginated<Product>>('GET', `${apiEndpoints.stock.list}${toQueryParams(req)}`),
@@ -79,6 +88,8 @@ export const productService = {
     request<Product>('PUT', apiEndpoints.stock.update(id), payload),
 
   remove: (id: string) => request<void>('DELETE', apiEndpoints.stock.remove(id)),
+
+  history: (id: string | number) => request<ProductHistoryItem[]>('GET', apiEndpoints.stock.history(id)),
 };
 
 export default productService;

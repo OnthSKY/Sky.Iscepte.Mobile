@@ -199,6 +199,15 @@
   "lowStock": "Low Stock",
   "create": "Create",
   "edit": "Edit",
-  "delete": "Delete"
+  "delete": "Delete",
+  "filters": "Filters",
+  "apply": "Apply",
+  "edit_filters": "Edit",
+  "select": "Select",
+  "date_format": "YYYY-MM-DD",
+  "enter_number": "Enter number",
+  "enter_value": "Enter value",
+  "filter_field": "Field",
+  "filter_value": "Value"
 }
 

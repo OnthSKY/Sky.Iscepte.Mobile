@@ -199,6 +199,15 @@
   "lowStock": "Düşük Stok",
   "create": "Oluştur",
   "edit": "Düzenle",
-  "delete": "Sil"
+  "delete": "Sil",
+  "filters": "Filtreler",
+  "apply": "Uygula",
+  "edit_filters": "Düzenle",
+  "select": "Seçiniz",
+  "date_format": "YYYY-MM-DD",
+  "enter_number": "Sayı giriniz",
+  "enter_value": "Değer giriniz",
+  "filter_field": "Alan",
+  "filter_value": "Değer"
 }
 

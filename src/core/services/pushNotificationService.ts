@@ -9,22 +9,24 @@ import { Product } from '../../modules/products/services/productService';
  * Handles background notifications for low stock alerts
  */
 
-// Bildirim davranışını yapılandır
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    // Bildirim içeriğini log'la
-    console.log('Notification handler called:', {
-      title: notification.request.content.title,
-      body: notification.request.content.body,
-    });
-    
-    return {
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    };
-  },
-});
+// Bildirim davranışını yapılandır (sadece mobil platformlarda)
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+      // Bildirim içeriğini log'la
+      console.log('Notification handler called:', {
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+      });
+      
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      };
+    },
+  });
+}
 
 /**
  * Bildirim izinlerini kontrol et ve iste
@@ -128,25 +130,34 @@ export async function scheduleLowStockNotification(product: Product, stock: numb
       }),
     };
 
-    console.log('Sending notification:', { title, body, productName: product.name });
+    // Web platform için bildirimleri destekleme
+    if (Platform.OS === 'web') {
+      // Web'de bildirimler desteklenmiyor, sessizce çık
+      if (__DEV__) {
+        console.log('Notifications not supported on web.');
+      }
+      return;
+    }
 
-    // Anında gösterim için presentNotificationAsync kullan
+    // Sadece geliştirme modunda log göster
+    if (__DEV__) {
+      console.log('Sending notification:', { title, body, productName: product.name });
+    }
+
+    // Anında gösterim için scheduleNotificationAsync kullan (presentNotificationAsync deprecated)
     try {
-      await Notifications.presentNotificationAsync(notificationContent);
-      console.log('Notification presented successfully:', { title, body });
-    } catch (presentError) {
-      console.warn('Failed to present notification, trying schedule:', presentError);
-      // Fallback: scheduleNotificationAsync kullan
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: notificationContent,
         trigger: null, // Hemen göster
       });
-      console.log('Notification scheduled:', { title, body, notificationId });
+      console.log('Notification scheduled successfully:', { title, body, notificationId });
       
       // Bildirim ID'sini sakla (gerekirse iptal etmek için)
       if (notificationId) {
         await AsyncStorage.setItem(`notification_${product.id}`, notificationId);
       }
+    } catch (error) {
+      console.error('Failed to schedule notification:', error);
     }
   } catch (error) {
     console.error('Error sending notification:', error);
@@ -158,6 +169,10 @@ export async function scheduleLowStockNotification(product: Product, stock: numb
  */
 export async function cancelNotificationForProduct(productId: string): Promise<void> {
   try {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     const notificationId = await AsyncStorage.getItem(`notification_${productId}`);
     if (notificationId) {
       await Notifications.cancelScheduledNotificationAsync(notificationId);
@@ -173,6 +188,10 @@ export async function cancelNotificationForProduct(productId: string): Promise<v
  */
 export async function cancelAllLowStockNotifications(): Promise<void> {
   try {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     await Notifications.cancelAllScheduledNotificationsAsync();
     
     // AsyncStorage'dan tüm notification ID'lerini temizle
@@ -201,6 +220,15 @@ export async function backgroundNotificationHandler(notification: Notifications.
  * Uygulama başlangıcında çağrılmalı
  */
 export function setupNotificationHandlers(): void {
+  // Web platform için bildirim handler'ları kurma
+  if (Platform.OS === 'web') {
+    // Web'de bildirim handler'ları desteklenmiyor, sessizce çık
+    if (__DEV__) {
+      console.log('Notification handlers not supported on web.');
+    }
+    return;
+  }
+
   // Bildirime tıklandığında
   Notifications.addNotificationResponseReceivedListener(response => {
     const data = response.notification.request.content.data;

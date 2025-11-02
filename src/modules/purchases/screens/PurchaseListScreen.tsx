@@ -111,7 +111,7 @@ export default function PurchaseListScreen() {
                 style={{ marginBottom: 12 }}
                 onPress={() => navigation.navigate('PurchaseDetail', { id: item.id, title: item.title, amount: item.amount })}
               >
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title || item.productName || t('purchases:purchase', { defaultValue: 'Alış' })}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{item.title || item.productName || t('purchases:purchase', { defaultValue: 'Alış' })}</Text>
               </Card>
             )}
             keyExtractor={(item: Purchase) => String(item.id)}

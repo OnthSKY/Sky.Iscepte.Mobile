@@ -210,6 +210,11 @@ export default function ProductsDashboardScreen() {
             entityName: 'stock_item',
             translationNamespace: 'stock',
             defaultPageSize: 10,
+            routeNames: {
+              detail: 'StockDetail',
+              edit: 'StockEdit',
+              create: 'StockCreate',
+            },
           },
           renderItem: (item: Product) => (
             <Card style={{ marginBottom: 12 }}>
