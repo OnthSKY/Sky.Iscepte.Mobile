@@ -8,16 +8,21 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRoute } from '@react-navigation/native';
-import { useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { incomeEntityService } from '../services/incomeServiceAdapter';
 import DynamicForm, { DynamicField } from '../../../shared/components/DynamicForm';
-import { Income } from '../store/incomeStore';
+import { Income, IncomeCustomField } from '../store/incomeStore';
 import IncomeTypeSelect from '../components/IncomeTypeSelect';
 import expenseTypeService from '../../expenses/services/expenseTypeService';
 import { ExpenseType } from '../../expenses/services/expenseTypeService';
 import { useTranslation } from 'react-i18next';
 import { baseIncomeFormFields, incomeValidator } from '../config/incomeFormConfig';
+import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
+import Card from '../../../shared/components/Card';
+import spacing from '../../../core/constants/spacing';
+import globalFieldsService from '../services/globalFieldsService';
+import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 
 interface IncomeFormScreenProps {
   mode?: 'create' | 'edit';
@@ -34,10 +39,21 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
 
   const [incomeTypes, setIncomeTypes] = useState<ExpenseType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
+  const [globalFields, setGlobalFields] = useState<IncomeCustomField[]>([]);
 
   useEffect(() => {
     loadIncomeTypes();
+    loadGlobalFields();
   }, []);
+
+  const loadGlobalFields = async () => {
+    try {
+      const fields = await globalFieldsService.getAll();
+      setGlobalFields(fields);
+    } catch (error) {
+      console.error('Failed to load global fields:', error);
+    }
+  };
 
   const loadIncomeTypes = async () => {
     setLoadingTypes(true);
@@ -50,6 +66,27 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
       setLoadingTypes(false);
     }
   };
+
+  const handleGlobalFieldsChange = async (fields: IncomeCustomField[]) => {
+    setGlobalFields(fields);
+    try {
+      await globalFieldsService.save(fields);
+    } catch (error) {
+      console.error('Failed to save global fields:', error);
+    }
+  };
+
+  const getInitialData = (): Partial<Income> => {
+    return getInitialDataWithCustomFields<Income>(formMode, {
+      source: 'manual',
+    });
+  };
+
+  const enhancedValidator = createEnhancedValidator<Income>(
+    incomeValidator,
+    globalFields,
+    'income'
+  );
 
   const typeOptions = useMemo(
     () => incomeTypes.map((i) => ({ label: i.name, value: String(i.id) })),
@@ -82,6 +119,10 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
     ...baseIncomeFormFields,
   ], [typeOptions, loadingTypes, t, handleTypeAdded]);
 
+  const screenTitle = formMode === 'create' 
+    ? t('new_income', { defaultValue: 'New Income' }) 
+    : t('edit_income', { defaultValue: 'Edit Income' });
+
   return (
     <FormScreenContainer
       service={incomeEntityService}
@@ -90,29 +131,41 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
         translationNamespace: 'income',
         mode: formMode,
       }}
-      validator={incomeValidator}
+      initialData={getInitialData()}
+      validator={enhancedValidator}
       renderForm={(formData, updateField, errors) => {
-        // Ensure default values are set
-        const formDataWithDefaults = {
-          ...formData,
-          source: formData.source || 'manual',
+        const customFields = (formData.customFields as IncomeCustomField[]) || [];
+        
+        const handleCustomFieldsChange = (fields: IncomeCustomField[]) => {
+          updateField('customFields' as keyof Income, fields);
         };
         
         return (
-          <DynamicForm
-            namespace="income"
-            columns={columns}
-            fields={incomeFields}
-            values={formDataWithDefaults}
-            onChange={(v) => {
-              Object.keys(v).forEach((key) => {
-                updateField(key as keyof Income, v[key]);
-              });
-            }}
-          />
+          <View style={{ gap: spacing.md }}>
+            <DynamicForm
+              namespace="income"
+              columns={columns}
+              fields={incomeFields}
+              values={formData}
+              onChange={(v) => {
+                Object.keys(v).forEach((key) => {
+                  updateField(key as keyof Income, (v as any)[key]);
+                });
+              }}
+            />
+            <Card>
+              <CustomFieldsManager<IncomeCustomField>
+                customFields={customFields}
+                onChange={handleCustomFieldsChange}
+                availableGlobalFields={globalFields}
+                onGlobalFieldsChange={handleGlobalFieldsChange}
+                module="income"
+              />
+            </Card>
+          </View>
         );
       }}
-      title={formMode === 'create' ? t('new_income', { defaultValue: 'New Income' }) : undefined}
+      title={screenTitle}
     />
   );
 }

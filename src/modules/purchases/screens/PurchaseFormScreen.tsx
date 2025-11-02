@@ -6,14 +6,23 @@
  * Open/Closed: Can handle both create and edit modes via props
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { purchaseEntityService } from '../services/purchaseServiceAdapter';
-import DynamicForm from '../../../shared/components/DynamicForm';
-import { Purchase } from '../store/purchaseStore';
-import { purchaseFormFields, purchaseValidator } from '../config/purchaseFormConfig';
+import DynamicForm, { DynamicField } from '../../../shared/components/DynamicForm';
+import { Purchase, PurchaseCustomField } from '../store/purchaseStore';
+import { basePurchaseFormFields, purchaseValidator } from '../config/purchaseFormConfig';
 import { useProductsQuery } from '../../products/hooks/useProductsQuery';
+import { useSuppliersQuery } from '../../suppliers/hooks/useSuppliersQuery';
+import PurchaseTypeSelect from '../components/PurchaseTypeSelect';
+import purchaseTypeService, { PurchaseType } from '../services/purchaseTypeService';
+import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
+import Card from '../../../shared/components/Card';
+import spacing from '../../../core/constants/spacing';
+import globalFieldsService from '../services/globalFieldsService';
 
 interface PurchaseFormScreenProps {
   mode?: 'create' | 'edit';
@@ -21,18 +30,127 @@ interface PurchaseFormScreenProps {
 
 export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {}) {
   const route = useRoute<any>();
+  const { t } = useTranslation('purchases');
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
 
-  // Fetch products for select fields
+  // Fetch products and suppliers for select fields
   const { data: productsData } = useProductsQuery();
+  const { data: suppliersData } = useSuppliersQuery();
+
+  // Purchase types state
+  const [purchaseTypes, setPurchaseTypes] = useState<PurchaseType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [selectedPurchaseType, setSelectedPurchaseType] = useState<PurchaseType | null>(null);
+
+  // Global fields state
+  const [globalFields, setGlobalFields] = useState<PurchaseCustomField[]>([]);
+
+  // Load purchase types and global fields on mount
+  useEffect(() => {
+    loadPurchaseTypes();
+    loadGlobalFields();
+  }, []);
+
+  const loadGlobalFields = async () => {
+    try {
+      const fields = await globalFieldsService.getAll();
+      setGlobalFields(fields);
+    } catch (error) {
+      console.error('Failed to load global fields:', error);
+    }
+  };
+
+  const loadPurchaseTypes = async () => {
+    setLoadingTypes(true);
+    try {
+      const response = await purchaseTypeService.list();
+      // Mock service returns PaginatedData, real API might return array directly
+      // Handle both cases: PaginatedData format or direct array
+      let types: PurchaseType[] = [];
+      if (Array.isArray(response)) {
+        types = response;
+      } else if (response && typeof response === 'object' && 'items' in response) {
+        // PaginatedData format
+        types = (response as any).items || [];
+      }
+      setPurchaseTypes(Array.isArray(types) ? types : []);
+    } catch (err) {
+      // Failed to load purchase types - will use empty list
+      setPurchaseTypes([]);
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
+
+  // Handle purchase type added
+  const handleTypeAdded = useCallback(() => {
+    loadPurchaseTypes();
+  }, []);
+
+  // Handle purchase type selection
+  const handlePurchaseTypeChange = useCallback((typeId: string) => {
+    const type = purchaseTypes.find((t) => String(t.id) === typeId);
+    setSelectedPurchaseType(type || null);
+  }, [purchaseTypes]);
+
+  // Prepare purchase type options
+  const typeOptions = useMemo(
+    () => (Array.isArray(purchaseTypes) ? purchaseTypes : []).map((t) => ({ label: t.name, value: String(t.id) })),
+    [purchaseTypes]
+  );
+
+  // Build dynamic fields with purchase type selection and type-specific fields
+  const purchaseFields: DynamicField[] = useMemo(() => {
+    const fields: DynamicField[] = [
+      {
+        name: 'purchaseTypeId',
+        labelKey: 'purchase_type',
+        type: 'custom',
+        render: (value, onChange) => (
+          <PurchaseTypeSelect
+            options={typeOptions}
+            value={String(value || '')}
+            onChange={(val) => {
+              onChange?.(val);
+              handlePurchaseTypeChange(val);
+            }}
+            placeholder={loadingTypes ? t('loading', { defaultValue: 'Yükleniyor...' }) : t('purchase_type', { defaultValue: 'Alış Tipi' })}
+            onTypeAdded={handleTypeAdded}
+          />
+        ),
+        required: false,
+      },
+    ];
+
+    // Add type-specific fields if a type is selected
+    if (selectedPurchaseType?.formFields && selectedPurchaseType.formFields.length > 0) {
+      selectedPurchaseType.formFields.forEach((typeField) => {
+        fields.push({
+          name: `typeField_${typeField.key}`,
+          labelKey: typeField.label,
+          type: typeField.type as any,
+          required: typeField.required,
+          defaultValue: typeField.defaultValue,
+          options: typeField.options,
+        });
+      });
+    }
+
+    // Add base fields
+    fields.push(...basePurchaseFormFields);
+
+    return fields;
+  }, [typeOptions, loadingTypes, selectedPurchaseType, t, handleTypeAdded, handlePurchaseTypeChange]);
 
   // Prepare form fields with dynamic options
   const fieldsWithOptions = useMemo(() => {
     const products = productsData?.items || [];
+    const suppliers = suppliersData?.items || [];
 
-    return purchaseFormFields.map(field => {
+    return purchaseFields.map(field => {
       if (field.name === 'productId') {
         return {
           ...field,
@@ -42,9 +160,18 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
           })),
         };
       }
+      if (field.name === 'supplierId') {
+        return {
+          ...field,
+          options: suppliers.map((s: any) => ({
+            label: s.name || s.email || `Tedarikçi ${s.id}`,
+            value: String(s.id),
+          })),
+        };
+      }
       return field;
     });
-  }, [productsData]);
+  }, [productsData, suppliersData, purchaseFields]);
 
   return (
     <FormScreenContainer
@@ -55,52 +182,134 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
         mode: formMode,
       }}
       validator={purchaseValidator}
+      initialData={formMode === 'create' ? { customFields: [] } : undefined}
       renderForm={(formData, updateField, errors) => {
-        // Get products for price lookup (closure over component scope)
+        // Get products and suppliers for lookup (closure over component scope)
         const products = productsData?.items || [];
+        const suppliers = suppliersData?.items || [];
+        
+        // Use formData's customFields directly or empty array (same as ProductFormScreen)
+        const customFields = (formData.customFields as PurchaseCustomField[]) || [];
+
+        // Load purchase type when purchaseTypeId is available (for edit mode)
+        React.useEffect(() => {
+          if (formData.purchaseTypeId && purchaseTypes.length > 0 && !selectedPurchaseType) {
+            const type = purchaseTypes.find((t) => String(t.id) === String(formData.purchaseTypeId));
+            if (type) {
+              setSelectedPurchaseType(type);
+            }
+          }
+        }, [formData.purchaseTypeId, purchaseTypes, selectedPurchaseType]);
+
+        const handleCustomFieldsChange = (fields: PurchaseCustomField[]) => {
+          // CustomFieldsManager merges global and specific fields automatically
+          // Directly update customFields (same as ProductFormScreen)
+          updateField('customFields' as keyof Purchase, fields);
+        };
+
+        // Handle global fields change
+        const handleGlobalFieldsChange = async (fields: PurchaseCustomField[]) => {
+          setGlobalFields(fields);
+          try {
+            await globalFieldsService.save(fields);
+          } catch (error) {
+            console.error('Failed to save global fields:', error);
+          }
+        };
+
+        // Prepare form values including type-specific fields
+        // Type-specific fields use typeField_ prefix and are stored in a separate metadata object
+        const formValues: Partial<Purchase> & Record<string, any> = { ...formData };
+        if (selectedPurchaseType?.formFields) {
+          selectedPurchaseType.formFields.forEach((typeField) => {
+            const fieldKey = `typeField_${typeField.key}`;
+            // Store type-specific field values with the typeField_ prefix
+            if (!(fieldKey in formValues)) {
+              formValues[fieldKey] = typeField.defaultValue;
+            }
+          });
+        }
         
         return (
-          <DynamicForm
-            namespace="purchases"
-            columns={2}
-            fields={fieldsWithOptions}
-            values={formData}
-            onChange={(v) => {
-              Object.keys(v).forEach((key) => {
-                const newValue = v[key];
-                updateField(key as keyof Purchase, newValue);
-                
-                // Auto-fill price when product is selected
-                if (key === 'productId' && newValue) {
-                  const selectedProduct = products.find((p: any) => String(p.id) === String(newValue));
-                  if (selectedProduct && selectedProduct.price) {
-                    // Only auto-fill if price is not already set or is 0
-                    const currentPrice = formData.price || 0;
-                    if (currentPrice === 0) {
-                      updateField('price' as keyof Purchase, selectedProduct.price);
-                      // Auto-calculate total if quantity is set
-                      const currentQuantity = formData.quantity || 1;
-                      if (currentQuantity > 0) {
-                        const total = selectedProduct.price * currentQuantity;
-                        updateField('total' as keyof Purchase, total);
+          <View style={{ gap: spacing.md }}>
+            <DynamicForm
+              namespace="purchases"
+              columns={2}
+              fields={fieldsWithOptions}
+              values={formValues}
+              onChange={(v) => {
+                Object.keys(v).forEach((key) => {
+                  const newValue = v[key];
+                  
+                  // Handle purchaseTypeId change
+                  if (key === 'purchaseTypeId' && newValue) {
+                    const selectedType = purchaseTypes.find((t) => String(t.id) === String(newValue));
+                    updateField('purchaseTypeId' as keyof Purchase, newValue);
+                    if (selectedType) {
+                      updateField('purchaseTypeName' as keyof Purchase, selectedType.name);
+                    }
+                  }
+                  
+                  // Handle type-specific fields - store them separately
+                  if (key.startsWith('typeField_')) {
+                    // Type-specific fields are stored with the typeField_ prefix in formValues
+                    // They will be saved to the purchase's metadata or customFields on submit
+                    formValues[key] = newValue;
+                  } else {
+                    updateField(key as keyof Purchase, newValue);
+                  }
+                  
+                  // Auto-fill supplierName when supplier is selected
+                  if (key === 'supplierId' && newValue) {
+                    const selectedSupplier = suppliers.find((s: any) => String(s.id) === String(newValue));
+                    if (selectedSupplier && selectedSupplier.name) {
+                      updateField('supplierName' as keyof Purchase, selectedSupplier.name);
+                    }
+                  }
+                  
+                  // Auto-fill price when product is selected
+                  if (key === 'productId' && newValue) {
+                    const selectedProduct = products.find((p: any) => String(p.id) === String(newValue));
+                    if (selectedProduct && selectedProduct.price) {
+                      // Only auto-fill if price is not already set or is 0
+                      const currentPrice = formData.price || 0;
+                      if (currentPrice === 0) {
+                        updateField('price' as keyof Purchase, selectedProduct.price);
+                        // Auto-calculate total if quantity is set
+                        const currentQuantity = formData.quantity || 1;
+                        if (currentQuantity > 0) {
+                          const total = selectedProduct.price * currentQuantity;
+                          updateField('total' as keyof Purchase, total);
+                        }
                       }
                     }
                   }
+                });
+                
+                // Auto-calculate total when price or quantity changes (after all fields are updated)
+                const updatedData = { ...formData, ...v };
+                if (updatedData.price && updatedData.quantity) {
+                  const price = updatedData.price as number;
+                  const quantity = updatedData.quantity as number;
+                  const total = price * quantity;
+                  if (updatedData.total !== total) {
+                    updateField('total' as keyof Purchase, total);
+                  }
                 }
-              });
-              
-              // Auto-calculate total when price or quantity changes (after all fields are updated)
-              const updatedData = { ...formData, ...v };
-              if (updatedData.price && updatedData.quantity) {
-                const price = updatedData.price as number;
-                const quantity = updatedData.quantity as number;
-                const total = price * quantity;
-                if (updatedData.total !== total) {
-                  updateField('total' as keyof Purchase, total);
-                }
-              }
-            }}
-          />
+              }}
+            />
+
+            {/* Custom Fields Section */}
+            <Card>
+              <CustomFieldsManager<PurchaseCustomField>
+                customFields={customFields}
+                onChange={handleCustomFieldsChange}
+                availableGlobalFields={globalFields}
+                onGlobalFieldsChange={handleGlobalFieldsChange}
+                module="purchases"
+              />
+            </Card>
+          </View>
         );
       }}
     />

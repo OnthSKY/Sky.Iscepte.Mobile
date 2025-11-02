@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { employeeEntityService } from '../services/employeeServiceAdapter';
 import DynamicForm from '../../../shared/components/DynamicForm';
-import { Employee } from '../store/employeeStore';
+import { Employee, EmployeeCustomField } from '../store/employeeStore';
 import { employeeFormFields, employeeUserAccountFields, employeeValidator } from '../config/employeeFormConfig';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,9 @@ import { permissionsRegistry } from '../../../core/config/permissions';
 import { useAppStore } from '../../../store/useAppStore';
 import { getModuleActions, ALL_FIELDS, ALL_NOTIFICATIONS } from '../utils/permissionsUtils';
 import { useStaffPermissionGroupStore } from '../store/staffPermissionGroupStore';
+import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
+import globalFieldsService from '../services/globalFieldsService';
+import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 
 interface EmployeeFormScreenProps {
   mode?: 'create' | 'edit';
@@ -64,11 +67,22 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [selectedPermissionGroup, setSelectedPermissionGroup] = useState<string>('');
   const { groups, loadGroups } = useStaffPermissionGroupStore();
+  const [globalFields, setGlobalFields] = useState<EmployeeCustomField[]>([]);
 
   // Load permission groups on mount
   useEffect(() => {
     loadGroups();
+    loadGlobalFields();
   }, []);
+
+  const loadGlobalFields = async () => {
+    try {
+      const fields = await globalFieldsService.getAll();
+      setGlobalFields(fields);
+    } catch (error) {
+      console.error('Failed to load global fields:', error);
+    }
+  };
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
@@ -83,6 +97,25 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
       module.key !== 'reports'
     );
   }, []);
+
+  const handleGlobalFieldsChange = async (fields: EmployeeCustomField[]) => {
+    setGlobalFields(fields);
+    try {
+      await globalFieldsService.save(fields);
+    } catch (error) {
+      console.error('Failed to save global fields:', error);
+    }
+  };
+
+  const getInitialData = (): Partial<Employee> => {
+    return getInitialDataWithCustomFields<Employee>(formMode, {});
+  };
+
+  const enhancedValidator = createEnhancedValidator<Employee>(
+    employeeValidator,
+    globalFields,
+    'employees'
+  );
 
   // Get all possible actions from permissions registry
   const ALL_ACTIONS = useMemo(() => {
@@ -126,7 +159,8 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
         translationNamespace: 'employees',
         mode: formMode,
       }}
-      validator={employeeValidator}
+      initialData={getInitialData()}
+      validator={enhancedValidator}
       renderForm={(formData, updateField, errors) => {
         // Auto-generate username when firstName/lastName changes
         const handleFieldChange = (field: keyof Employee, value: any) => {
@@ -143,6 +177,12 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
               }
             }
           }
+        };
+
+        const customFields = (formData.customFields as EmployeeCustomField[]) || [];
+
+        const handleCustomFieldsChange = (fields: EmployeeCustomField[]) => {
+          updateField('customFields' as keyof Employee, fields);
         };
 
         return (
@@ -164,6 +204,17 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
           }}
         />
             </View>
+
+            {/* Custom Fields */}
+            <Card>
+              <CustomFieldsManager<EmployeeCustomField>
+                customFields={customFields}
+                onChange={handleCustomFieldsChange}
+                availableGlobalFields={globalFields}
+                onGlobalFieldsChange={handleGlobalFieldsChange}
+                module="employees"
+              />
+            </Card>
 
           {/* User Account Section */}
           {isCreateMode && (

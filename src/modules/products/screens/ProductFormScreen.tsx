@@ -15,13 +15,14 @@ import { productEntityService } from '../services/productServiceAdapter';
 import DynamicForm from '../../../shared/components/DynamicForm';
 import { Product, ProductCustomField } from '../services/productService';
 import { productFormFields, productValidator } from '../config/productFormConfig';
-import CustomFieldsManager from '../components/CustomFieldsManager';
+import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
 import Card from '../../../shared/components/Card';
 import spacing from '../../../core/constants/spacing';
 import globalFieldsService from '../services/globalFieldsService';
 import { useProductsQuery } from '../hooks/useProductsQuery';
 import CategorySelect from '../components/CategorySelect';
 import CurrencySelect from '../components/CurrencySelect';
+import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 
 interface ProductFormScreenProps {
   mode?: 'create' | 'edit';
@@ -36,15 +37,11 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
 
   // Default values for create mode
   const getInitialData = (): Partial<Product> => {
-    if (formMode === 'edit') {
-      return {};
-    }
-    return {
+    return getInitialDataWithCustomFields<Product>(formMode, {
       stock: 1, // Default stock value
       currency: 'TRY', // Default currency is TL
       isActive: true,
-      customFields: [],
-    };
+    });
   };
 
   // Global fields state
@@ -108,6 +105,13 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
     }
   };
 
+  // Enhanced validator for required global custom fields
+  const enhancedValidator = createEnhancedValidator<Product>(
+    productValidator,
+    globalFields,
+    'stock'
+  );
+
   // Get title based on mode
   const screenTitle = formMode === 'edit' 
     ? t('stock:edit_stock', { defaultValue: 'Stok düzenle' })
@@ -122,7 +126,7 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
         mode: formMode,
       }}
       initialData={getInitialData()}
-      validator={productValidator}
+      validator={enhancedValidator}
       title={screenTitle}
       renderForm={(formData, updateField, errors) => {
         // Use formData's customFields directly or empty array
@@ -176,7 +180,7 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
                 stock: formData.stock ?? 1, // Ensure default value is set
               }}
               onChange={(v) => {
-                Object.keys(v).forEach((key) => {
+                (Object.keys(v) as Array<keyof typeof v>).forEach((key) => {
                   updateField(key as keyof Product, v[key]);
                 });
               }}
@@ -184,11 +188,12 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
 
             {/* Custom Fields Section */}
             <Card>
-              <CustomFieldsManager
+              <CustomFieldsManager<ProductCustomField>
                 customFields={customFields}
                 onChange={handleCustomFieldsChange}
                 availableGlobalFields={globalFields}
                 onGlobalFieldsChange={handleGlobalFieldsChange}
+                module="stock"
               />
             </Card>
           </View>

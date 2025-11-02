@@ -8,17 +8,20 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRoute } from '@react-navigation/native';
-import { useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { expenseEntityService } from '../services/expenseServiceAdapter';
 import DynamicForm, { DynamicField } from '../../../shared/components/DynamicForm';
-import { Expense } from '../store/expenseStore';
+import { Expense, ExpenseCustomField } from '../store/expenseStore';
 import ExpenseTypeSelect from '../components/ExpenseTypeSelect';
-import Select from '../../../shared/components/Select';
-import expenseTypeService from '../services/expenseTypeService';
-import { ExpenseType } from '../services/expenseTypeService';
+import expenseTypeService, { ExpenseType } from '../services/expenseTypeService';
 import { useTranslation } from 'react-i18next';
 import { baseExpenseFormFields, expenseValidator } from '../config/expenseFormConfig';
+import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
+import Card from '../../../shared/components/Card';
+import spacing from '../../../core/constants/spacing';
+import globalFieldsService from '../services/globalFieldsService';
+import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 
 interface ExpenseFormScreenProps {
   mode?: 'create' | 'edit';
@@ -35,10 +38,21 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
 
   const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
+  const [globalFields, setGlobalFields] = useState<ExpenseCustomField[]>([]);
 
   useEffect(() => {
     loadExpenseTypes();
+    loadGlobalFields();
   }, []);
+
+  const loadGlobalFields = async () => {
+    try {
+      const fields = await globalFieldsService.getAll();
+      setGlobalFields(fields);
+    } catch (error) {
+      console.error('Failed to load global fields:', error);
+    }
+  };
 
   const loadExpenseTypes = async () => {
     setLoadingTypes(true);
@@ -51,6 +65,28 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
       setLoadingTypes(false);
     }
   };
+
+  const handleGlobalFieldsChange = async (fields: ExpenseCustomField[]) => {
+    setGlobalFields(fields);
+    try {
+      await globalFieldsService.save(fields);
+    } catch (error) {
+      console.error('Failed to save global fields:', error);
+    }
+  };
+
+  const getInitialData = (): Partial<Expense> => {
+    return getInitialDataWithCustomFields<Expense>(formMode, {
+      type: 'expense',
+      source: 'manual',
+    });
+  };
+
+  const enhancedValidator = createEnhancedValidator<Expense>(
+    expenseValidator,
+    globalFields,
+    'expenses'
+  );
 
   const typeOptions = useMemo(
     () => expenseTypes.map((i) => ({ label: i.name, value: String(i.id) })),
@@ -83,6 +119,10 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
     ...baseExpenseFormFields,
   ], [typeOptions, loadingTypes, t, handleTypeAdded]);
 
+  const screenTitle = formMode === 'create' 
+    ? t('new_expense', { defaultValue: 'New Expense' }) 
+    : t('edit_expense', { defaultValue: 'Edit Expense' });
+
   return (
     <FormScreenContainer
       service={expenseEntityService}
@@ -91,30 +131,41 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
         translationNamespace: 'expenses',
         mode: formMode,
       }}
-      validator={expenseValidator}
+      initialData={getInitialData()}
+      validator={enhancedValidator}
       renderForm={(formData, updateField, errors) => {
-        // Ensure default values are set (only expense, no type selection)
-        const formDataWithDefaults = {
-          ...formData,
-          type: 'expense', // Always expense for this module
-          source: formData.source || 'manual',
+        const customFields = (formData.customFields as ExpenseCustomField[]) || [];
+        
+        const handleCustomFieldsChange = (fields: ExpenseCustomField[]) => {
+          updateField('customFields' as keyof Expense, fields);
         };
         
         return (
-          <DynamicForm
-            namespace="expenses"
-            columns={columns}
-            fields={expenseFields}
-            values={formDataWithDefaults}
-            onChange={(v) => {
-              Object.keys(v).forEach((key) => {
-                updateField(key as keyof Expense, v[key]);
-              });
-            }}
-          />
+          <View style={{ gap: spacing.md }}>
+            <DynamicForm
+              namespace="expenses"
+              columns={columns}
+              fields={expenseFields}
+              values={formData}
+              onChange={(v) => {
+                Object.keys(v).forEach((key) => {
+                  updateField(key as keyof Expense, (v as any)[key]);
+                });
+              }}
+            />
+            <Card>
+              <CustomFieldsManager<ExpenseCustomField>
+                customFields={customFields}
+                onChange={handleCustomFieldsChange}
+                availableGlobalFields={globalFields}
+                onGlobalFieldsChange={handleGlobalFieldsChange}
+                module="expenses"
+              />
+            </Card>
+          </View>
         );
       }}
-      title={formMode === 'create' ? t('new_expense', { defaultValue: 'New Expense' }) : undefined}
+      title={screenTitle}
     />
   );
 }
