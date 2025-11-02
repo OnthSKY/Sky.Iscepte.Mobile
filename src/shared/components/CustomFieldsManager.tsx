@@ -15,6 +15,7 @@ import spacing from '../../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppStore } from '../../store/useAppStore';
 import { usePermissions } from '../../core/hooks/usePermissions';
+import { generateFieldName, normalizeFieldName, getFieldNameExample } from '../utils/fieldNameUtils';
 
 import { BaseCustomField, CustomFieldType } from '../types/customFields';
 
@@ -27,6 +28,7 @@ type Props<T extends BaseCustomField> = {
   availableGlobalFields?: T[];
   onGlobalFieldsChange?: (fields: T[]) => void;
   module: string; // Module name for permission checks (e.g., 'stock', 'customers', 'sales')
+  errors?: Record<string, string>; // Validation errors from form
 };
 
 export default function CustomFieldsManager<T extends BaseCustomField>({ 
@@ -34,7 +36,8 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
   onChange,
   availableGlobalFields = [],
   onGlobalFieldsChange,
-  module
+  module,
+  errors = {}
 }: Props<T>) {
   const { t } = useTranslation('common');
   const { colors } = useTheme();
@@ -262,34 +265,51 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
               {isGlobalField ? (
                 /* Global Field Addition Form */
                 <View style={styles.addFieldForm}>
-                  {/* Field Key and Label */}
-                  <View style={styles.formRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.label, { color: colors.text }]}>
-                        {t('field_key', { defaultValue: 'Field Key' })} *
-                      </Text>
-                      <Text style={[styles.hint, { color: colors.muted }]}>
-                        {t('field_key_hint', { defaultValue: 'Technical name (e.g., color, size)' })}
-                      </Text>
-                      <Input
-                        value={newFieldKey}
-                        onChangeText={setNewFieldKey}
-                        placeholder="color, size, weight..."
-                      />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: spacing.sm }}>
-                      <Text style={[styles.label, { color: colors.text }]}>
-                        {t('field_label', { defaultValue: 'Field Label' })} *
-                      </Text>
-                      <Text style={[styles.hint, { color: colors.muted }]}>
-                        {t('field_label_hint', { defaultValue: 'Display name (e.g., Color, Size)' })}
-                      </Text>
-                      <Input
-                        value={newFieldLabel}
-                        onChangeText={setNewFieldLabel}
-                        placeholder={t('field_label', { defaultValue: 'Field Label' })}
-                      />
-                    </View>
+                  {/* Info Box */}
+                  <View style={[styles.infoBox, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
+                    <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                    <Text style={[styles.hint, { color: colors.muted, fontSize: 11, flex: 1 }]}>
+                      {t('field_name_example', { 
+                        defaultValue: `Örnek: "${getFieldNameExample()}" (Türkçe karakterler otomatik dönüştürülür: ğ→g, ö→o, ü→u, ş→s, ı→i, ç→c)` 
+                      })}
+                    </Text>
+                  </View>
+                  
+                  {/* Field Label (Görünür İsmi) */}
+                  <View style={{ marginTop: spacing.sm }}>
+                    <Text style={[styles.label, { color: colors.text, marginBottom: spacing.xs }]}>
+                      {t('field_label', { defaultValue: 'Alan Etiketi (Gösterim Adı)' })} *
+                    </Text>
+                    <Input
+                      value={newFieldLabel}
+                      onChangeText={(text) => {
+                        setNewFieldLabel(text);
+                        // Auto-generate field name from label
+                        if (text.trim()) {
+                          const generated = generateFieldName(text);
+                          setNewFieldKey(generated);
+                        } else {
+                          setNewFieldKey('');
+                        }
+                      }}
+                      placeholder={t('enter_field_label', { defaultValue: 'Örn: Ürün Adı' })}
+                    />
+                  </View>
+                  
+                  {/* Field Key (Alan Adı - Teknik) */}
+                  <View style={{ marginTop: spacing.sm }}>
+                    <Text style={[styles.label, { color: colors.text, marginBottom: spacing.xs }]}>
+                      {t('field_name', { defaultValue: 'Alan Adı (Teknik)' })} *
+                    </Text>
+                    <Input
+                      value={newFieldKey}
+                      onChangeText={(text) => {
+                        // Normalize on change
+                        const normalized = normalizeFieldName(text);
+                        setNewFieldKey(normalized);
+                      }}
+                      placeholder={getFieldNameExample()}
+                    />
                   </View>
 
                   {/* Field Type */}
@@ -543,6 +563,11 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
                         },
                         colors
                       )}
+                      {errors[`customField_${field.key}`] && (
+                        <Text style={{ fontSize: 12, color: colors.error, marginTop: spacing.xs }}>
+                          {errors[`customField_${field.key}`]}
+                        </Text>
+                      )}
                     </View>
                   )}
                   {isActive && !canEditValues && (
@@ -601,6 +626,11 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
                       field,
                       (value) => handleUpdateFieldValue(field.key, value),
                       colors
+                    )}
+                    {errors[`customField_${field.key}`] && (
+                      <Text style={{ fontSize: 12, color: colors.error, marginTop: spacing.xs }}>
+                        {errors[`customField_${field.key}`]}
+                      </Text>
                     )}
                 </View>
                 )}

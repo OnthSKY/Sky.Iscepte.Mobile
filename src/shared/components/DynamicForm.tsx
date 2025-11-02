@@ -59,17 +59,30 @@ export default function DynamicForm<T extends Record<string, any>>({
     <Form>
       {grouped.map((row, idx) => (
         <FormRow key={idx} columns={columns}>
-          {row.map((field) => (
-            <FormField key={field.name} label={namespace ? t(`${namespace}:${field.labelKey}`) : t(field.labelKey)} required={field.required}>
-              {renderField(
-                field, 
-                values[field.name] ?? field.defaultValue ?? '', 
-                (v) => setValue(field.name, v), 
-                t,
-                namespace
-              )}
-            </FormField>
-          ))}
+          {row.map((field) => {
+            // Get label: try translation first, fallback to labelKey as display text
+            const getLabel = () => {
+              if (namespace) {
+                const translated = t(`${namespace}:${field.labelKey}`);
+                // If translation returns the key itself (no translation found), use labelKey as-is for custom fields
+                // Otherwise use the translated value
+                return translated !== `${namespace}:${field.labelKey}` ? translated : field.labelKey;
+              }
+              return t(field.labelKey);
+            };
+            
+            return (
+              <FormField key={field.name} label={getLabel()} required={field.required}>
+                {renderField(
+                  field, 
+                  values[field.name] ?? field.defaultValue ?? '', 
+                  (v) => setValue(field.name, v), 
+                  t,
+                  namespace
+                )}
+              </FormField>
+            );
+          })}
         </FormRow>
       ))}
     </Form>

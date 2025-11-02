@@ -528,6 +528,84 @@ export default function FormTemplateManagementScreen() {
       }
     >
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Detailed Description Section */}
+        <View style={[styles.infoSection, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+            <View style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              backgroundColor: colors.primary + '15',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginTop: 2,
+            }}>
+              <Ionicons name="information-circle" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1, gap: spacing.xs }}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
+                {t('common:form_templates_title', { defaultValue: 'Form Şablonları Nedir?' })}
+              </Text>
+              <Text style={[styles.infoSectionText, { color: colors.muted }]}>
+                {t('common:form_templates_description', { 
+                  defaultValue: 'Form şablonları, her modül için özelleştirilebilir form yapıları oluşturmanızı sağlar. Her şablonda hangi alanların görüneceğini, hangi alanların zorunlu olduğunu ve formun nasıl görüneceğini belirleyebilirsiniz.' 
+                })}
+              </Text>
+              <View style={{ marginTop: spacing.xs, gap: spacing.xs }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
+                  <Text style={{ color: colors.primary, fontSize: 12 }}>•</Text>
+                  <Text style={[styles.infoBullet, { color: colors.muted }]}>
+                    {t('common:form_templates_feature_1', { 
+                      defaultValue: 'Modül bazında özel form yapıları oluşturun (ör: Hızlı Satış Formu, Detaylı Ürün Formu)' 
+                    })}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
+                  <Text style={{ color: colors.primary, fontSize: 12 }}>•</Text>
+                  <Text style={[styles.infoBullet, { color: colors.muted }]}>
+                    {t('common:form_templates_feature_2', { 
+                      defaultValue: 'Her şablon için farklı alanlar seçin ve özel alanlar ekleyin' 
+                    })}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
+                  <Text style={{ color: colors.primary, fontSize: 12 }}>•</Text>
+                  <Text style={[styles.infoBullet, { color: colors.muted }]}>
+                    {t('common:form_templates_feature_3', { 
+                      defaultValue: 'Liste ve detay sayfalarında hangi alanların görüneceğini belirleyin' 
+                    })}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
+                  <Text style={{ color: colors.primary, fontSize: 12 }}>•</Text>
+                  <Text style={[styles.infoBullet, { color: colors.muted }]}>
+                    {t('common:form_templates_feature_4', { 
+                      defaultValue: 'Form ekranlarında şablon seçerek farklı form yapılarını kullanın' 
+                    })}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ 
+                marginTop: spacing.sm, 
+                padding: spacing.sm, 
+                backgroundColor: colors.background, 
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}>
+                <Text style={[styles.infoNote, { color: colors.text }]}>
+                  <Text style={{ fontWeight: '600' }}>
+                    {t('common:form_templates_note_title', { defaultValue: 'İpucu: ' })}
+                  </Text>
+                  {t('common:form_templates_note', { 
+                    defaultValue: 'Form ekranlarında "Form Yapılandırması" bölümünden şablon seçebilir veya varsayılan formu kullanabilirsiniz. Yeni şablon oluşturmak için bu ekranda "Yeni Şablon" butonunu kullanın.' 
+                  })}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
         {/* Module Selection */}
         {availableModules.length > 1 && (
           <View style={styles.moduleSelector}>
@@ -570,14 +648,14 @@ export default function FormTemplateManagementScreen() {
         {/* Templates List */}
         {isLoading ? (
           <View style={styles.centerContainer}>
-            <Text style={[styles.description, { color: colors.muted }]}>
+            <Text style={[styles.descriptionText, { color: colors.muted }]}>
               {t('common:loading', { defaultValue: 'Yükleniyor...' })}
             </Text>
           </View>
         ) : templates.length === 0 ? (
           <View style={styles.centerContainer}>
             <Ionicons name="document-outline" size={64} color={colors.muted} />
-            <Text style={[styles.description, { color: colors.muted, marginTop: spacing.md, textAlign: 'center' }]}>
+            <Text style={[styles.descriptionText, { color: colors.muted, marginTop: spacing.md, textAlign: 'center' }]}>
               {t('common:no_templates_for_module', { defaultValue: 'Bu modül için henüz form şablonu oluşturulmamış' })}
             </Text>
             <Button
@@ -1251,6 +1329,30 @@ const getStyles = (colors: any) =>
       padding: spacing.lg,
       paddingBottom: spacing.xl,
     },
+    infoSection: {
+      padding: spacing.md,
+      borderRadius: 12,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+    },
+    infoTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+    },
+    infoSectionText: {
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    infoBullet: {
+      fontSize: 12,
+      lineHeight: 18,
+      flex: 1,
+    },
+    infoNote: {
+      fontSize: 12,
+      lineHeight: 18,
+    },
     centerContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -1258,7 +1360,7 @@ const getStyles = (colors: any) =>
       padding: spacing.xl,
       minHeight: 300,
     },
-    description: {
+    descriptionText: {
       fontSize: 14,
       color: colors.muted,
       marginBottom: spacing.lg,

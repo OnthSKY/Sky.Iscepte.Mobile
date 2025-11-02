@@ -124,11 +124,6 @@ export default function ProductDetailScreen() {
   // Get detail fields from template
   const detailFieldsData = getDetailFields(defaultTemplate, 'stock', data);
   
-  // Format currency helper
-  const formatCurrency = (value: number) => {
-    return formatCurrencyHelper(value, data.currency || 'TRY');
-  };
-  
   // Convert detail fields to DetailSection format
   const basicFields = detailFieldsData.map(fieldInfo => {
     let value = fieldInfo.value;

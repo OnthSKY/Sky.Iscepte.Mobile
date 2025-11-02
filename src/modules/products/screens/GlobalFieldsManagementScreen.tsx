@@ -4,8 +4,8 @@
  * Allows admin to create, edit, and delete global fields that can be used in all products
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
@@ -19,6 +19,9 @@ import { ProductCustomField } from '../services/productService';
 import globalFieldsService from '../services/globalFieldsService';
 import spacing from '../../../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
+import { FormTemplate } from '../../../shared/types/formTemplate';
+import { useQuery } from '@tanstack/react-query';
 
 export default function GlobalFieldsManagementScreen() {
   const navigation = useNavigation<any>();
@@ -29,6 +32,14 @@ export default function GlobalFieldsManagementScreen() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingField, setEditingField] = useState<ProductCustomField | null>(null);
   const [deleteField, setDeleteField] = useState<ProductCustomField | null>(null);
+
+  // Load form templates to check usage
+  const formTemplateService = useMemo(() => createFormTemplateService('stock'), []);
+  const { data: templates = [] } = useQuery<FormTemplate[]>({
+    queryKey: ['stock', 'form-templates', 'list'],
+    queryFn: () => formTemplateService.list(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Form state
   const [fieldKey, setFieldKey] = useState('');
@@ -121,8 +132,40 @@ export default function GlobalFieldsManagementScreen() {
     setIsAdding(true);
   };
 
+  // Check how many templates use this global field
+  const getTemplateUsageCount = (fieldKey: string): number => {
+    return templates.filter(template => {
+      // Check if field exists in template's customFields
+      return template.customFields?.some(cf => cf.name === fieldKey) || false;
+    }).length;
+  };
+
+  // Get template names that use this field
+  const getTemplateNamesUsingField = (fieldKey: string): string[] => {
+    return templates
+      .filter(template => template.customFields?.some(cf => cf.name === fieldKey))
+      .map(template => template.name);
+  };
+
   const handleDeleteField = async () => {
     if (!deleteField) return;
+
+    const usageCount = getTemplateUsageCount(deleteField.key);
+    
+    if (usageCount > 0) {
+      const templateNames = getTemplateNamesUsingField(deleteField.key);
+      Alert.alert(
+        t('cannot_delete_field', { defaultValue: 'Alan Silinemez' }),
+        t('field_used_in_templates', { 
+          defaultValue: `Bu alan ${usageCount} form şablonunda kullanılıyor:\n\n${templateNames.join('\n')}\n\nÖnce bu şablonlardan alanı kaldırmanız gerekiyor.`,
+          count: usageCount,
+          templates: templateNames.join(', ')
+        }),
+        [{ text: t('common:ok', { defaultValue: 'Tamam' }) }]
+      );
+      setDeleteField(null);
+      return;
+    }
 
     try {
       await globalFieldsService.remove(deleteField.key);
@@ -272,46 +315,92 @@ export default function GlobalFieldsManagementScreen() {
 
         {globalFields.length > 0 && (
           <View style={styles.fieldsList}>
-            {globalFields.map((field) => (
-              <Card key={field.key} style={styles.fieldCard}>
-                <View style={styles.fieldHeader}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                      <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                        {field.label}
-                      </Text>
-                      <View style={[styles.globalBadge, { backgroundColor: colors.primary + '20' }]}>
-                        <Text style={[styles.globalBadgeText, { color: colors.primary }]}>
-                          {t('global', { defaultValue: 'Genel' })}
+            {globalFields.map((field) => {
+              const usageCount = getTemplateUsageCount(field.key);
+              const canDelete = usageCount === 0;
+              
+              return (
+                <Card key={field.key} style={styles.fieldCard}>
+                  <View style={styles.fieldHeader}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
+                        <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                          {field.label}
                         </Text>
+                        <View style={[styles.globalBadge, { backgroundColor: colors.primary + '20' }]}>
+                          <Text style={[styles.globalBadgeText, { color: colors.primary }]}>
+                            {t('global', { defaultValue: 'Genel' })}
+                          </Text>
+                        </View>
+                        {usageCount > 0 && (
+                          <View style={[styles.usageBadge, { backgroundColor: '#F59E0B' + '20' }]}>
+                            <Ionicons name="document-text-outline" size={12} color="#F59E0B" />
+                            <Text style={[styles.usageBadgeText, { color: '#F59E0B' }]}>
+                              {usageCount} {t('templates', { defaultValue: 'şablon' })}
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                    </View>
-                    <Text style={[styles.fieldKey, { color: colors.muted }]}>
-                      {field.key} ({field.type})
-                    </Text>
-                    {field.options && field.options.length > 0 && (
-                      <Text style={[styles.fieldOptions, { color: colors.muted }]}>
-                        {t('options', { defaultValue: 'Seçenekler' })}: {field.options.map(o => o.label).join(', ')}
+                      <Text style={[styles.fieldKey, { color: colors.muted }]}>
+                        {field.key} ({field.type})
                       </Text>
-                    )}
+                      {field.options && field.options.length > 0 && (
+                        <Text style={[styles.fieldOptions, { color: colors.muted }]}>
+                          {t('options', { defaultValue: 'Seçenekler' })}: {field.options.map(o => o.label).join(', ')}
+                        </Text>
+                      )}
+                      {usageCount > 0 && (
+                        <View style={{ marginTop: spacing.xs, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs / 2 }}>
+                          <Ionicons name="information-circle-outline" size={14} color="#F59E0B" />
+                          <Text style={[styles.usageInfo, { color: '#F59E0B' }]}>
+                            {t('used_in_templates', { 
+                              defaultValue: `${usageCount} form şablonunda kullanılıyor. Silmek için önce şablonlardan kaldırın.`,
+                              count: usageCount
+                            })}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.fieldActions}>
+                      <TouchableOpacity
+                        onPress={() => handleEditField(field)}
+                        style={[styles.actionIconButton, { backgroundColor: colors.primary + '20' }]}
+                      >
+                        <Ionicons name="pencil-outline" size={18} color={colors.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (canDelete) {
+                            setDeleteField(field);
+                          } else {
+                            const templateNames = getTemplateNamesUsingField(field.key);
+                            Alert.alert(
+                              t('cannot_delete_field', { defaultValue: 'Alan Silinemez' }),
+                              t('field_used_in_templates', { 
+                                defaultValue: `Bu alan ${usageCount} form şablonunda kullanılıyor:\n\n${templateNames.join('\n')}\n\nÖnce bu şablonlardan alanı kaldırmanız gerekiyor.`,
+                                count: usageCount,
+                                templates: templateNames.join(', ')
+                              }),
+                              [{ text: t('common:ok', { defaultValue: 'Tamam' }) }]
+                            );
+                          }
+                        }}
+                        style={[
+                          styles.actionIconButton, 
+                          { 
+                            backgroundColor: canDelete ? '#EF444420' : colors.muted + '20',
+                            opacity: canDelete ? 1 : 0.5
+                          }
+                        ]}
+                        disabled={!canDelete}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={canDelete ? "#EF4444" : colors.muted} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                  <View style={styles.fieldActions}>
-                    <TouchableOpacity
-                      onPress={() => handleEditField(field)}
-                      style={[styles.actionIconButton, { backgroundColor: colors.primary + '20' }]}
-                    >
-                      <Ionicons name="pencil-outline" size={18} color={colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setDeleteField(field)}
-                      style={[styles.actionIconButton, { backgroundColor: '#EF444420' }]}
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -320,9 +409,22 @@ export default function GlobalFieldsManagementScreen() {
       <ConfirmDialog
         visible={deleteField !== null}
         title={t('delete_global_field_title', { defaultValue: 'Genel Alanı Sil' })}
-        message={t('delete_global_field_message', { 
-          defaultValue: 'Bu genel alanı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz. Tüm ürünlerde bu alan kaldırılacaktır.' 
-        })}
+        message={(() => {
+          if (deleteField) {
+            const usageCount = getTemplateUsageCount(deleteField.key);
+            if (usageCount > 0) {
+              const templateNames = getTemplateNamesUsingField(deleteField.key);
+              return t('delete_global_field_message_with_templates', { 
+                defaultValue: `Bu genel alan ${usageCount} form şablonunda kullanılıyor:\n\n${templateNames.join('\n')}\n\nBu alanı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+                count: usageCount,
+                templates: templateNames.join('\n')
+              });
+            }
+          }
+          return t('delete_global_field_message', { 
+            defaultValue: 'Bu genel alanı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz. Tüm ürünlerde bu alan kaldırılacaktır.' 
+          });
+        })()}
         confirmText={t('common:delete', { defaultValue: 'Sil' })}
         cancelText={t('common:cancel', { defaultValue: 'İptal' })}
         onCancel={() => setDeleteField(null)}
@@ -453,6 +555,24 @@ const styles = StyleSheet.create({
   actionIconButton: {
     padding: spacing.xs,
     borderRadius: 8,
+  },
+  usageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: 8,
+  },
+  usageBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  usageInfo: {
+    fontSize: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
   },
 });
 

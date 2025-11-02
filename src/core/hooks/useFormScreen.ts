@@ -68,14 +68,27 @@ export function useFormScreen<T extends BaseEntity>(
   // Form handlers
   const updateField = useCallback((field: keyof T, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error for this field
-    if (errors[field as string]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[field as string];
-        return next;
-      });
-    }
+    // Clear error for this field and related customField errors
+    const fieldKey = field as string;
+    setErrors((prev) => {
+      const next = { ...prev };
+      // Clear direct field error
+      if (next[fieldKey]) {
+        delete next[fieldKey];
+      }
+      // If updating customFields, clear all customField errors (will be re-validated on submit)
+      if (fieldKey === 'customFields' && Array.isArray(value)) {
+        Object.keys(next).forEach(key => {
+          if (key.startsWith('customField_')) {
+            // Check if this customField still exists and might still be invalid
+            // We'll let validation handle this on next submit
+            // For now, just clear the error so user can see updated validation
+            delete next[key];
+          }
+        });
+      }
+      return next;
+    });
   }, [errors]);
 
   const updateFormData = useCallback((data: Partial<T>) => {

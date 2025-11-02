@@ -7,9 +7,10 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import IoniconsLib from 'react-native-vector-icons/Ionicons';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { employeeEntityService } from '../services/employeeServiceAdapter';
 import DynamicForm from '../../../shared/components/DynamicForm';
@@ -30,6 +31,10 @@ import { useStaffPermissionGroupStore } from '../store/staffPermissionGroupStore
 import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
 import globalFieldsService from '../services/globalFieldsService';
 import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
+import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FormTemplate } from '../../../shared/types/formTemplate';
+import { customFieldToDynamicField } from '../../../shared/utils/formTemplateUtils';
 
 interface EmployeeFormScreenProps {
   mode?: 'create' | 'edit';
@@ -60,6 +65,7 @@ const generateUsername = (firstName: string = '', lastName: string = ''): string
 
 export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {}) {
   const route = useRoute<any>();
+  const navigation = useNavigation<any>();
   const { colors, activeTheme } = useTheme();
   const { t } = useTranslation(['employees', 'common']);
   const currentUserRole = useAppStore((state) => state.role);
@@ -68,6 +74,33 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   const [selectedPermissionGroup, setSelectedPermissionGroup] = useState<string>('');
   const { groups, loadGroups } = useStaffPermissionGroupStore();
   const [globalFields, setGlobalFields] = useState<EmployeeCustomField[]>([]);
+  const queryClient = useQueryClient();
+
+  // Form template state - default to 'default' to use employeeFormFields
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | number | null>('default');
+  
+  // Load form templates for employees module
+  const formTemplateService = useMemo(() => createFormTemplateService('employees'), []);
+  const { data: templates = [] } = useQuery({
+    queryKey: ['employees', 'form-templates', 'list'],
+    queryFn: () => formTemplateService.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Set default to 'default' (use employeeFormFields) on mount
+  useEffect(() => {
+    if (!selectedTemplateId) {
+      setSelectedTemplateId('default');
+    }
+  }, [selectedTemplateId]);
+
+  // Get selected template
+  const selectedTemplate = useMemo(() => {
+    if (!selectedTemplateId || selectedTemplateId === 'default') {
+      return null; // Use default employeeFormFields when no template selected
+    }
+    return templates.find((t: FormTemplate) => String(t.id) === String(selectedTemplateId)) || null;
+  }, [templates, selectedTemplateId]);
 
   // Load permission groups on mount
   useEffect(() => {
@@ -99,9 +132,50 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   }, []);
 
   const handleGlobalFieldsChange = async (fields: EmployeeCustomField[]) => {
+    const previousGlobalFields = globalFields;
     setGlobalFields(fields);
     try {
       await globalFieldsService.save(fields);
+      
+      // If a template is selected, check if a new global field was added and add it to the template
+      if (selectedTemplate && selectedTemplateId && selectedTemplateId !== 'default') {
+        // Find newly added global fields (those in new list but not in previous list)
+        const newGlobalFields = fields.filter(newField => 
+          !previousGlobalFields.some(prevField => prevField.key === newField.key)
+        );
+        
+        if (newGlobalFields.length > 0) {
+          // Convert new global fields to DynamicField format
+          const newTemplateFields = newGlobalFields.map(customField => 
+            customFieldToDynamicField(customField)
+          );
+          
+          // Get current template custom fields
+          const currentCustomFields = selectedTemplate.customFields || [];
+          
+          // Add new fields to template (avoid duplicates)
+          const updatedCustomFields = [...currentCustomFields];
+          newTemplateFields.forEach(newField => {
+            if (!updatedCustomFields.some(f => f.name === newField.name)) {
+              updatedCustomFields.push(newField);
+            }
+          });
+          
+          // Update the template with new custom fields
+          try {
+            await formTemplateService.update(selectedTemplateId, {
+              customFields: updatedCustomFields,
+            });
+            
+            // Invalidate and refetch templates to get the updated one
+            queryClient.invalidateQueries({ queryKey: ['employees', 'form-templates', 'list'] });
+            
+            console.log('Global field(s) added to selected template:', newGlobalFields.map(f => f.label).join(', '));
+          } catch (error) {
+            console.error('Failed to update template with new global fields:', error);
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to save global fields:', error);
     }
@@ -111,11 +185,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
     return getInitialDataWithCustomFields<Employee>(formMode, {});
   };
 
-  const enhancedValidator = createEnhancedValidator<Employee>(
-    employeeValidator,
-    globalFields,
-    'employees'
-  );
+  // Base validator - will be enhanced with template fields in renderForm
 
   // Get all possible actions from permissions registry
   const ALL_ACTIONS = useMemo(() => {
@@ -160,7 +230,26 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
         mode: formMode,
       }}
       initialData={getInitialData()}
-      validator={enhancedValidator}
+      validator={(data) => {
+        // Get current template fields for validation
+        const baseFields = selectedTemplate?.baseFields?.length 
+          ? selectedTemplate.baseFields 
+          : employeeFormFields;
+        const templateFields = [
+          ...baseFields,
+          ...(selectedTemplate?.customFields || [])
+        ];
+        
+        // Create enhanced validator with template fields
+        const validatorWithTemplate = createEnhancedValidator<Employee>(
+          employeeValidator,
+          globalFields,
+          'employees',
+          templateFields
+        );
+        
+        return validatorWithTemplate(data);
+      }}
       renderForm={(formData, updateField, errors) => {
         // Auto-generate username when firstName/lastName changes
         const handleFieldChange = (field: keyof Employee, value: any) => {
@@ -185,8 +274,109 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
           updateField('customFields' as keyof Employee, fields);
         };
 
+        // Get fields from template or default fields
+        const baseFields = selectedTemplate?.baseFields?.length 
+          ? selectedTemplate.baseFields 
+          : employeeFormFields;
+        const templateFields = [
+          ...baseFields,
+          ...(selectedTemplate?.customFields || [])
+        ];
+
+        // Template options for dropdown
+        const templateOptions = useMemo(() => {
+          const allTemplates = templates
+            .filter((template: FormTemplate) => template.isActive)
+            .map((template: FormTemplate) => ({
+              label: template.isDefault ? `${template.name} (${t('employees:default', { defaultValue: 'Varsayılan' })})` : template.name,
+              value: String(template.id),
+            }));
+          
+          return [
+            { 
+              label: t('employees:default_template', { defaultValue: 'Varsayılan Form' }), 
+              value: 'default' 
+            },
+            ...allTemplates,
+          ];
+        }, [templates, t]);
+
         return (
           <View style={{ gap: spacing.lg }}>
+            {/* Template Selector - Configuration Section */}
+            <View style={{ 
+              backgroundColor: colors.background, 
+              borderWidth: 1, 
+              borderColor: colors.border,
+              borderRadius: 8,
+              padding: spacing.md,
+              borderStyle: 'solid',
+              borderLeftWidth: 3,
+              borderLeftColor: colors.primary,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+                <View style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  backgroundColor: colors.primary + '10',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                  <IoniconsLib name="construct-outline" size={16} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>
+                    {t('employees:form_configuration', { defaultValue: 'Form Yapılandırması' })}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>
+                    {t('employees:form_configuration_info', { defaultValue: 'Form şablonunu seçin veya varsayılanı kullanın' })}
+                  </Text>
+                </View>
+              </View>
+              <Select
+                value={selectedTemplateId ? String(selectedTemplateId) : 'default'}
+                options={templateOptions}
+                onChange={(value) => {
+                  if (value === 'default') {
+                    setSelectedTemplateId('default');
+                  } else {
+                    setSelectedTemplateId(value ? Number(value) : null);
+                  }
+                }}
+                placeholder={t('employees:select_template', { defaultValue: 'Şablon seçin' })}
+              />
+              {selectedTemplate?.description && (
+                <View style={{ marginTop: spacing.xs }}>
+                  <Text style={{ fontSize: 11, color: colors.muted, fontStyle: 'italic' }}>
+                    {selectedTemplate.description}
+                  </Text>
+                </View>
+              )}
+              
+              {/* Link to Settings for template management */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('FormTemplateManagement')}
+                style={{ 
+                  marginTop: spacing.sm, 
+                  padding: spacing.sm, 
+                  borderRadius: 6,
+                  backgroundColor: colors.primary + '08',
+                  borderWidth: 1,
+                  borderColor: colors.primary + '20',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.xs,
+                }}
+              >
+                <IoniconsLib name="settings-outline" size={14} color={colors.primary} />
+                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
+                  {t('employees:manage_templates', { defaultValue: 'Form şablonlarını yönetmek için ayarlara gidin' })}
+                </Text>
+                <IoniconsLib name="chevron-forward-outline" size={14} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+
             {/* Basic Information */}
             <View>
               <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: spacing.md, color: colors.text }}>
@@ -195,7 +385,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
         <DynamicForm
           namespace="employees"
           columns={2}
-          fields={employeeFormFields}
+          fields={templateFields}
           values={formData}
           onChange={(v) => {
             Object.keys(v).forEach((key) => {
@@ -207,13 +397,14 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
 
             {/* Custom Fields */}
             <Card>
-              <CustomFieldsManager<EmployeeCustomField>
-                customFields={customFields}
-                onChange={handleCustomFieldsChange}
-                availableGlobalFields={globalFields}
-                onGlobalFieldsChange={handleGlobalFieldsChange}
-                module="employees"
-              />
+                  <CustomFieldsManager<EmployeeCustomField>
+                    customFields={customFields}
+                    onChange={handleCustomFieldsChange}
+                    availableGlobalFields={globalFields}
+                    onGlobalFieldsChange={handleGlobalFieldsChange}
+                    module="employees"
+                    errors={errors}
+                  />
             </Card>
 
           {/* User Account Section */}
