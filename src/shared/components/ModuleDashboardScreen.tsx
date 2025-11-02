@@ -22,6 +22,7 @@ import SearchBar from './SearchBar';
 import PaginatedList from './PaginatedList';
 import EmptyState from './EmptyState';
 import ConfirmDialog from './ConfirmDialog';
+import { MODULE_CONFIGS, getModuleConfig } from '../../core/config/moduleConfig';
 
 export interface ModuleStat {
   key: string;
@@ -75,6 +76,20 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
   const { width } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
+  
+  // Get module config for display name
+  const moduleConfig = useMemo(() => {
+    return getModuleConfig(config.module) || 
+           MODULE_CONFIGS.find(m => m.translationNamespace === config.module) || null;
+  }, [config.module]);
+  
+  // Get module display name
+  const moduleName = useMemo(() => {
+    if (!moduleConfig) return '';
+    return t(`${moduleConfig.translationNamespace}:${moduleConfig.translationKey}`, {
+      defaultValue: moduleConfig.key,
+    });
+  }, [moduleConfig, t]);
 
   // Fetch stats - handle both sync and async
   const statsResult = React.useMemo(() => {
@@ -216,16 +231,51 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
       contentInsetAdjustmentBehavior="never"
       scrollEventThrottle={16}
     >
-        {/* Module Description */}
-        {config.description && (
-          <View style={[styles.descriptionSection, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
-            <View style={[styles.descriptionCard, { backgroundColor: isDark ? colors.surface : colors.card, borderColor: colors.border }]}>
-              <View style={styles.descriptionHeader}>
-                <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
-                <Text style={[styles.descriptionTitle, { color: colors.text }]}>
-                  {t(`${config.module}:module_overview`, { defaultValue: 'Modül Özeti' })}
+      {/* Module Name Header */}
+      {moduleName && (
+        <View style={[styles.moduleHeaderSection, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
+          <View style={[styles.moduleHeaderCard, { backgroundColor: isDark ? colors.surface : colors.card, borderColor: colors.border }]}>
+            <View style={styles.moduleHeaderContent}>
+              {moduleConfig && (
+                <Ionicons 
+                  name={moduleConfig.icon as any} 
+                  size={width > 640 ? 28 : 24} 
+                  color={colors.primary} 
+                  style={styles.moduleHeaderIcon}
+                />
+              )}
+              <View style={styles.moduleHeaderTextContainer}>
+                <Text style={[styles.moduleHeaderLabel, { color: colors.muted, fontSize: width > 640 ? 12 : 11 }]}>
+                  {t('common:current_module', { defaultValue: 'Mevcut Modül' })}
+                </Text>
+                <Text 
+                  style={[
+                    styles.moduleHeaderName, 
+                    { 
+                      color: colors.text,
+                      fontSize: width > 640 ? 20 : width > 400 ? 18 : 16,
+                    }
+                  ]} 
+                  numberOfLines={1}
+                >
+                  {moduleName}
                 </Text>
               </View>
+            </View>
+          </View>
+        </View>
+      )}
+      
+      {/* Module Description */}
+      {config.description && (
+        <View style={[styles.descriptionSection, { paddingHorizontal: spacing.lg, paddingTop: moduleName ? spacing.md : spacing.lg }]}>
+          <View style={[styles.descriptionCard, { backgroundColor: isDark ? colors.surface : colors.card, borderColor: colors.border }]}>
+            <View style={styles.descriptionHeader}>
+              <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+              <Text style={[styles.descriptionTitle, { color: colors.text }]}>
+                {t(`${config.module}:module_overview`, { defaultValue: 'Modül Özeti' })}
+              </Text>
+            </View>
               <Text style={[styles.descriptionText, { color: colors.muted }]}>
                 {t(config.description, { defaultValue: config.description })}
               </Text>
@@ -786,6 +836,50 @@ const styles = StyleSheet.create({
   cardActionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  moduleHeaderSection: {
+    marginBottom: spacing.md,
+  },
+  moduleHeaderCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: spacing.md,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+    }),
+  },
+  moduleHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  moduleHeaderIcon: {
+    flexShrink: 0,
+  },
+  moduleHeaderTextContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moduleHeaderLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: spacing.xs / 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  moduleHeaderName: {
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 28,
   },
   descriptionSection: {
     marginBottom: spacing.md,
