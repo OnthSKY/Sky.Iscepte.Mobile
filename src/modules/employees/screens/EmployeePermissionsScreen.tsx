@@ -29,6 +29,9 @@ const ALL_ACTIONS = ['view', 'create', 'edit', 'delete'];
 const ALL_FIELDS = ['category', 'price', 'group', 'phone', 'expenseType', 'amount', 'role', 'dateRange'];
 const ALL_NOTIFICATIONS = ['dailyReport', 'lowStock'];
 
+// Stock-specific permissions that owner can grant to staff
+const STOCK_SPECIAL_PERMISSIONS = ['manage_global_fields', 'add_product_custom_fields'];
+
 export default function EmployeePermissionsScreen() {
   const route = useRoute<any>();
   const { colors } = useTheme();
@@ -117,6 +120,8 @@ export default function EmployeePermissionsScreen() {
       notifications: [],
     };
 
+    const isStockModule = module === 'stock';
+
     return (
       <Card key={module} style={{ marginBottom: spacing.md }}>
         <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: spacing.md, color: colors.text }}>
@@ -144,6 +149,39 @@ export default function EmployeePermissionsScreen() {
             ))}
           </View>
         </View>
+
+        {/* Stock Special Permissions - Only for stock module */}
+        {isStockModule && (
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: spacing.sm, color: colors.muted }}>
+              {t('employees:special_permissions', { defaultValue: 'Special Permissions' })}
+            </Text>
+            <View style={{ gap: spacing.xs }}>
+              {STOCK_SPECIAL_PERMISSIONS.map((permission) => {
+                // Check if permission is in actions list (for backward compatibility)
+                // or handle it separately
+                const hasPermission = modulePerms.actions.includes(permission);
+                return (
+                  <View key={permission} style={styles.permissionRow}>
+                    <Text style={{ flex: 1, color: colors.text }}>
+                      {t(`stock:${permission}`, { 
+                        defaultValue: permission === 'manage_global_fields' 
+                          ? 'Genel Alanları Yönet' 
+                          : 'Özel Ürün Alanları Ekle' 
+                      })}
+                    </Text>
+                    <Switch
+                      value={hasPermission}
+                      onValueChange={() => togglePermission(module, 'actions', permission)}
+                      trackColor={{ false: colors.border, true: colors.primary }}
+                      thumbColor={colors.surface}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Fields */}
         <View style={{ marginBottom: spacing.md }}>

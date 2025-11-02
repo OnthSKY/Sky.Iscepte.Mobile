@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useRef } from 'react';
+import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { filterRoutesByRole } from './routes';
 import { hasPermission } from '../config/permissions';
@@ -77,6 +77,18 @@ export default function RootNavigator({ role }: Props) {
     }
   }, [availableRouteNames, t]);
 
+  // Callback to handle navigation state changes (memoized to prevent unnecessary re-renders)
+  const handleStateChange = React.useCallback((routeName: string) => {
+    if (routeName && routeName !== activeRouteName) {
+      setActiveRouteName(routeName);
+    }
+  }, [activeRouteName]);
+
+  // Callback to open menu (memoized to prevent unnecessary re-renders)
+  const handleOpenMenu = React.useCallback(() => {
+    setMenuVisible(true);
+  }, []);
+
   return (
     <>
       <Suspense fallback={<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}><ActivityIndicator size="large" color={colors.primary} /></View>}>
@@ -90,14 +102,13 @@ export default function RootNavigator({ role }: Props) {
           if (tabProps.navigation) {
             tabNavigationRef.current = tabProps.navigation;
           }
-          // Update active route name when navigation state changes
-          if (tabProps.state?.routeNames && tabProps.state?.index !== undefined) {
-            const currentRoute = tabProps.state.routeNames[tabProps.state.index];
-            if (currentRoute && currentRoute !== activeRouteName) {
-              setActiveRouteName(currentRoute);
-            }
-          }
-          return <CustomTabBar {...tabProps} onOpenMenu={() => setMenuVisible(true)} />;
+          return (
+            <CustomTabBar 
+              {...tabProps} 
+              onOpenMenu={handleOpenMenu}
+              onStateChange={handleStateChange}
+            />
+          );
         }}
         >
           {allRoutes.map((r) => {
@@ -156,7 +167,7 @@ function getIconName(routeName: string): string {
 
 type TabBarProps = React.ComponentProps<typeof Tab.Navigator> extends { tabBar?: infer T } ? T extends (p: infer P) => any ? P : any : any;
 
-function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenMenu: () => void }) {
+function CustomTabBar({ state, navigation, onOpenMenu, onStateChange }: TabBarProps & { onOpenMenu: () => void; onStateChange?: (routeName: string) => void }) {
   const { t } = useTranslation(['common']);
   const { colors } = useTheme();
   const shortcuts = [
@@ -166,6 +177,13 @@ function CustomTabBar({ state, navigation, onOpenMenu }: TabBarProps & { onOpenM
   ];
 
   const activeName = state.routeNames[state.index];
+
+  // Update parent state when navigation state changes (using useEffect to avoid render-time setState)
+  useEffect(() => {
+    if (onStateChange && activeName) {
+      onStateChange(activeName);
+    }
+  }, [activeName, onStateChange]);
 
   const go = React.useCallback((routeName: string) => {
     if (routeName === 'MENU') {

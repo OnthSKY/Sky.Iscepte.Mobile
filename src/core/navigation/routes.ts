@@ -73,6 +73,13 @@ const PurchaseEditScreen = React.lazy(() => import('../../modules/purchases/scre
 
 // Other screens - ProfileScreen imported directly to avoid native module loading issues
 const SettingsScreen = React.lazy(() => import('../../screens/SettingsScreen'));
+const GeneralModuleSettingsScreen = React.lazy(() => import('../../screens/GeneralModuleSettingsScreen'));
+const StockModuleSettingsScreen = React.lazy(() => import('../../screens/StockModuleSettingsScreen'));
+const EmployeesModuleSettingsScreen = React.lazy(() => import('../../screens/EmployeesModuleSettingsScreen'));
+const LanguageSettingsScreen = React.lazy(() => import('../../screens/LanguageSettingsScreen'));
+const ThemeSettingsScreen = React.lazy(() => import('../../screens/ThemeSettingsScreen'));
+const OwnerSettingsScreen = React.lazy(() => import('../../screens/AdminSettingsScreen'));
+const LowStockAlertSettingsScreen = React.lazy(() => import('../../screens/LowStockAlertSettingsScreen'));
 const NotificationsScreen = React.lazy(() => import('../../screens/NotificationsScreen'));
 
 export const allRoutes: RouteConfig[] = [
@@ -150,6 +157,13 @@ export const allRoutes: RouteConfig[] = [
   // Other screens
   { name: 'Profile', module: 'profile', component: ProfileScreen, options: { title: i18n.t('profile') } },
   { name: 'Settings', module: 'settings', component: SettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings') } },
+  { name: 'GeneralModuleSettings', module: 'settings', component: GeneralModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:general_settings', { defaultValue: 'Genel Ayarlar' }) } },
+  { name: 'StockModuleSettings', module: 'settings', component: StockModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('stock:stock', { defaultValue: 'Stock Modülü' }) } },
+  { name: 'EmployeesModuleSettings', module: 'settings', component: EmployeesModuleSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('employees:employees', { defaultValue: 'Çalışanlar Modülü' }) } },
+  { name: 'LanguageSettings', module: 'settings', component: LanguageSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:language', { defaultValue: 'Dil' }) } },
+  { name: 'ThemeSettings', module: 'settings', component: ThemeSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:theme', { defaultValue: 'Tema' }) } },
+  { name: 'OwnerSettings', module: 'settings', component: OwnerSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:owner_settings', { defaultValue: 'Satıcı Ayarları' }) } },
+  { name: 'LowStockAlertSettings', module: 'settings', component: LowStockAlertSettingsScreen, requiredPermission: 'settings:view', options: { title: i18n.t('settings:stock_alerts', { defaultValue: 'Stok Uyarı Ayarları' }) } },
   { name: 'Notifications', module: 'notifications', component: NotificationsScreen, options: { title: i18n.t('notifications') } },
 ];
 

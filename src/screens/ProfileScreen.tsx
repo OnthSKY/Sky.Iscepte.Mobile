@@ -9,6 +9,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../core/contexts/ThemeContext";
 import { useAppStore } from "../store/useAppStore";
 import LanguagePicker from "../shared/components/LanguagePicker";
@@ -21,6 +22,7 @@ import spacing from "../core/constants/spacing";
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation(["common", "settings"]);
+  const navigation = useNavigation<any>();
   const logout = useAppStore((s) => s.logout);
   const user = useAppStore((s) => s.user);
   const role = useAppStore((s) => s.role);
@@ -87,6 +89,18 @@ export default function ProfileScreen() {
               <ThemeGradientToggle />
             </View>
           </View>
+        </Section>
+
+        {/* AYARLAR */}
+        <Section title={t("settings:settings", { defaultValue: "Ayarlar" })}>
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Ionicons name="settings-outline" size={20} color={colors.primary} />
+            <Text style={styles.settingText}>{t("settings:settings", { defaultValue: "Ayarlar" })}</Text>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+          </TouchableOpacity>
         </Section>
 
         {/* HESAP */}
@@ -198,6 +212,19 @@ const getStyles = (colors: any) =>
 
     contactRow: { flexDirection: "row", alignItems: "center", marginTop: spacing.md, gap: 8 },
     contactText: { color: colors.primary, fontWeight: "500" },
+    
+    settingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    settingText: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "500",
+    },
     footerText: {
       textAlign: "center",
       fontSize: 12,

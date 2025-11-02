@@ -21,6 +21,9 @@ import ToastManager from './src/shared/components/ToastManager';
 import { PersistQueryClientProvider, queryClient, asyncStoragePersister } from './src/core/services/queryClient';
 import { useNavigationPrefetch } from './src/core/hooks/useNavigationPrefetch';
 import SplashScreen from './src/shared/components/SplashScreen';
+import { useLowStockAlert } from './src/core/hooks/useLowStockAlert';
+import { useLowStockAlertStore } from './src/core/store/lowStockAlertStore';
+import { setupNotificationHandlers } from './src/core/services/pushNotificationService';
 
 const RootStack = createNativeStackNavigator();
 
@@ -30,9 +33,20 @@ function NavigationPrefetchWrapper() {
   return null;
 }
 
+// Component to monitor low stock alerts
+function LowStockAlertMonitor() {
+  useLowStockAlert();
+  return null;
+}
+
 function MainApp() {
   const role = useAppStore(s => s.role) as Role;
-  return <RootNavigator role={role} />;
+  return (
+    <>
+      <LowStockAlertMonitor />
+      <RootNavigator role={role} />
+    </>
+  );
 }
 
 function AppWrapper() {
@@ -41,8 +55,20 @@ function AppWrapper() {
   const isAuthenticated = useAppStore(s => s.isAuthenticated);
   const isLoading = useAppStore(s => s.isLoading);
   const [showSplash, setShowSplash] = useState(true);
+  const hydrateLowStockAlert = useLowStockAlertStore(s => s.hydrate);
   
-  useEffect(() => { hydrate(); }, [hydrate]);
+  useEffect(() => { 
+    hydrate();
+    hydrateLowStockAlert();
+  }, [hydrate, hydrateLowStockAlert]);
+  
+  // Bildirim handler'larını ayarla (uygulama başlangıcında)
+  useEffect(() => {
+    if (isAuthenticated) {
+      setupNotificationHandlers();
+    }
+  }, [isAuthenticated]);
+  
   useEffect(() => {
     httpInterceptors.useRequest(({ config }: any) => {
       const token = useAppStore.getState().token;

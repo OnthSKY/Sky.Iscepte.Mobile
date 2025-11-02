@@ -52,7 +52,7 @@
   "name": "Ürün Adı",
   "sku": "SKU / Barkod",
   "category": "Kategori",
-  "stock": "Stok Miktarı",
+  "stock_quantitiy": "Stok Miktarı",
   "moq": "Minimum Sipariş Miktarı (MOQ)",
   "custom_fields": "Özel Alanlar",
   "add_custom_field": "Özel Alan Ekle",
@@ -107,6 +107,7 @@
   "no_categories_desc": "Yukarıdaki butona tıklayarak kategori ekleyebilirsiniz.",
   "categories": "Kategoriler",
   "products": "ürün",
-  "category_delete_not_implemented": "Bu özellik henüz eklenmedi."
+  "category_delete_not_implemented": "Bu özellik henüz eklenmedi.",
+  "low_stock_alert_message": "{{productName}} ürününde düşük stok: {{stock}} (Eşik: {{threshold}})"
 }
 

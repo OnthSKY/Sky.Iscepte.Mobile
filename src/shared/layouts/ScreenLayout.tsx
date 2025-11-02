@@ -34,13 +34,21 @@ export default function ScreenLayout({
   const { colors } = useTheme();
   const styles = getStyles(colors, !!noPadding);
   const navigation = useNavigation();
-  const canGoBack = showBackButton && navigation.canGoBack();
+  // Always show back button if showBackButton is true, regardless of navigation state
+  const canGoBack = showBackButton;
   
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
-    } else {
+    } else if (navigation.canGoBack()) {
       navigation.goBack();
+    } else {
+      // Fallback: try to navigate to Settings
+      try {
+        navigation.navigate('Settings' as never);
+      } catch (e) {
+        console.warn('Could not navigate back');
+      }
     }
   };
   

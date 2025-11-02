@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -7,23 +7,58 @@ import { useTheme, AppTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ErrorReportModal from '../shared/components/ErrorReportModal';
+import { useAppStore } from '../store/useAppStore';
+import { usePermissions } from '../core/hooks/usePermissions';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { t, i18n } = useTranslation(['settings', 'common', 'stock']);
-  const { colors, theme, setTheme, activeTheme } = useTheme();
+  const { t } = useTranslation(['settings', 'common', 'stock', 'employees']);
+  const { colors } = useTheme();
   const [contactModalVisible, setContactModalVisible] = useState(false);
+  const role = useAppStore((s) => s.role);
+  const permissions = usePermissions(role);
 
-  const languageOptions = [
-    { key: 'tr', label: t('turkish'), icon: '🇹🇷' },
-    { key: 'en', label: t('english'), icon: '🇬🇧' },
-  ];
+  const modules = useMemo(() => {
+    const modulesList = [];
+    
+    // General Settings Module - Always available (settings:view)
+    if (permissions.can('settings:view')) {
+      modulesList.push({
+        key: 'general',
+        title: t('settings:settings', { defaultValue: 'Ayarlar' }),
+        desc: t('settings:general_settings_module_desc', { defaultValue: 'Dil, tema ve diğer genel ayarlar' }),
+        icon: 'settings-outline',
+        route: 'GeneralModuleSettings',
+        requiredPermission: 'settings:view',
+      });
+    }
 
-  const themeOptions = [
-    { key: 'light', label: t('light'), icon: 'sunny-outline' },
-    { key: 'dark', label: t('dark'), icon: 'moon-outline' },
-    { key: 'system', label: t('system'), icon: 'cog-outline' },
-  ];
+    // Stock Module - Requires stock:view
+    if (permissions.can('stock:view')) {
+      modulesList.push({
+        key: 'stock',
+        title: t('stock:stock', { defaultValue: 'Stock' }),
+        desc: t('settings:stock_management', { defaultValue: 'Stok yönetimi ayarları' }),
+        icon: 'cube-outline',
+        route: 'StockModuleSettings',
+        requiredPermission: 'stock:view',
+      });
+    }
+
+    // Employees Module - Requires employees:view
+    if (permissions.can('employees:view')) {
+      modulesList.push({
+        key: 'employees',
+        title: t('employees:employees', { defaultValue: 'Çalışanlar' }),
+        desc: t('settings:employees_management', { defaultValue: 'Çalışan yönetimi ayarları' }),
+        icon: 'people-outline',
+        route: 'EmployeesModuleSettings',
+        requiredPermission: 'employees:view',
+      });
+    }
+
+    return modulesList;
+  }, [t, permissions]);
 
   const styles = getStyles(colors);
 
@@ -32,80 +67,31 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{t('common:settings')}</Text>
 
-        {/* Preferences Section */}
+        {/* Modules Section */}
         <View style={styles.settingsGroup}>
-          <Text style={styles.groupTitle}>{t('preferences', { defaultValue: 'Tercihler' })}</Text>
+          <Text style={styles.groupTitle}>{t('settings:modules', { defaultValue: 'Modüller' })}</Text>
           
-          {/* Language Settings */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t('language')}</Text>
-            <View style={styles.segmentControl}>
-              {languageOptions.map((opt) => (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[
-                    styles.segmentButton,
-                    i18n.language === opt.key && styles.segmentButtonActive,
-                  ]}
-                  onPress={() => i18n.changeLanguage(opt.key)}
-                >
-                  <Text style={[styles.segmentButtonText, { color: i18n.language === opt.key ? colors.primary : colors.muted }]}>
-                    {`${opt.icon} ${opt.label}`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Theme Settings */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t('theme')}</Text>
-            <View style={styles.segmentControl}>
-              {themeOptions.map((opt) => (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[
-                    styles.segmentButton,
-                    theme === opt.key && styles.segmentButtonActive,
-                  ]}
-                  onPress={() => setTheme(opt.key as AppTheme)}
-                >
-                  <Ionicons 
-                    name={opt.icon as any} 
-                    size={20} 
-                    color={theme === opt.key ? colors.primary : colors.muted} 
-                  />
-                  <Text style={[styles.segmentButtonText, { color: theme === opt.key ? colors.primary : colors.muted }]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Admin Settings Section */}
-        <View style={styles.settingsGroup}>
-          <Text style={styles.groupTitle}>{t('admin_settings', { defaultValue: 'Yönetici Ayarları' })}</Text>
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={() => navigation.navigate('GlobalFieldsManagement')}
-            >
-              <View style={styles.settingItemLeft}>
-                <Ionicons name="grid-outline" size={22} color={colors.primary} />
-                <View style={styles.settingItemContent}>
-                  <Text style={[styles.settingItemTitle, { color: colors.text }]}>
-                    {t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' })}
-                  </Text>
-                  <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
-                    {t('stock:manage_global_fields_desc', { defaultValue: 'Tüm ürünlerde kullanılabilecek genel alanları oluşturun' })}
-                  </Text>
+          {modules.map((module, index) => (
+            <View key={module.key} style={[styles.card, index < modules.length - 1 && { marginBottom: spacing.md }]}>
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={() => navigation.navigate(module.route)}
+              >
+                <View style={styles.settingItemLeft}>
+                  <Ionicons name={module.icon as any} size={22} color={colors.primary} />
+                  <View style={styles.settingItemContent}>
+                    <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                      {module.title}
+                    </Text>
+                    <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                      {module.desc}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
-            </TouchableOpacity>
-          </View>
+                <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+              </TouchableOpacity>
+            </View>
+          ))}
         </View>
 
         {/* Contact Section */}
@@ -236,6 +222,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   settingItemContent: {
     flex: 1,
+  },
+  settingItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  settingItemValue: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   settingItemTitle: {
     fontSize: 16,

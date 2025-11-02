@@ -39,6 +39,7 @@ export interface ModuleQuickAction {
   icon: string;
   color: string;
   route: string;
+  action?: () => void; // Optional custom callback function
 }
 
 export interface ModuleDashboardConfig<T extends BaseEntity = BaseEntity> {
@@ -441,7 +442,14 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
                     color: action.color,
                     route: action.route,
                   }}
-                  onPress={() => handleNavigate(action.route)}
+                  onPress={() => {
+                    // If action has a custom callback, use it; otherwise navigate to route
+                    if (action.action && typeof action.action === 'function') {
+                      action.action();
+                    } else {
+                      handleNavigate(action.route);
+                    }
+                  }}
                 />
               ))}
             </View>

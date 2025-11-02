@@ -1,4 +1,4 @@
-export type NotificationType = 'success' | 'error' | 'info';
+export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 /**
  * Error Categories
@@ -260,6 +260,13 @@ const info = (message: string, options?: ToastOptions) => {
   show(message, 'info', options);
 };
 
+/**
+ * Uyarı mesajı gösterir (düşük stok uyarıları için)
+ */
+const warning = (message: string, options?: ToastOptions) => {
+  show(message, 'warning', options);
+};
+
 export const notificationService = {
   show,
   success,
@@ -270,6 +277,7 @@ export const notificationService = {
   permissionError,
   businessError,
   info,
+  warning,
   onToastDismissed,
   clearQueue,
   subscribe: (listener: Listener) => {

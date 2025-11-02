@@ -16,16 +16,18 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import spacing from '../../../core/constants/spacing';
 import { useAppStore } from '../../../store/useAppStore';
 import { usePermissions } from '../../../core/hooks/usePermissions';
+import { useNavigation } from '@react-navigation/native';
 
 /**
  * StockDashboardScreen - Dashboard for Stock module
  */
 export default function ProductsDashboardScreen() {
-  const { t } = useTranslation(['stock', 'common']);
+  const { t } = useTranslation(['stock', 'common', 'settings']);
   const { activeTheme, colors } = useTheme();
   const isDark = activeTheme === 'dark';
   const role = useAppStore((s) => s.role);
   const permissions = usePermissions(role);
+  const navigation = useNavigation<any>();
   
   // Use React Query hook for stats
   const { data: stats, isLoading, error } = useProductStatsQuery();
@@ -138,6 +140,14 @@ export default function ProductsDashboardScreen() {
         icon: 'grid-outline',
         color: isDark ? '#60A5FA' : '#1D4ED8',
         route: 'GlobalFieldsManagement',
+      },
+      {
+        key: 'stock-alert-settings',
+        label: t('settings:stock_alerts', { defaultValue: 'Stok Uyarı Ayarları' }),
+        icon: 'notifications-outline',
+        color: isDark ? '#F59E0B' : '#D97706',
+        route: 'LowStockAlertSettings',
+        action: () => navigation.navigate('LowStockAlertSettings', { fromModule: 'Stock' }),
       },
       // 5. View - List all items
       {
