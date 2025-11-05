@@ -6,11 +6,15 @@ import { useTranslation } from 'react-i18next';
 import { hasPermission } from '../../core/config/permissions';
 import { Role } from '../../core/config/appConstants';
 import { useTheme } from '../../core/contexts/ThemeContext';
+import { usePermissions } from '../../core/hooks/usePermissions';
+import { useNavigation } from '@react-navigation/native';
 import ConfirmDialog from './ConfirmDialog';
 import AppModal from './Modal';
 import storage from '../services/storageService';
 import { MODULE_CONFIGS, ALL_QUICK_ACTIONS, getQuickActionFallback, getModuleConfigByRoute } from '../../core/config/moduleConfig';
 import { allRoutes } from '../../core/navigation/routes';
+import { useAppStore } from '../../store/useAppStore';
+import { transformMenuText, getCompactFontSize } from '../../core/utils/menuTextUtils';
 
 type MenuItem = {
   key: string;
@@ -32,6 +36,10 @@ type Props = {
 };
 
 export default function FullScreenMenu({ visible, onClose, onNavigate, availableRoutes, role = 'guest', activeRouteName }: Props) {
+  const navigation = useNavigation<any>();
+  const permissions = usePermissions(role);
+  const menuTextCase = useAppStore((s) => s.menuTextCase);
+  const language = useAppStore((s) => s.language);
   // Get all unique translation namespaces from module configs
   const translationNamespaces = useMemo(() => {
     const namespaces = new Set<string>();
@@ -72,8 +80,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   const quickIconWrapSize = width > 640 ? 36 : 32;
   const { colors, activeTheme } = useTheme();
   const QUICK_MAX = 6; // Fixed to 6 quick actions
-  const [purchaseVisible, setPurchaseVisible] = useState(false);
-  const [purchaseTarget, setPurchaseTarget] = useState<string | null>(null);
+
   const [addQaVisible, setAddQaVisible] = useState(false);
   const [removeQaVisible, setRemoveQaVisible] = useState(false);
   const [removeQaKey, setRemoveQaKey] = useState<string | null>(null);
@@ -137,7 +144,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
 
   const processedItems = useMemo(() => {
     const mapped = MODULE_CONFIGS.map((module) => {
-      const hasAccess = !module.requiredPermission || hasPermission(role, module.requiredPermission);
+      // Use real permission check with usePermissions hook (checks package permissions)
+      const hasAccess = !module.requiredPermission || permissions.can(module.requiredPermission);
       const isAvailable = availableRoutes?.includes(module.routeName) ?? false;
       
       // Get label from translation
@@ -145,9 +153,12 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         defaultValue: module.key,
       });
       
+      // Transform label based on menu text case setting
+      const transformedLabel = transformMenuText(label, menuTextCase, language);
+      
       return {
         key: module.key,
-        label,
+        label: transformedLabel,
         icon: module.icon,
         routeName: module.routeName,
         requiredPermission: module.requiredPermission,
@@ -156,10 +167,13 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       };
     });
     
-    // Sadece navigator'da mevcut olan route'ları göster
-    const available = mapped.filter(it => it.isAvailable);
+    // Combine module items
+    const allItems = [...mapped];
     
-    // Owner: Tüm öğeleri göster (kilitli olanlar dahil)
+    // Sadece navigator'da mevcut olan route'ları göster
+    const available = allItems.filter(it => it.isAvailable);
+    
+    // Owner: Tüm öğeleri göster (kilitli olanlar dahil) - kilitli olanlar kilit ikonuyla gösterilir
     // Staff: Sadece erişim izni olanları göster
     // Admin: Tüm öğeleri göster (hepsi açık)
     const filtered = role === 'staff' 
@@ -168,25 +182,26 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
     
     // If we have an active module, prioritize it by putting it first
     if (activeModule) {
-      const activeModuleItem = filtered.find(item => item.routeName === activeModule.routeName);
-      const others = filtered.filter(item => item.routeName !== activeModule.routeName);
+      const activeModuleItem = filtered.find(item => item.routeName === activeModule.routeName || item.key === activeModule.key);
+      const others = filtered.filter(item => item.routeName !== activeModule.routeName && item.key !== activeModule.key);
       if (activeModuleItem) {
         return [activeModuleItem, ...others];
       }
     }
     
     return filtered;
-  }, [t, role, availableRoutes, activeModule]);
+  }, [t, role, availableRoutes, activeModule, permissions, menuTextCase, language]);
 
   const quickActionLabelByRoute = useMemo(() => {
     const labels: Record<string, string> = {};
     ALL_QUICK_ACTIONS.forEach((qa) => {
-      labels[qa.routeName] = t(`${qa.translationNamespace}:${qa.translationKey}`, {
+      const label = t(`${qa.translationNamespace}:${qa.translationKey}`, {
         defaultValue: qa.routeName,
       });
+      labels[qa.routeName] = transformMenuText(label, menuTextCase, language);
     });
     return labels;
-  }, [t]);
+  }, [t, menuTextCase, language]);
 
   // Note: processedQuickActions is not used - we only show custom quick actions
   // ALL_QUICK_ACTIONS is only used for the "Add Quick Action" modal
@@ -194,7 +209,8 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
   const processedCustomQuickActions = useMemo(() => {
     return customQuickActions
       .map((qa) => {
-        const hasAccess = !qa.requiredPermission || hasPermission(role, qa.requiredPermission);
+        // Use real permission check with usePermissions hook (checks package permissions)
+        const hasAccess = !qa.requiredPermission || permissions.can(qa.requiredPermission);
         const routeName = (qa as any).routeName;
         // Check if the route or its fallback is available
         // If availableRoutes is not provided or empty, assume all routes are available
@@ -205,13 +221,13 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
         const label = quickActionLabelByRoute[routeName] ?? qa.label;
         return { ...qa, label, isLocked: !hasAccess, isAvailable: isAvailable || fallbackAvailable } as any;
       })
-      .filter((qa: any) => !qa.isLocked && (qa.isAvailable || !availableRoutes || availableRoutes.length === 0));
-  }, [customQuickActions, role, quickActionLabelByRoute, availableRoutes]);
+            .filter((qa: any) => !qa.isLocked && (qa.isAvailable || !availableRoutes || availableRoutes.length === 0));                                               
+  }, [customQuickActions, role, quickActionLabelByRoute, availableRoutes, permissions]);
 
-  const canAddQuick = useMemo(() => {
-    // Check if user has permission to create any quick action
-    return ALL_QUICK_ACTIONS.some((qa) => hasPermission(role, qa.requiredPermission));
-  }, [role]);
+    const canAddQuick = useMemo(() => {
+    // Check if user has permission to create any quick action (checks package permissions)
+    return ALL_QUICK_ACTIONS.some((qa) => permissions.can(qa.requiredPermission));                                                                          
+  }, [permissions]);
 
   // Persist custom quick actions
   useEffect(() => {
@@ -227,7 +243,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
             const defaults: MenuItem[] = [];
             const commonRoutes = ['StockCreate', 'SalesCreate', 'PurchaseCreate', 'CustomerCreate', 'ExpenseCreate', 'SupplierCreate'];
             commonRoutes.forEach(route => {
-              const qa = ALL_QUICK_ACTIONS.find(a => a.routeName === route && hasPermission(role, a.requiredPermission));
+              const qa = ALL_QUICK_ACTIONS.find(a => a.routeName === route && permissions.can(a.requiredPermission));
               if (qa && defaults.length < QUICK_MAX) {
                 // Check if this quick action already exists in parsed
                 const exists = parsed.find(p => p.key === qa.key);
@@ -258,7 +274,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
           // Add most common quick actions: stock, sales, purchases, customers, expenses, suppliers
           const commonRoutes = ['StockCreate', 'SalesCreate', 'PurchaseCreate', 'CustomerCreate', 'ExpenseCreate', 'SupplierCreate'];
           commonRoutes.forEach(route => {
-            const qa = ALL_QUICK_ACTIONS.find(a => a.routeName === route && hasPermission(role, a.requiredPermission));
+            const qa = ALL_QUICK_ACTIONS.find(a => a.routeName === route && permissions.can(a.requiredPermission));
             if (qa && defaults.length < QUICK_MAX) {
               defaults.push({
                 key: qa.key,
@@ -276,7 +292,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       } catch {}
     })();
     return () => { mounted = false; };
-  }, [role, quickActionLabelByRoute, QUICK_MAX]);
+  }, [role, quickActionLabelByRoute, QUICK_MAX, permissions]);
 
   useEffect(() => {
     (async () => {
@@ -362,10 +378,13 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
           }
         }
         
-        const hasAccess = !route.requiredPermission || hasPermission(role, route.requiredPermission);
+        // Use real permission check with usePermissions hook (checks package permissions)
+        const hasAccess = !route.requiredPermission || permissions.can(route.requiredPermission);
+        // Transform label based on menu text case setting
+        const transformedLabel = transformMenuText(label, menuTextCase, language);
         searchItems.push({
           key: `route-${route.name}`,
-          label,
+          label: transformedLabel,
           icon,
           routeName: route.name,
           requiredPermission: route.requiredPermission,
@@ -375,7 +394,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
       });
     
     return searchItems;
-  }, [processedItems, availableRoutes, role, t]);
+  }, [processedItems, availableRoutes, role, t, permissions, menuTextCase, language]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return processedItems.map(item => ({ ...item, moduleLabel: null }));
@@ -455,9 +474,10 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
           const itemModule = getModuleConfigByRoute(item.routeName) || 
                             MODULE_CONFIGS.find(m => m.routeName === routeConfig.module || m.key === routeConfig.module);
           if (itemModule) {
-            moduleLabel = t(`${itemModule.translationNamespace}:${itemModule.translationKey}`, {
+            const label = t(`${itemModule.translationNamespace}:${itemModule.translationKey}`, {
               defaultValue: itemModule.key,
             });
+            moduleLabel = transformMenuText(label, menuTextCase, language);
           }
         }
         
@@ -538,7 +558,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
             <View style={styles.headerLeft}>
               <View style={[styles.menuIndicator, { backgroundColor: colors.primary }]} />
               <Text style={[styles.headerTitle, { color: colors.text }]}>
-                {t('common:menu', { defaultValue: 'Menü' })}
+                {transformMenuText(t('common:menu', { defaultValue: 'Menü' }), menuTextCase, language)}
               </Text>
             </View>
             <View style={[styles.searchWrap, { borderColor: colors.border, backgroundColor: colors.surface, flex: 1, maxWidth: 300, marginHorizontal: spacing.md }]}>
@@ -574,7 +594,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                 <View>
                   <View style={styles.quickHeader}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {t('common:quick_actions', { defaultValue: 'Hızlı İşlemler' })}
+                      {transformMenuText(t('common:quick_actions', { defaultValue: 'Hızlı İşlemler' }), menuTextCase, language)}
                     </Text>
                     {canAddQuick && totalQuickCount < QUICK_MAX && (
                       <TouchableOpacity 
@@ -591,10 +611,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                     {filteredQuickActions.map((qa, idx) => (
                       <TouchableOpacity
                         key={qa.key}
-                        style={[
-                          styles.quickItem,
-                          { width: `${100 / qaCols}%` }
-                        ]}
+                        style={styles.quickItem}
                         onPress={() => {
                           onClose();
                           safeNavigate(qa.routeName);
@@ -621,8 +638,19 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                         ]}>
                           <Ionicons name={qa.icon as any} size={quickIconSize} color={colors.primary} />
                         </View>
-                        <Text style={[styles.quickLabel, { color: colors.text, fontSize: width > 640 ? 11 : 10 }]} numberOfLines={1}>
-                          {qa.label}
+                        <Text 
+                          style={[
+                            styles.quickLabel, 
+                            { 
+                              color: colors.text, 
+                              fontSize: getCompactFontSize(width > 640 ? 11 : 10, menuTextCase)
+                            }
+                          ]} 
+                          numberOfLines={1}
+                          adjustsFontSizeToFit={true}
+                          minimumFontScale={0.7}
+                        >
+                          {transformMenuText(qa.label, menuTextCase, language)}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -637,7 +665,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                     <View style={[styles.activeModuleBadge, { backgroundColor: `${colors.primary}20` }]}>
                       <Ionicons name="location" size={16} color={colors.primary} />
                       <Text style={[styles.activeModuleText, { color: colors.primary }]}>
-                        {t('common:current_module', { defaultValue: 'Mevcut Modül' })}: {activeModule ? t(`${activeModule.translationNamespace}:${activeModule.translationKey}`, { defaultValue: activeModule.key }) : ''}
+                        {transformMenuText(t('common:current_module', { defaultValue: 'Mevcut Modül' }), menuTextCase, language)}: {activeModule ? transformMenuText(t(`${activeModule.translationNamespace}:${activeModule.translationKey}`, { defaultValue: activeModule.key }), menuTextCase, language) : ''}
                       </Text>
                     </View>
                   </View>
@@ -681,10 +709,9 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                         ]}
                       onPress={() => {
                         if (item.isLocked) {
-                          if (role === 'owner') {
-                            setPurchaseTarget(item.label);
-                            setPurchaseVisible(true);
-                          }
+                          // If locked, navigate to Packages screen to upgrade
+                          onClose();
+                          navigation.navigate('Packages');
                         } else {
                           onClose();
                           safeNavigate(item.routeName);
@@ -703,16 +730,35 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                           borderRadius: Math.round(iconWrapSize / 3.25),
                         }
                       ]}> 
-                        <Ionicons name={item.icon as any} size={itemIconSize} color={item.isLocked ? colors.muted : colors.primary} />
+                        <Ionicons 
+                          name={item.icon as any} 
+                          size={itemIconSize} 
+                          color={item.isLocked ? colors.muted : colors.primary} 
+                        />
                         {item.isLocked && (
                           <View style={[styles.lockBadge, { backgroundColor: colors.muted }]}> 
                             <Ionicons name="lock-closed" size={12} color={colors.surface} />
                           </View>
                         )}
                       </View>
-                      <Text style={[styles.itemLabel, { color: colors.text, fontSize: itemLabelSize }]} numberOfLines={1}>{item.label}</Text>
+                      <Text 
+                        style={[
+                          styles.itemLabel, 
+                          { 
+                            color: colors.text, 
+                            fontSize: getCompactFontSize(itemLabelSize, menuTextCase)
+                          }
+                        ]} 
+                        numberOfLines={2}
+                        adjustsFontSizeToFit={true}
+                        minimumFontScale={0.7}
+                      >
+                        {transformMenuText(item.label, menuTextCase, language)}
+                      </Text>
                       {hasSearchTerm && moduleLabel && (
-                        <Text style={[styles.moduleSubLabel, { color: colors.muted }]} numberOfLines={1}>{moduleLabel}</Text>
+                        <Text style={[styles.moduleSubLabel, { color: colors.muted }]} numberOfLines={1}>
+                          {transformMenuText(moduleLabel, menuTextCase, language)}
+                        </Text>
                       )}
                     </TouchableOpacity>
                     );
@@ -727,7 +773,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
             <View style={{ gap: spacing.md }}>
               <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: spacing.xs }}>{t('common:add_quick_action', { defaultValue: 'Hızlı işlem ekle' })}</Text>
               {totalQuickCount < QUICK_MAX && ALL_QUICK_ACTIONS
-                .filter(qa => hasPermission(role, qa.requiredPermission))
+                .filter(qa => permissions.can(qa.requiredPermission))
                 .filter(qa => !customQuickActions.find(c => c.key === qa.key))
                 .map(qa => {
                   const menuItem: MenuItem = {
@@ -753,7 +799,9 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
                       <View style={[styles.quickIconWrap, { backgroundColor: `${colors.primary}15`, marginRight: spacing.sm }]}> 
                         <Ionicons name={qa.icon as any} size={18} color={colors.primary} />
                       </View>
-                      <Text style={{ color: colors.text, fontWeight: '600' }}>{menuItem.label}</Text>
+                      <Text style={{ color: colors.text, fontWeight: '600' }}>
+                        {transformMenuText(menuItem.label, menuTextCase, language)}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -765,20 +813,7 @@ export default function FullScreenMenu({ visible, onClose, onNavigate, available
             </View>
           </AppModal>
           
-          <ConfirmDialog
-            visible={purchaseVisible}
-            title={t('common:upgrade_needed', { defaultValue: 'Yükseltme gerekli' }) as string}
-            message={(t('common:upgrade_message', { defaultValue: `${purchaseTarget || ''} için bir paket satın almanız gerekiyor.` }) as string)}
-            confirmText={t('common:buy_now', { defaultValue: 'Satın al' }) as string}
-            cancelText={t('common:cancel', { defaultValue: 'Vazgeç' }) as string}
-            onCancel={() => setPurchaseVisible(false)}
-            onConfirm={() => {
-              setPurchaseVisible(false);
-              onClose();
-              // Yönlendirme: Ayarlar sayfasına yönlendiriyoruz (paket satın alma akışı burada olabilir)
-              safeNavigate('Settings');
-            }}
-          />
+
 
           <ConfirmDialog
             visible={removeQaVisible}
@@ -915,15 +950,19 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',      
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
     overflow: 'hidden',
+    gap: spacing.xs,
   },
   quickItem: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    minWidth: 0,
+    flex: 1,
   },
   
   quickIconWrap: {
@@ -944,6 +983,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.2,
     lineHeight: 16,
+    maxWidth: '100%',
   },
   itemsGrid: {
     flexDirection: 'row',

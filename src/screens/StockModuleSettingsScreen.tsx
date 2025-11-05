@@ -30,15 +30,6 @@ export default function StockModuleSettingsScreen() {
       color: '#F59E0B',
       permission: 'stock:view', // Stock modülüne erişimi olan herkes görebilir
     },
-    {
-      key: 'global-fields',
-      label: t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' }),
-      desc: t('stock:manage_global_fields_desc', { defaultValue: 'Tüm ürünlerde kullanılabilecek genel alanları oluşturun' }),
-      icon: 'grid-outline',
-      route: 'GlobalFieldsManagement',
-      color: '#60A5FA',
-      permission: 'stock:manage_global_fields',
-    },
   ];
 
   // Filter settings based on permissions

@@ -16,6 +16,51 @@ import { Paginated } from '../../../shared/types/module';
 import { toQueryParams } from '../../../shared/utils/query';
 
 /**
+ * Accounting Summary Types
+ */
+export interface AccountingSummary {
+  period: 'day' | 'week' | 'month' | 'year';
+  startDate?: string;
+  endDate?: string;
+  revenue: {
+    totalRevenue: number;
+    salesRevenue: number;
+    manualRevenue: number;
+  };
+  expenses: {
+    totalExpenses: number;
+    productPurchaseCost: number;
+    employeeSalaries: number;
+    manualExpenses: number;
+  };
+  profit: {
+    netProfit: number;
+    profitMargin: number;
+  };
+  stock?: {
+    totalStockValue: number;
+    totalProducts: number;
+    lowStockItems: number;
+  };
+  cashflow?: {
+    openingBalance: number;
+    closingBalance: number;
+    netCashflow: number;
+  };
+}
+
+/**
+ * Hook for fetching accounting summary
+ */
+export function useAccountingSummaryQuery(period: 'day' | 'week' | 'month' | 'year' = 'month') {
+  return useApiQuery<AccountingSummary>({
+    url: apiEndpoints.accounting.summary(period),
+    queryKey: queryKeys.accounting.summary(period),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
  * Hook for fetching reports list
  */
 export function useReportsQuery(filters?: Record<string, any>) {

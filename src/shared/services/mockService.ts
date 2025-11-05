@@ -600,6 +600,16 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
     return wrapResponse(summary, 200, 'OperationSuccessful') as T;
   }
 
+  // Handle accounting endpoints
+  if (url.startsWith('/accounting/')) {
+    if (method === 'GET' && url.includes('/accounting/summary')) {
+      const summary = calculateAccountingSummary(url, currentOwnerId);
+      return wrapResponse(summary, 200, 'OperationSuccessful') as T;
+    }
+    // Other accounting endpoints can be added here
+    throw wrapErrorResponse('Accounting endpoint not implemented', 404);
+  }
+
   // Handle form templates endpoints: /form-templates/:module, /form-templates/:module/:id, etc.
   if (url.startsWith('/form-templates/')) {
     return handleFormTemplateRequest<T>(method, url, body, currentOwnerId);
@@ -608,6 +618,16 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   // Handle stock alert settings endpoints: GET /stock/alert-settings, PUT /stock/alert-settings
   if (url === '/stock/alert-settings') {
     return handleStockAlertSettingsRequest<T>(method, url, body, currentOwnerId);
+  }
+
+  // Handle employee verification settings endpoints: GET /employees/verification-settings, PUT /employees/verification-settings
+  if (url === '/employees/verification-settings') {
+    return handleEmployeeVerificationSettingsRequest<T>(method, url, body, currentOwnerId);
+  }
+
+  // Handle verification endpoints: POST /verification/tc/verify, POST /verification/imei/verify
+  if (url.startsWith('/verification/')) {
+    return handleVerificationRequest<T>(method, url, body, currentOwnerId);
   }
 
   // Supports: /resource?page=1&pageSize=20, /resource/:id
@@ -628,6 +648,106 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
   const resource = parts[0];
   const id = parts[1];
   const subResource = parts[2];
+  
+  // Handle special endpoints for sales
+  if (resource === 'sales' && id === 'debt') {
+    // GET /sales/debt - Borçlu satışlar listesi
+    const salesStore: any = (stores as any).sales;
+    let allSales: any[] = salesStore ? salesStore.list() : [];
+    
+    // Filter by owner
+    allSales = filterByOwner(allSales, currentOwnerId);
+    
+    // Filter: Sadece debtCollectionDate olan ve isPaid !== true olan satışlar
+    const debtSales = allSales.filter((sale: any) => {
+      return sale.debtCollectionDate && sale.isPaid !== true;
+    });
+    
+    // Apply search
+    let filtered = debtSales;
+    if (q) {
+      filtered = filtered.filter((item: any) => {
+        const searchable = [
+          item.customerName,
+          item.productName,
+          item.title,
+          item.id,
+        ].filter(Boolean).join(' ').toLowerCase();
+        return searchable.includes(q);
+      });
+    }
+    
+    // Apply filters
+    if (filters.customerId) {
+      filtered = filtered.filter((item: any) => String(item.customerId) === String(filters.customerId));
+    }
+    if (filters.isPaid !== undefined) {
+      const isPaidFilter = filters.isPaid === 'true' || filters.isPaid === true;
+      filtered = filtered.filter((item: any) => Boolean(item.isPaid) === isPaidFilter);
+    }
+    
+    // Apply sorting
+    if (orderColumn) {
+      filtered.sort((a: any, b: any) => {
+        let aVal = a[orderColumn];
+        let bVal = b[orderColumn];
+        
+        if (orderColumn === 'debtCollectionDate') {
+          aVal = aVal ? new Date(aVal).getTime() : 0;
+          bVal = bVal ? new Date(bVal).getTime() : 0;
+        }
+        
+        if (aVal < bVal) return orderDirection === 'ASC' ? -1 : 1;
+        if (aVal > bVal) return orderDirection === 'ASC' ? 1 : -1;
+        return 0;
+      });
+    }
+    
+    // Paginate
+    const totalCount = filtered.length;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedItems = filtered.slice(startIndex, endIndex);
+    
+    // Normalize IDs
+    const normalized = paginatedItems.map((item: any) => ({
+      ...item,
+      id: String(item.id),
+    }));
+    
+    const paginated = createPaginatedData(normalized, totalCount, page, pageSize);
+    return wrapResponse(paginated, 200, 'OperationSuccessful') as T;
+  }
+  
+  // Handle /sales/:id/mark-paid endpoint
+  if (resource === 'sales' && id && subResource === 'mark-paid') {
+    if (method === 'PUT') {
+      const salesStore: any = (stores as any).sales;
+      if (!salesStore) {
+        throw wrapErrorResponse('Sales store not found', 404);
+      }
+      
+      const sale = salesStore.get(id);
+      if (!sale) {
+        throw wrapErrorResponse('Sale not found', 404);
+      }
+      
+      // Check owner access
+      const filtered = filterByOwner([sale], currentOwnerId);
+      if (filtered.length === 0) {
+        throw wrapErrorResponse('Sale not found', 404);
+      }
+      
+      // Update sale to mark as paid
+      const updated = salesStore.update(id, { isPaid: true });
+      if (!updated) {
+        throw wrapErrorResponse('Failed to update sale', 500);
+      }
+      
+      return wrapResponse({ ...updated, id: String(updated.id) }, 200, 'OperationSuccessful') as T;
+    }
+    throw wrapErrorResponse('Method not allowed', 405);
+  }
   
   // Handle /resource/stats endpoints (where stats is the second part, not third)
   if (id === 'stats') {
@@ -880,8 +1000,24 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
     if (currentOwnerId !== null) {
       itemToCreate.ownerId = currentOwnerId;
     }
+    
+    // Normalize items array for bulk sales (ensure productId is string)
+    if (itemToCreate.items && Array.isArray(itemToCreate.items)) {
+      itemToCreate.items = itemToCreate.items.map((item: any) => ({
+        ...item,
+        productId: String(item.productId),
+      }));
+    }
+    
     const created = store.create(itemToCreate);
-    return wrapResponse(created, 201, 'OperationSuccessful') as T;
+    
+    // Normalize created item ID
+    const normalizedCreated = {
+      ...created,
+      id: String(created.id),
+    };
+    
+    return wrapResponse(normalizedCreated, 201, 'OperationSuccessful') as T;
   }
 
   if (method === 'PUT') {
@@ -913,6 +1049,9 @@ export async function mockRequest<T>(method: HttpMethod, url: string, body?: any
 
 // Stock Alert Settings Store (in-memory, per owner)
 let stockAlertSettingsStore: Record<number, any> = {};
+
+// Employee Verification Settings Store (in-memory, per owner)
+let employeeVerificationSettingsStore: Record<number, any> = {};
 
 // Stock Alert Settings handler
 async function handleStockAlertSettingsRequest<T>(
@@ -954,6 +1093,151 @@ async function handleStockAlertSettingsRequest<T>(
   }
 
   throw wrapErrorResponse('Unsupported method', 405);
+}
+
+// Employee Verification Settings handler
+async function handleEmployeeVerificationSettingsRequest<T>(
+  method: HttpMethod,
+  url: string,
+  body?: any,
+  ownerId: number | null = null
+): Promise<T> {
+  // Use ownerId as key (or 0 for admin/global)
+  const key = ownerId || 0;
+
+  if (method === 'GET') {
+    // Return existing settings or default values
+    const settings = employeeVerificationSettingsStore[key] || {
+      tcVerificationEnabled: false,
+      imeiVerificationEnabled: false,
+    };
+    return wrapResponse(settings, 200, 'OperationSuccessful') as T;
+  }
+
+  if (method === 'PUT') {
+    // Update settings
+    const existing = employeeVerificationSettingsStore[key] || {
+      tcVerificationEnabled: false,
+      imeiVerificationEnabled: false,
+    };
+    
+    const updated = {
+      ...existing,
+      ...body, // Update with provided fields
+    };
+    
+    employeeVerificationSettingsStore[key] = updated;
+    return wrapResponse(updated, 200, 'OperationSuccessful') as T;
+  }
+
+  throw wrapErrorResponse('Unsupported method', 405);
+}
+
+// Verification handler (TC Kimlik, IMEI)
+async function handleVerificationRequest<T>(
+  method: HttpMethod,
+  url: string,
+  body?: any,
+  ownerId: number | null = null
+): Promise<T> {
+  if (method !== 'POST') {
+    throw wrapErrorResponse('Only POST method is supported', 405);
+  }
+
+  // Parse URL: /verification/tc/verify or /verification/imei/verify
+  const parts = url.replace(/^\//, '').split('/');
+  if (parts.length < 3) {
+    throw wrapErrorResponse('Invalid verification URL', 400);
+  }
+
+  const type = parts[1]; // 'tc' or 'imei'
+
+  if (type === 'tc' && url.endsWith('/verify')) {
+    // TC Kimlik verification with required fields
+    if (!body || !body.tcNo || !body.birthDate || !body.fullName) {
+      throw wrapErrorResponse('TC verification requires tcNo, birthDate, and fullName', 400);
+    }
+
+    const { tcNo, birthDate, fullName } = body;
+    
+    // Validate TC number
+    if (!tcNo || tcNo.length !== 11 || !/^\d+$/.test(tcNo)) {
+      throw wrapErrorResponse('Invalid TC Kimlik number', 400);
+    }
+
+    // Mock verification logic: Simulate checking with external API
+    // In real implementation, this would call an external API with all three fields
+    // For demo: Accept if TC starts with valid digits and name is provided
+    const normalizedName = fullName.toLowerCase().trim();
+    const isValid = normalizedName.length > 0 && /^\d{11}$/.test(tcNo);
+
+    if (!isValid) {
+      const mockResponse = {
+        valid: false,
+        tcNo,
+        message: 'TC Kimlik doğrulaması başarısız. Lütfen bilgileri kontrol edin.',
+      };
+      return wrapResponse(mockResponse, 200, 'OperationSuccessful') as T;
+    }
+
+    // Mock successful response with person information
+    // Extract first and last name from fullName
+    const nameParts = normalizedName.split(' ').filter(p => p.length > 0);
+    const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : '';
+    const lastName = nameParts.length > 1 
+      ? nameParts.slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')
+      : '';
+
+    const mockResponse = {
+      valid: true,
+      tcNo,
+      firstName: firstName || 'Ahmet',
+      lastName: lastName || 'Yılmaz',
+      birthDate: birthDate,
+      gender: 'M' as const,
+    };
+
+    return wrapResponse(mockResponse, 200, 'OperationSuccessful') as T;
+  } else if (type === 'imei' && url.endsWith('/verify')) {
+    // IMEI verification
+    if (!body || !body.imei) {
+      throw wrapErrorResponse('IMEI verification requires imei', 400);
+    }
+
+    const { imei, brand, model, serialNumber } = body;
+    
+    // Validate IMEI
+    if (!imei || imei.length !== 15 || !/^\d+$/.test(imei)) {
+      throw wrapErrorResponse('Invalid IMEI number', 400);
+    }
+
+    // Mock verification logic: Simulate checking with external API
+    // In real implementation, this would call an external IMEI database
+    const isValid = /^\d{15}$/.test(imei);
+
+    if (!isValid) {
+      const mockResponse = {
+        valid: false,
+        imei,
+        message: 'IMEI doğrulaması başarısız. Lütfen IMEI numarasını kontrol edin.',
+      };
+      return wrapResponse(mockResponse, 200, 'OperationSuccessful') as T;
+    }
+
+    // Mock successful response with device information
+    const mockResponse = {
+      valid: true,
+      imei,
+      brand: brand || 'Samsung',
+      model: model || 'Galaxy S21',
+      serialNumber: serialNumber || 'SN123456789',
+      status: 'active' as const,
+    };
+
+    return wrapResponse(mockResponse, 200, 'OperationSuccessful') as T;
+  } else {
+    throw wrapErrorResponse('Invalid verification endpoint. Use /verification/tc/verify or /verification/imei/verify', 400);
+  }
 }
 
 // Calculate owner dashboard summary
@@ -1192,6 +1476,145 @@ function calculateOwnerDashboardSummary(url: string, ownerId: number | null): an
   }
 
   throw wrapErrorResponse(`Unknown dashboard endpoint: ${endpoint}`, 404);
+}
+
+// Calculate accounting summary
+function calculateAccountingSummary(url: string, ownerId: number | null): any {
+  // Parse period from query string
+  const urlParts = url.split('?');
+  const queryParams = new URLSearchParams(urlParts[1] || '');
+  const period = (queryParams.get('period') || 'month') as 'day' | 'week' | 'month' | 'year';
+  
+  // Get stores
+  const salesStore: any = (stores as any).sales;
+  const expensesStore: any = (stores as any).expenses;
+  const revenueStore: any = (stores as any).revenue;
+  const purchasesStore: any = (stores as any).purchases;
+  
+  let allSales: any[] = salesStore ? salesStore.list() : [];
+  let allExpenses: any[] = expensesStore ? expensesStore.list() : [];
+  let allRevenue: any[] = revenueStore ? revenueStore.list() : [];
+  let allPurchases: any[] = purchasesStore ? purchasesStore.list() : [];
+  
+  // Filter by owner ID
+  allSales = filterByOwner(allSales, ownerId);
+  allExpenses = filterByOwner(allExpenses, ownerId);
+  allRevenue = filterByOwner(allRevenue, ownerId);
+  allPurchases = filterByOwner(allPurchases, ownerId);
+  
+  // Helper function to get week number
+  function getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+  
+  // Helper function to filter data by period
+  function filterByPeriod(data: any[], period: string, checkStatus: boolean = false): any[] {
+    const now = new Date();
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const currentWeek = getWeekNumber(now);
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    return data.filter((item: any) => {
+      if (checkStatus && item.status !== 'completed') return false;
+      if (!item.date) return false;
+      
+      const itemDate = new Date(item.date);
+      
+      switch (period) {
+        case 'day':
+          return itemDate.toDateString() === currentDate.toDateString();
+        case 'week':
+          return getWeekNumber(itemDate) === currentWeek && itemDate.getFullYear() === currentYear;
+        case 'month':
+          return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+        case 'year':
+          return itemDate.getFullYear() === currentYear;
+        default:
+          return true;
+      }
+    });
+  }
+  
+  // Filter data by period
+  const filteredSales = filterByPeriod(allSales, period, true);
+  const filteredExpenses = filterByPeriod(allExpenses, period, false);
+  const filteredRevenue = filterByPeriod(allRevenue, period, false);
+  const filteredPurchases = filterByPeriod(allPurchases, period, false);
+  
+  // Calculate revenue
+  const salesRevenue = filteredSales.reduce((sum, s) => sum + (s.amount || s.total || 0), 0);
+  const manualRevenue = filteredRevenue.filter((r: any) => r.source === 'manual' || !r.source)
+    .reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+  const totalRevenue = salesRevenue + manualRevenue;
+  
+  // Calculate expenses
+  const productPurchaseCost = filteredPurchases.reduce((sum, p) => {
+    const cost = p.totalCost || p.amount || 0;
+    return sum + cost;
+  }, 0);
+  
+  const manualExpenses = filteredExpenses.filter((e: any) => !e.productId || e.source === 'manual')
+    .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+  
+  // Estimate employee salaries (simplified - in real app this would come from employee data)
+  const employeeSalaries = 0; // Can be calculated from employee data if available
+  
+  const totalExpenses = productPurchaseCost + employeeSalaries + manualExpenses;
+  
+  // Calculate profit
+  const netProfit = totalRevenue - totalExpenses;
+  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  
+  // Calculate date range
+  const now = new Date();
+  let startDate: string;
+  let endDate: string = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  switch (period) {
+    case 'day':
+      startDate = endDate;
+      break;
+    case 'week':
+      const dayOfWeek = now.getDay();
+      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
+      const monday = new Date(now.setDate(diff));
+      startDate = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+      break;
+    case 'month':
+      startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      break;
+    case 'year':
+      startDate = `${now.getFullYear()}-01-01`;
+      break;
+    default:
+      startDate = endDate;
+  }
+  
+  return {
+    period,
+    startDate,
+    endDate,
+    revenue: {
+      totalRevenue,
+      salesRevenue,
+      manualRevenue,
+    },
+    expenses: {
+      totalExpenses,
+      productPurchaseCost,
+      employeeSalaries,
+      manualExpenses,
+    },
+    profit: {
+      netProfit,
+      profitMargin: Math.round(profitMargin * 100) / 100,
+    },
+  };
 }
 
 // Calculate stats for modules

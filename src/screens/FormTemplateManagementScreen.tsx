@@ -24,34 +24,78 @@ import { usePermissions } from '../core/hooks/usePermissions';
 import { useAppStore } from '../store/useAppStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BaseCustomField } from '../shared/types/customFields';
-import { loadGlobalFieldsForModule, customFieldToDynamicField } from '../shared/utils/formTemplateUtils';
+import { customFieldToDynamicField } from '../shared/utils/formTemplateUtils';
 import DynamicForm from '../shared/components/DynamicForm';
 import Input from '../shared/components/Input';
 import Select from '../shared/components/Select';
 import { generateFieldName, getFieldNameExample, normalizeFieldName } from '../shared/utils/fieldNameUtils';
+import { Role } from '../core/config/appConstants';
+import { showPermissionAlert as showPermissionAlertUtil } from '../shared/utils/permissionUtils';
+import packages from '../mocks/packages.json';
+import users from '../mocks/users.json';
 
 export default function FormTemplateManagementScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { t } = useTranslation(['common', 'stock', 'customers', 'suppliers', 'sales', 'purchases', 'expenses', 'revenue', 'employees']);
+  const { t } = useTranslation(['common', 'packages', 'stock', 'customers', 'suppliers', 'sales', 'purchases', 'expenses', 'revenue', 'employees']);
   const { colors } = useTheme();
   const role = useAppStore((s) => s.role);
+  const user = useAppStore((s) => s.user);
   const permissions = usePermissions(role);
   const queryClient = useQueryClient();
 
-  // Get available modules based on permissions
+  // Get package info for form limits
+  const packageInfo = useMemo(() => {
+    let packageId = (user as any)?.package || 'free';
+    // For STAFF: Use owner's package
+    if (role === Role.STAFF && (user as any)?.ownerId) {
+      const owner: any = (users as any).find((u: any) => u.id === (user as any).ownerId);
+      packageId = owner?.package || 'free';
+    }
+    const pkg: any = (packages as any).find((p: any) => p.id === packageId);
+    return {
+      maxCustomForms: pkg?.maxCustomForms || 0,
+      allowedFormModules: pkg?.allowedFormModules || [],
+    };
+  }, [user, role]);
+
+  // Get available modules based on permissions and package limits
   const availableModules = useMemo(() => {
     return MODULE_CONFIGS.filter(config => {
       const moduleKey = config.key;
       // Only include modules that support form templates
       if (!getSupportedModules().includes(moduleKey)) return false;
-      // Check permission
-      return permissions.can(config.requiredPermission);
+      // Check both module view permission and form template permission
+      if (!permissions.can(config.requiredPermission) || !permissions.can(`${moduleKey}:custom_form`)) {
+        return false;
+      }
+      // Check if module is allowed in package (if package has allowedFormModules restriction)
+      if (packageInfo.allowedFormModules.length > 0 && !packageInfo.allowedFormModules.includes(moduleKey)) {
+        return false;
+      }
+      return true;
     });
-  }, [permissions]);
+  }, [permissions, packageInfo]);
+  
+  // Selected module state - get from route params if available, otherwise use first available module
+  const initialModule = route.params?.module || availableModules[0]?.key || 'stock';
+  const [selectedModule, setSelectedModule] = useState<string>(initialModule);
+  
+  // Update selected module when route params change
+  useEffect(() => {
+    if (route.params?.module && availableModules.some(m => m.key === route.params.module)) {
+      setSelectedModule(route.params.module);
+    }
+  }, [route.params?.module, availableModules]);
 
-  // Selected module state
-  const [selectedModule, setSelectedModule] = useState<string>(availableModules[0]?.key || 'stock');
+  // Helper function to show permission alert - uses centralized utility
+  const handlePermissionAlert = (permission: string) => {
+    const fullPermission = `${selectedModule}:${permission}`;
+    showPermissionAlertUtil(role, fullPermission, navigation, t, selectedModule);
+  };
+
+  // Permission checks - must be after selectedModule is defined
+  const canManageTemplates = permissions.can(`${selectedModule}:custom_form`);
 
   // Get service for selected module
   const formTemplateService = useMemo(() => {
@@ -119,7 +163,6 @@ export default function FormTemplateManagementScreen() {
   const [templateDescription, setTemplateDescription] = useState('');
   const [selectedBaseFields, setSelectedBaseFields] = useState<string[]>([]); // Array of field names
   const [templateCustomFields, setTemplateCustomFields] = useState<DynamicField[]>([]); // Custom fields for this template
-  const [globalCustomFields, setGlobalCustomFields] = useState<BaseCustomField[]>([]); // Global fields available
   const [selectedListFields, setSelectedListFields] = useState<string[]>([]); // Fields for list view
   const [selectedDetailFields, setSelectedDetailFields] = useState<string[]>([]); // Additional fields for detail view
   const [isAdding, setIsAdding] = useState(false);
@@ -133,16 +176,6 @@ export default function FormTemplateManagementScreen() {
   const [newCustomFieldRequired, setNewCustomFieldRequired] = useState(false);
   const [newCustomFieldOptions, setNewCustomFieldOptions] = useState('');
   
-  // Load global fields when module changes
-  useEffect(() => {
-    const loadGlobalFields = async () => {
-      const fields = await loadGlobalFieldsForModule(selectedModule);
-      setGlobalCustomFields(fields);
-    };
-    if (selectedModule) {
-      loadGlobalFields();
-    }
-  }, [selectedModule]);
 
   // Get module info
   const currentModule = useMemo(() => {
@@ -177,9 +210,6 @@ export default function FormTemplateManagementScreen() {
     setIsAdding(true);
     setModalVisible(true);
     
-    // Load global fields
-    const fields = await loadGlobalFieldsForModule(selectedModule);
-    setGlobalCustomFields(fields);
   };
 
   const handleEdit = async (template: FormTemplate) => {
@@ -196,9 +226,6 @@ export default function FormTemplateManagementScreen() {
     setIsAdding(false);
     setModalVisible(true);
     
-    // Load global fields
-    const fields = await loadGlobalFieldsForModule(selectedModule);
-    setGlobalCustomFields(fields);
   };
   
   const handleShowPreview = () => {
@@ -222,7 +249,6 @@ export default function FormTemplateManagementScreen() {
     const allFieldNames = [
       ...selectedBaseFields,
       ...templateCustomFields.map(f => f.name),
-      ...globalCustomFields.map(f => f.key),
     ];
     if (editingCustomField && editingCustomField.name !== normalizedName && allFieldNames.includes(normalizedName)) {
       Alert.alert(t('common:error', { defaultValue: 'Hata' }), t('common:field_name_exists', { defaultValue: 'Bu alan adı zaten kullanılıyor' }));
@@ -237,6 +263,8 @@ export default function FormTemplateManagementScreen() {
       name: normalizedName,
       labelKey: newCustomFieldLabel.trim(),
       required: newCustomFieldRequired,
+      type: newCustomFieldType,
+      readonly: newCustomFieldType === 'tc_verification' || newCustomFieldType === 'imei_verification',
       options: newCustomFieldType === 'select' && newCustomFieldOptions.trim()
         ? newCustomFieldOptions.split(',').map(opt => ({
             label: opt.trim(),
@@ -321,23 +349,8 @@ export default function FormTemplateManagementScreen() {
       return;
     }
     
-    // Not used - can be deleted
+    // Remove field
     setTemplateCustomFields(prev => prev.filter(f => f.name !== field.name));
-  };
-  
-  const handleToggleGlobalField = (globalField: BaseCustomField) => {
-    const dynamicField = customFieldToDynamicField(globalField);
-    const isAlreadyAdded = templateCustomFields.some(f => f.name === dynamicField.name);
-    
-    if (isAlreadyAdded) {
-      // Find the field and remove it
-      const fieldToRemove = templateCustomFields.find(f => f.name === dynamicField.name);
-      if (fieldToRemove) {
-        handleRemoveCustomField(fieldToRemove);
-      }
-    } else {
-      setTemplateCustomFields(prev => [...prev, dynamicField]);
-    }
   };
   
   // Get preview fields (selected base + custom)
@@ -412,6 +425,60 @@ export default function FormTemplateManagementScreen() {
     if (selectedBaseFields.length === 0) {
       Alert.alert(t('common:error', { defaultValue: 'Hata' }), t('common:select_at_least_one_field', { defaultValue: 'En az bir alan seçmelisiniz' }));
       return;
+    }
+
+    // Check form template limits
+    if (isAdding) {
+      // Check total form count limit
+      if (packageInfo.maxCustomForms > 0) {
+        // Count total forms across all modules
+        let totalForms = 0;
+        for (const module of getSupportedModules()) {
+          const moduleService = createFormTemplateService(module);
+          try {
+            const moduleTemplates = await moduleService.list();
+            totalForms += moduleTemplates.length;
+          } catch (error) {
+            // Ignore errors for modules that don't have templates yet
+          }
+        }
+        if (totalForms >= packageInfo.maxCustomForms) {
+          Alert.alert(
+            t('common:error', { defaultValue: 'Hata' }),
+            t('packages:form_limit_reached', { 
+              defaultValue: `Maksimum ${packageInfo.maxCustomForms} özel form şablonu oluşturabilirsiniz. Paketinizi yükseltmek için Paketler ekranına gidin.`,
+              maxForms: packageInfo.maxCustomForms 
+            }),
+            [
+              { text: t('common:cancel', { defaultValue: 'İptal' }), style: 'cancel' },
+              { 
+                text: t('packages:upgrade_package', { defaultValue: 'Paket Yükselt' }), 
+                onPress: () => navigation.navigate('Packages')
+              }
+            ]
+          );
+          return;
+        }
+      }
+
+      // Check module-specific limit (if module is not in allowedFormModules)
+      if (packageInfo.allowedFormModules.length > 0 && !packageInfo.allowedFormModules.includes(selectedModule)) {
+        Alert.alert(
+          t('common:error', { defaultValue: 'Hata' }),
+          t('packages:module_not_allowed', { 
+            defaultValue: `Bu pakette ${selectedModule} modülü için özel form şablonu oluşturamazsınız. Paketinizi yükseltmek için Paketler ekranına gidin.`,
+            module: selectedModule 
+          }),
+          [
+            { text: t('common:cancel', { defaultValue: 'İptal' }), style: 'cancel' },
+            { 
+              text: t('packages:upgrade_package', { defaultValue: 'Paket Yükselt' }), 
+              onPress: () => navigation.navigate('Packages')
+            }
+          ]
+        );
+        return;
+      }
     }
 
     try {
@@ -516,10 +583,27 @@ export default function FormTemplateManagementScreen() {
       headerRight={
         !modalVisible ? (
           <TouchableOpacity
-            onPress={handleCreateNew}
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              if (!canManageTemplates) {
+                handlePermissionAlert('custom_form');
+                return;
+              }
+              handleCreateNew();
+            }}
+            style={[
+              styles.addButton, 
+              { 
+                backgroundColor: canManageTemplates ? colors.primary : colors.muted,
+                opacity: canManageTemplates ? 1 : 0.6,
+              }
+            ]}
+            disabled={!canManageTemplates}
           >
-            <Ionicons name="add-outline" size={20} color="#fff" />
+            <Ionicons 
+              name={canManageTemplates ? "add-outline" : "lock-closed-outline"} 
+              size={20} 
+              color="#fff" 
+            />
             <Text style={styles.addButtonText}>
               {t('common:new_template', { defaultValue: 'Yeni Şablon' })}
             </Text>
@@ -660,8 +744,15 @@ export default function FormTemplateManagementScreen() {
             </Text>
             <Button
               title={t('common:create_first_template', { defaultValue: 'İlk Şablonu Oluştur' })}
-              onPress={handleCreateNew}
+              onPress={() => {
+                if (!canManageTemplates) {
+                  handlePermissionAlert('custom_form');
+                  return;
+                }
+                handleCreateNew();
+              }}
               style={{ marginTop: spacing.md }}
+              disabled={!canManageTemplates}
             />
           </View>
         ) : (
@@ -707,33 +798,95 @@ export default function FormTemplateManagementScreen() {
                       </Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity
-                    onPress={() => handleClone(template)}
-                    style={[styles.actionButton, { backgroundColor: colors.secondary + '20' }]}
-                  >
-                    <Ionicons name="copy-outline" size={18} color={colors.secondary} />
-                    <Text style={[styles.actionButtonText, { color: colors.secondary }]}>
-                      {t('common:clone', { defaultValue: 'Çoğalt' })}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleEdit(template)}
-                    style={[styles.actionButton, { backgroundColor: colors.info + '20' }]}
-                  >
-                    <Ionicons name="create-outline" size={18} color={colors.info} />
-                    <Text style={[styles.actionButtonText, { color: colors.info }]}>
-                      {t('common:edit', { defaultValue: 'Düzenle' })}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(template)}
-                    style={[styles.actionButton, { backgroundColor: colors.error + '20' }]}
-                  >
-                    <Ionicons name="trash-outline" size={18} color={colors.error} />
-                    <Text style={[styles.actionButtonText, { color: colors.error }]}>
-                      {t('common:delete', { defaultValue: 'Sil' })}
-                    </Text>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (!canManageTemplates) {
+                          handlePermissionAlert('custom_form');
+                          return;
+                        }
+                        handleClone(template);
+                      }}
+                      style={[
+                        styles.actionButton, 
+                        { 
+                          backgroundColor: canManageTemplates ? colors.secondary + '20' : colors.muted + '20',
+                          opacity: canManageTemplates ? 1 : 0.6,
+                        }
+                      ]}
+                      disabled={!canManageTemplates}
+                    >
+                      <Ionicons 
+                        name={canManageTemplates ? "copy-outline" : "lock-closed-outline"} 
+                        size={18} 
+                        color={canManageTemplates ? colors.secondary : colors.muted} 
+                      />
+                      <Text style={[
+                        styles.actionButtonText, 
+                        { color: canManageTemplates ? colors.secondary : colors.muted }
+                      ]}>
+                        {t('common:clone', { defaultValue: 'Çoğalt' })}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (!canManageTemplates) {
+                          handlePermissionAlert('custom_form');
+                          return;
+                        }
+                        handleEdit(template);
+                      }}
+                      style={[
+                        styles.actionButton, 
+                        { 
+                          backgroundColor: canManageTemplates ? colors.info + '20' : colors.muted + '20',
+                          opacity: canManageTemplates ? 1 : 0.6,
+                        }
+                      ]}
+                      disabled={!canManageTemplates}
+                    >
+                      <Ionicons 
+                        name={canManageTemplates ? "create-outline" : "lock-closed-outline"} 
+                        size={18} 
+                        color={canManageTemplates ? colors.info : colors.muted} 
+                      />
+                      <Text style={[
+                        styles.actionButtonText, 
+                        { color: canManageTemplates ? colors.info : colors.muted }
+                      ]}>
+                        {t('common:edit', { defaultValue: 'Düzenle' })}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (!canManageTemplates) {
+                          handlePermissionAlert('custom_form');
+                          return;
+                        }
+                        handleDelete(template);
+                      }}
+                      style={[
+                        styles.actionButton, 
+                        { 
+                          backgroundColor: canManageTemplates ? colors.error + '20' : colors.muted + '20',
+                          opacity: canManageTemplates ? 1 : 0.6,
+                        }
+                      ]}
+                      disabled={!canManageTemplates}
+                    >
+                      <Ionicons 
+                        name={canManageTemplates ? "trash-outline" : "lock-closed-outline"} 
+                        size={18} 
+                        color={canManageTemplates ? colors.error : colors.muted} 
+                      />
+                      <Text style={[
+                        styles.actionButtonText, 
+                        { color: canManageTemplates ? colors.error : colors.muted }
+                      ]}>
+                        {t('common:delete', { defaultValue: 'Sil' })}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
                 </View>
               </Card>
             ))}
@@ -864,6 +1017,10 @@ export default function FormTemplateManagementScreen() {
                   </Text>
                   <TouchableOpacity
                     onPress={() => {
+                      if (!canManageTemplates) {
+                        handlePermissionAlert('custom_form');
+                        return;
+                      }
                       setEditingCustomField(null);
                       setNewCustomFieldName('');
                       setNewCustomFieldLabel('');
@@ -872,53 +1029,25 @@ export default function FormTemplateManagementScreen() {
                       setNewCustomFieldOptions('');
                       setIsAddingCustomField(true);
                     }}
-                    style={[styles.addFieldButton, { backgroundColor: colors.primary }]}
+                    style={[
+                      styles.addFieldButton, 
+                      { 
+                        backgroundColor: canManageTemplates ? colors.primary : colors.muted,
+                        opacity: canManageTemplates ? 1 : 0.6,
+                      }
+                    ]}
+                    disabled={!canManageTemplates}
                   >
-                    <Ionicons name="add-outline" size={18} color="#fff" />
+                    <Ionicons 
+                      name={canManageTemplates ? "add-outline" : "lock-closed-outline"} 
+                      size={18} 
+                      color="#fff" 
+                    />
                     <Text style={styles.addFieldButtonText}>
                       {t('common:add_field', { defaultValue: 'Alan Ekle' })}
                     </Text>
                   </TouchableOpacity>
                 </View>
-                
-                {/* Global Fields Available */}
-                {globalCustomFields.length > 0 && (
-                  <View style={styles.sectionContainer}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {t('common:available_global_fields', { defaultValue: 'Kullanılabilir Global Alanlar' })}
-                    </Text>
-                    <View style={styles.fieldsContainer}>
-                      {globalCustomFields.map((field) => {
-                        const isAdded = templateCustomFields.some(f => f.name === field.key);
-                        return (
-                          <TouchableOpacity
-                            key={field.key}
-                            onPress={() => handleToggleGlobalField(field)}
-                            style={[
-                              styles.fieldChip,
-                              {
-                                backgroundColor: isAdded ? colors.primary + '20' : colors.surface,
-                                borderColor: isAdded ? colors.primary : colors.border,
-                              }
-                            ]}
-                          >
-                            <Ionicons 
-                              name={isAdded ? "checkmark-circle" : "add-circle-outline"} 
-                              size={18} 
-                              color={isAdded ? colors.primary : colors.muted} 
-                            />
-                            <Text style={[
-                              styles.fieldChipText,
-                              { color: isAdded ? colors.primary : colors.text }
-                            ]}>
-                              {field.label} {field.isGlobal && '🌐'}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                )}
                 
                 {/* Template Custom Fields */}
                 {templateCustomFields.length > 0 && (
@@ -928,7 +1057,6 @@ export default function FormTemplateManagementScreen() {
                     </Text>
                     <View style={styles.customFieldsList}>
                       {templateCustomFields.map((field) => {
-                        const isFromGlobal = globalCustomFields.some(f => f.key === field.name);
                         const isActive = field.isActive !== false; // Default to true
                         const isUsed = field.isUsed === true;
                         return (
@@ -944,7 +1072,6 @@ export default function FormTemplateManagementScreen() {
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                                 <Text style={[styles.customFieldName, { color: colors.text }]}>
                                   {field.labelKey || field.name}
-                                  {isFromGlobal && ' 🌐'}
                                   {!isActive && ` (${t('common:inactive', { defaultValue: 'Pasif' })})`}
                                   {isUsed && ` ⚠️`}
                                 </Text>
@@ -955,38 +1082,88 @@ export default function FormTemplateManagementScreen() {
                               </Text>
                             </View>
                             <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                              {!isFromGlobal && (
-                                <>
+                              <>
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    if (!canManageTemplates) {
+                                      handlePermissionAlert('custom_form');
+                                      return;
+                                    }
+                                    handleEditCustomField(field);
+                                  }}
+                                  style={[
+                                    styles.editButton, 
+                                    { 
+                                      backgroundColor: canManageTemplates ? colors.info + '20' : colors.muted + '20',
+                                      opacity: canManageTemplates ? 1 : 0.6,
+                                    }
+                                  ]}
+                                  disabled={!canManageTemplates}
+                                >
+                                  <Ionicons 
+                                    name={canManageTemplates ? "create-outline" : "lock-closed-outline"} 
+                                    size={16} 
+                                    color={canManageTemplates ? colors.info : colors.muted} 
+                                  />
+                                </TouchableOpacity>
+                                {isUsed ? (
                                   <TouchableOpacity
-                                    onPress={() => handleEditCustomField(field)}
-                                    style={[styles.editButton, { backgroundColor: colors.info + '20' }]}
+                                    onPress={() => {
+                                      if (!canManageTemplates) {
+                                        handlePermissionAlert('custom_form');
+                                        return;
+                                      }
+                                      handleToggleCustomFieldActive(field.name);
+                                    }}
+                                    style={[
+                                      styles.toggleButton, 
+                                      { 
+                                        backgroundColor: canManageTemplates 
+                                          ? (isActive ? colors.warning + '20' : colors.success + '20')
+                                          : colors.muted + '20',
+                                        opacity: canManageTemplates ? 1 : 0.6,
+                                      }
+                                    ]}
+                                    disabled={!canManageTemplates}
                                   >
-                                    <Ionicons name="create-outline" size={16} color={colors.info} />
+                                    <Ionicons 
+                                      name={canManageTemplates 
+                                        ? (isActive ? "eye-off-outline" : "eye-outline")
+                                        : "lock-closed-outline"
+                                      } 
+                                      size={16} 
+                                      color={canManageTemplates 
+                                        ? (isActive ? colors.warning : colors.success)
+                                        : colors.muted
+                                      } 
+                                    />
                                   </TouchableOpacity>
-                                  {isUsed ? (
-                                    <TouchableOpacity
-                                      onPress={() => handleToggleCustomFieldActive(field.name)}
-                                      style={[
-                                        styles.toggleButton, 
-                                        { backgroundColor: isActive ? colors.warning + '20' : colors.success + '20' }
-                                      ]}
-                                    >
-                                      <Ionicons 
-                                        name={isActive ? "eye-off-outline" : "eye-outline"} 
-                                        size={16} 
-                                        color={isActive ? colors.warning : colors.success} 
-                                      />
-                                    </TouchableOpacity>
-                                  ) : (
-                                    <TouchableOpacity
-                                      onPress={() => handleRemoveCustomField(field)}
-                                      style={[styles.removeButton, { backgroundColor: colors.error + '20' }]}
-                                    >
-                                      <Ionicons name="trash-outline" size={16} color={colors.error} />
-                                    </TouchableOpacity>
-                                  )}
-                                </>
-                              )}
+                                ) : (
+                                  <TouchableOpacity
+                                    onPress={() => {
+                                      if (!canManageTemplates) {
+                                        handlePermissionAlert('custom_form');
+                                        return;
+                                      }
+                                      handleRemoveCustomField(field);
+                                    }}
+                                    style={[
+                                      styles.removeButton, 
+                                      { 
+                                        backgroundColor: canManageTemplates ? colors.error + '20' : colors.muted + '20',
+                                        opacity: canManageTemplates ? 1 : 0.6,
+                                      }
+                                    ]}
+                                    disabled={!canManageTemplates}
+                                  >
+                                    <Ionicons 
+                                      name={canManageTemplates ? "trash-outline" : "lock-closed-outline"} 
+                                      size={16} 
+                                      color={canManageTemplates ? colors.error : colors.muted} 
+                                    />
+                                  </TouchableOpacity>
+                                )}
+                              </>
                             </View>
                           </View>
                         );
@@ -1162,14 +1339,15 @@ export default function FormTemplateManagementScreen() {
                           setNewCustomFieldName(normalized);
                         }}
                         placeholder={getFieldNameExample()}
-                        editable={!editingCustomField || !editingCustomField.isUsed} // Can't edit name if field is used
+                        editable={false} // Always readonly - system generates field name automatically
                       />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}>
+                        <Ionicons name="information-circle-outline" size={14} color={colors.info} />
+                        <Text style={[styles.infoText, { color: colors.muted, fontSize: 11 }]}>
+                          {t('common:field_name_auto_generated', { defaultValue: 'Alan adı sistem tarafından otomatik oluşturulur' })}
+                        </Text>
+                      </View>
                     </View>
-                    {editingCustomField?.isUsed && (
-                      <Text style={[styles.warningText, { color: colors.warning }]}>
-                        {t('common:field_name_locked', { defaultValue: 'Bu alan kullanıldığı için adı değiştirilemez' })}
-                      </Text>
-                    )}
                     
                     <View style={{ marginTop: spacing.sm }}>
                       <Text style={[styles.formLabel, { color: colors.text, marginBottom: spacing.xs }]}>
@@ -1183,11 +1361,38 @@ export default function FormTemplateManagementScreen() {
                           { label: t('common:date', { defaultValue: 'Tarih' }), value: 'date' },
                           { label: t('common:select', { defaultValue: 'Seçim' }), value: 'select' },
                           { label: t('common:textarea', { defaultValue: 'Metin Alanı' }), value: 'textarea' },
+                          { label: t('common:tc_verification', { defaultValue: 'TC Kimlik Doğrulama' }), value: 'tc_verification' },
+                          { label: t('common:imei_verification', { defaultValue: 'IMEI Doğrulama' }), value: 'imei_verification' },
                         ]}
-                        onChange={(value) => setNewCustomFieldType(value as DynamicField['type'])}
+                        onChange={(value) => {
+                          const fieldType = value as DynamicField['type'];
+                          setNewCustomFieldType(fieldType);
+                          
+                          // Auto-set field name for verification types
+                          if (fieldType === 'tc_verification') {
+                            setNewCustomFieldName('tcKimlik');
+                          } else if (fieldType === 'imei_verification') {
+                            setNewCustomFieldName('imei');
+                          }
+                        }}
                         placeholder={t('common:select_field_type', { defaultValue: 'Tip seçin' })}
                         disabled={editingCustomField?.isUsed === true} // Can't change type if field is used
                       />
+                      {(newCustomFieldType === 'tc_verification' || newCustomFieldType === 'imei_verification') && (
+                        <View style={[styles.infoBox, { backgroundColor: colors.info + '10', borderColor: colors.info + '30', marginTop: spacing.sm }]}>
+                          <Ionicons name="information-circle-outline" size={16} color={colors.info} />
+                          <Text style={[styles.infoText, { color: colors.text, fontSize: 11 }]}>
+                            {newCustomFieldType === 'tc_verification' 
+                              ? t('common:tc_verification_info', { 
+                                  defaultValue: 'Bu alan TC kimlik doğrulama özelliği ile çalışır. TC kimlik no, doğum tarihi ve tam isim ile doğrulama yapılır. Modül ayarlarından TC kimlik doğrulamasını etkinleştirmeniz gerekir.' 
+                                })
+                              : t('common:imei_verification_info', { 
+                                  defaultValue: 'Bu alan IMEI doğrulama özelliği ile çalışır. IMEI numarası ve opsiyonel cihaz bilgileri ile doğrulama yapılır. Modül ayarlarından IMEI doğrulamasını etkinleştirmeniz gerekir.' 
+                                })
+                            }
+                          </Text>
+                        </View>
+                      )}
                       {editingCustomField?.isUsed && (
                         <Text style={[styles.warningText, { color: colors.warning }]}>
                           {t('common:field_type_locked', { defaultValue: 'Bu alan kullanıldığı için tipi değiştirilemez (veri kaybı önlemek için)' })}

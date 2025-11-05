@@ -13,9 +13,12 @@ export const employeeFormFields: DynamicField[] = [
   { name: 'lastName', labelKey: 'last_name', type: 'text', required: true, isLocked: true }, // Always required, cannot be removed
   { name: 'email', labelKey: 'email', type: 'text' },
   { name: 'phone', labelKey: 'phone', type: 'text' },
+  { name: 'tcKimlik', labelKey: 'tc_kimlik', type: 'text' }, // TC Kimlik No
+  { name: 'imei', labelKey: 'imei', type: 'text' }, // IMEI
   { name: 'position', labelKey: 'position', type: 'text' },
   { name: 'salary', labelKey: 'salary', type: 'number' }, // Not required
   { name: 'hireDate', labelKey: 'hire_date', type: 'date' },
+  { name: 'photo', labelKey: 'photo', type: 'image', required: false },
 ];
 
 export const employeeUserAccountFields: DynamicField[] = [

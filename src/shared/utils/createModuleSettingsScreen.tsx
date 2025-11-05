@@ -59,16 +59,19 @@ export function createModuleSettingsScreen({
       navigation.navigate(defaultBackRoute);
     };
 
+    // Use translation for module title, fallback to moduleTitle if translation not found
+    const translatedTitle = t(`${translationNamespace}:module_name`, { defaultValue: moduleTitle });
+
     return (
       <ScreenLayout 
-        title={moduleTitle}
+        title={translatedTitle}
         subtitle={t('settings:module_settings', { defaultValue: 'Modül Ayarları' })}
         showBackButton
         onBackPress={handleBackPress}
       >
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.description}>
-            {t(`settings:${module}_module_settings_desc`, { defaultValue: `${moduleTitle} modülüne özel ayarlar` })}
+            {t(`settings:${module}_module_settings_desc`, { defaultValue: `${translatedTitle} modülüne özel ayarlar` })}
           </Text>
 
           {moduleSettings.length === 0 ? (

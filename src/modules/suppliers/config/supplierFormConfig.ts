@@ -11,6 +11,7 @@ export const supplierFormFields: DynamicField[] = [
   { name: 'phone', labelKey: 'phone', type: 'text' },
   { name: 'email', labelKey: 'email', type: 'text' },
   { name: 'address', labelKey: 'address', type: 'textarea' },
+  { name: 'photo', labelKey: 'photo', type: 'image', required: false },
 ];
 
 export const supplierValidator = (data: Partial<Supplier>): Record<string, string> => {

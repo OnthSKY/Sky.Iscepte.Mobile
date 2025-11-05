@@ -75,7 +75,6 @@ export function DetailScreenContainer<T extends BaseEntity>({
 
   const renderFooter = () => {
     if (!showEditButton && !showDeleteButton) return null;
-    if (!permissions.canEdit && !permissions.canDelete) return null;
 
     const handleDeleteConfirm = async () => {
       try {
@@ -91,18 +90,22 @@ export function DetailScreenContainer<T extends BaseEntity>({
 
     return (
       <View style={styles.footer}>
-        {showEditButton && permissions.canEdit && (
+        {showEditButton && (
           <Button
             title={t('common:edit', { defaultValue: 'Edit' })}
             onPress={handleEdit}
             style={[styles.footerButton, { flex: 1 }]}
+            disabled={!permissions.canEdit}
+            showLockIcon={true}
           />
         )}
-        {showDeleteButton && permissions.canDelete && (
+        {showDeleteButton && (
           <Button
             title={t('common:delete', { defaultValue: 'Delete' })}
             onPress={handleDeleteConfirm}
             style={[styles.footerButton, { flex: 1, backgroundColor: colors.error }]}
+            disabled={!permissions.canDelete}
+            showLockIcon={true}
           />
         )}
       </View>

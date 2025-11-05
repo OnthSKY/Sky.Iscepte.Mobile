@@ -32,6 +32,27 @@
   "module": "Sales",
   "module_name": "Sales Management",
   "module_overview": "Module Overview",
-  "module_description": "Manage product sales to customers with the Sales module. Sales are automatically deducted from your stock inventory and recorded in your income tracking."
+  "module_description": "Manage product sales to customers with the Sales module. Sales are automatically deducted from your stock inventory and recorded in your income tracking.",
+  "debt_collection_date": "Debt Collection Date",
+  "debt_collection_reminder": "Debt Collection Reminder",
+  "debt_collection_approaching": "Debt collection date for {{customerName}} is approaching",
+  "debt_collection_today": "Debt collection date for {{customerName}} is today",
+  "debt_collection_overdue": "Debt collection date for {{customerName}} has passed",
+  "debt_collection_amount": "Amount: {{amount}} {{currency}}",
+  "debt_sales": "Debt Sales",
+  "mark_as_paid": "Mark as Paid",
+  "mark_as_paid_confirmation": "Are you sure you want to mark the payment of {{amount}} from {{customerName}} as paid?",
+  "marked_as_paid": "Payment marked as paid",
+  "paid": "Paid",
+  "overdue": "Overdue",
+  "due_today": "Due Today",
+  "due_in_days": "Due in {{days}} Days",
+  "no_debt_sales": "No debt sales found",
+  "no_debt_sales_subtitle": "All payments received",
+  "sale_date": "Sale Date",
+  "bulk_sale": "Bulk Sale",
+  "select_product": "Select Product",
+  "add": "Add",
+  "insufficient_stock": "Insufficient stock"
 }
 

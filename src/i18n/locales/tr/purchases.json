@@ -83,6 +83,14 @@
   "no_global_fields_desc": "Yukarıdaki butona tıklayarak genel alan ekleyebilirsiniz.",
   "options": "Seçenekler",
   "field_required": "Zorunlu alan",
-  "required": "Zorunlu"
+  "required": "Zorunlu",
+  "signature": "İmza",
+  "purchase_type": "Alış Tipi",
+  "product_in_stock_title": "Ürün Stokta Mevcut",
+  "product_in_stock_message": "\"{{productName}}\" ürünü stokta mevcut (Stok: {{stock}}). Stok artırmak için Hızlı Alış ekranına yönlendirilmek ister misiniz?",
+  "go_to_quick_purchase": "Hızlı Alış'a Git",
+  "continue_normal_purchase": "Normal Alış'a Devam Et",
+  "is_stock_purchase": "Stok Alışı",
+  "is_stock_purchase_description": "İşaretlenirse stok için alış yapılır. İşaretlenmezse gider olarak kaydedilir."
 }
 

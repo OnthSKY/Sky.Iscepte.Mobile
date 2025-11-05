@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useExpenseStatsQuery } from '../hooks/useExpensesQuery';
@@ -57,81 +57,80 @@ export default function ExpenseListScreen() {
     ];
   }, [stats, t, isDark]);
 
+  // Stats header component for ListHeaderComponent
+  const statsHeader = React.useMemo(() => {
+    if (statsLoading) {
+      return (
+        <View style={{ padding: spacing.lg }}>
+          <LoadingState />
+        </View>
+      );
+    }
+    return (
+      <ModuleStatsHeader 
+        stats={moduleStats}
+        mainStatKey="total-expenses"
+        translationNamespace="expenses"
+      />
+    );
+  }, [statsLoading, moduleStats]);
+
   return (
     <ScreenLayout noPadding>
-      <ScrollView 
-        style={{ flex: 1, backgroundColor: colors.page }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
-        {/* Stats Header */}
-        {statsLoading ? (
-          <View style={{ padding: spacing.lg }}>
-            <LoadingState />
-          </View>
-        ) : (
-          <ModuleStatsHeader 
-            stats={moduleStats}
-            mainStatKey="total-expenses"
-            translationNamespace="expenses"
-          />
-        )}
-
-        {/* List Section */}
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-          <ListScreenContainer
-            service={expenseEntityService}
-            config={{
-              entityName: 'expense',
-              translationNamespace: 'expenses',
-              defaultPageSize: 10,
-              filterOptions: [
-                {
-                  key: 'source',
-                  label: 'expenses:source',
-                  type: 'select',
-                  options: [
-                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
-                    { label: t('expenses:product_purchase', { defaultValue: 'Ürün Alış' }), value: 'product_purchase' },
-                    { label: t('expenses:employee_salary', { defaultValue: 'Maaş' }), value: 'employee_salary' },
-                    { label: t('expenses:manual', { defaultValue: 'Manuel' }), value: 'manual' },
-                  ],
-                },
-                {
-                  key: 'expenseTypeId',
-                  label: 'expenses:expense_type',
-                  type: 'text',
-                },
-                {
-                  key: 'amountMin',
-                  label: 'expenses:amount_min',
-                  type: 'number',
-                },
-                {
-                  key: 'amountMax',
-                  label: 'expenses:amount_max',
-                  type: 'number',
-                },
-                {
-                  key: 'date',
-                  label: 'expenses:date',
-                  type: 'date',
-                },
-              ],
-            }}
-            renderItem={(item: Expense) => (
-              <Card
-                style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('ExpenseDetail', { id: item.id, title: item.title, amount: item.amount })}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
-                <Text style={{ color: '#DC2626', fontWeight: '600' }}>-{formatCurrency(item.amount || 0, item.currency || 'TRY')}</Text>
-              </Card>
-            )}
-            keyExtractor={(item: Expense) => String(item.id)}
-          />
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing.lg }}>
+        <ListScreenContainer
+          service={expenseEntityService}
+          config={{
+            entityName: 'expense',
+            translationNamespace: 'expenses',
+            defaultPageSize: 10,
+            filterOptions: [
+              {
+                key: 'source',
+                label: 'expenses:source',
+                type: 'select',
+                options: [
+                  { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                  { label: t('expenses:product_purchase', { defaultValue: 'Ürün Alış' }), value: 'product_purchase' },
+                  { label: t('expenses:employee_salary', { defaultValue: 'Maaş' }), value: 'employee_salary' },
+                  { label: t('expenses:manual', { defaultValue: 'Manuel' }), value: 'manual' },
+                ],
+              },
+              {
+                key: 'expenseTypeId',
+                label: 'expenses:expense_type',
+                type: 'text',
+              },
+              {
+                key: 'amountMin',
+                label: 'expenses:amount_min',
+                type: 'number',
+              },
+              {
+                key: 'amountMax',
+                label: 'expenses:amount_max',
+                type: 'number',
+              },
+              {
+                key: 'date',
+                label: 'expenses:date',
+                type: 'date',
+              },
+            ],
+          }}
+          ListHeaderComponent={statsHeader}
+          renderItem={(item: Expense) => (
+            <Card
+              style={{ marginBottom: 12 }}
+              onPress={() => navigation.navigate('ExpenseDetail', { id: item.id, title: item.title, amount: item.amount })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
+              <Text style={{ color: '#DC2626', fontWeight: '600' }}>-{formatCurrency(item.amount || 0, item.currency || 'TRY')}</Text>
+            </Card>
+          )}
+          keyExtractor={(item: Expense) => String(item.id)}
+        />
+      </View>
     </ScreenLayout>
   );
 }

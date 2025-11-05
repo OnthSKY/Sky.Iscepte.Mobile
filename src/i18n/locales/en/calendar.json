@@ -1,0 +1,16 @@
+{
+  "module_name": "Calendar",
+  "daily_report": "Daily Report",
+  "total_revenue": "Total Revenue",
+  "total_expenses": "Total Expenses",
+  "net_profit": "Net Profit",
+  "transactions": "Transactions",
+  "no_transactions": "No transactions found for this date",
+  "sales": "Sales",
+  "expenses": "Expenses",
+  "revenue": "Revenue",
+  "purchases": "Purchases",
+  "stock": "Stock",
+  "all_transactions": "All Transactions"
+}
+

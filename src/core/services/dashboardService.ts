@@ -188,6 +188,13 @@ export class OwnerDashboardService extends BaseDashboardService {
         colorKey: 'primary',
         route: 'Reports',
       },
+      {
+        key: 'packages',
+        translationKey: 'packages:packages',
+        icon: 'cube-outline',
+        colorKey: 'info',
+        route: 'Packages',
+      },
     ];
   }
 }

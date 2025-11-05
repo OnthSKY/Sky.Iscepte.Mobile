@@ -6,7 +6,7 @@
  * Open/Closed: Can handle both create and edit modes via props
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,13 +28,16 @@ import { permissionsRegistry } from '../../../core/config/permissions';
 import { useAppStore } from '../../../store/useAppStore';
 import { getModuleActions, ALL_FIELDS, ALL_NOTIFICATIONS } from '../utils/permissionsUtils';
 import { useStaffPermissionGroupStore } from '../store/staffPermissionGroupStore';
+import packages from '../../../mocks/packages.json';
 import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
-import globalFieldsService from '../services/globalFieldsService';
 import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormTemplate } from '../../../shared/types/formTemplate';
-import { customFieldToDynamicField } from '../../../shared/utils/formTemplateUtils';
+import { employeeVerificationSettingsService } from '../services/employeeVerificationSettingsService';
+import TCKimlikVerificationField from '../../../shared/components/TCKimlikVerificationField';
+import IMEIVerificationField from '../../../shared/components/IMEIVerificationField';
+import { useVerificationCacheStore } from '../../../shared/store/verificationCacheStore';
 
 interface EmployeeFormScreenProps {
   mode?: 'create' | 'edit';
@@ -69,11 +72,11 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   const { colors, activeTheme } = useTheme();
   const { t } = useTranslation(['employees', 'common']);
   const currentUserRole = useAppStore((state) => state.role);
+  const currentUser = useAppStore((state) => state.user);
   const [createUserAccount, setCreateUserAccount] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [selectedPermissionGroup, setSelectedPermissionGroup] = useState<string>('');
   const { groups, loadGroups } = useStaffPermissionGroupStore();
-  const [globalFields, setGlobalFields] = useState<EmployeeCustomField[]>([]);
   const queryClient = useQueryClient();
 
   // Form template state - default to 'default' to use employeeFormFields
@@ -86,6 +89,19 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
     queryFn: () => formTemplateService.list(),
     staleTime: 5 * 60 * 1000,
   });
+
+  // Load verification settings
+  const { data: verificationSettings } = useQuery({
+    queryKey: ['employees', 'verification-settings'],
+    queryFn: () => employeeVerificationSettingsService.get(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Load verification cache on mount
+  const { loadCache } = useVerificationCacheStore();
+  useEffect(() => {
+    loadCache();
+  }, [loadCache]);
 
   // Set default to 'default' (use employeeFormFields) on mount
   useEffect(() => {
@@ -105,17 +121,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
   // Load permission groups on mount
   useEffect(() => {
     loadGroups();
-    loadGlobalFields();
   }, []);
-
-  const loadGlobalFields = async () => {
-    try {
-      const fields = await globalFieldsService.getAll();
-      setGlobalFields(fields);
-    } catch (error) {
-      console.error('Failed to load global fields:', error);
-    }
-  };
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
@@ -131,55 +137,6 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
     );
   }, []);
 
-  const handleGlobalFieldsChange = async (fields: EmployeeCustomField[]) => {
-    const previousGlobalFields = globalFields;
-    setGlobalFields(fields);
-    try {
-      await globalFieldsService.save(fields);
-      
-      // If a template is selected, check if a new global field was added and add it to the template
-      if (selectedTemplate && selectedTemplateId && selectedTemplateId !== 'default') {
-        // Find newly added global fields (those in new list but not in previous list)
-        const newGlobalFields = fields.filter(newField => 
-          !previousGlobalFields.some(prevField => prevField.key === newField.key)
-        );
-        
-        if (newGlobalFields.length > 0) {
-          // Convert new global fields to DynamicField format
-          const newTemplateFields = newGlobalFields.map(customField => 
-            customFieldToDynamicField(customField)
-          );
-          
-          // Get current template custom fields
-          const currentCustomFields = selectedTemplate.customFields || [];
-          
-          // Add new fields to template (avoid duplicates)
-          const updatedCustomFields = [...currentCustomFields];
-          newTemplateFields.forEach(newField => {
-            if (!updatedCustomFields.some(f => f.name === newField.name)) {
-              updatedCustomFields.push(newField);
-            }
-          });
-          
-          // Update the template with new custom fields
-          try {
-            await formTemplateService.update(selectedTemplateId, {
-              customFields: updatedCustomFields,
-            });
-            
-            // Invalidate and refetch templates to get the updated one
-            queryClient.invalidateQueries({ queryKey: ['employees', 'form-templates', 'list'] });
-            
-            console.log('Global field(s) added to selected template:', newGlobalFields.map(f => f.label).join(', '));
-          } catch (error) {
-            console.error('Failed to update template with new global fields:', error);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to save global fields:', error);
-    }
-  };
 
   const getInitialData = (): Partial<Employee> => {
     return getInitialDataWithCustomFields<Employee>(formMode, {});
@@ -243,7 +200,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
         // Create enhanced validator with template fields
         const validatorWithTemplate = createEnhancedValidator<Employee>(
           employeeValidator,
-          globalFields,
+          [],
           'employees',
           templateFields
         );
@@ -278,8 +235,50 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
         const baseFields = selectedTemplate?.baseFields?.length 
           ? selectedTemplate.baseFields 
           : employeeFormFields;
+        
+        // Enhance fields with verification functionality for TC Kimlik and IMEI
+        const enhancedFields = baseFields.map(field => {
+          if (field.name === 'tcKimlik' && verificationSettings?.tcVerificationEnabled) {
+            return {
+              ...field,
+              type: 'custom' as const,
+              render: (value: string, onChange: (v: string) => void) => {
+                return (
+                  <TCKimlikVerificationField
+                    value={value || ''}
+                    onChange={onChange}
+                    onAutoFill={(data) => {
+                      if (data.firstName) updateField('firstName', data.firstName);
+                      if (data.lastName) updateField('lastName', data.lastName);
+                    }}
+                    placeholder={t('employees:tc_kimlik', { defaultValue: 'TC Kimlik No' })}
+                  />
+                );
+              },
+            };
+          }
+          
+          if (field.name === 'imei' && verificationSettings?.imeiVerificationEnabled) {
+            return {
+              ...field,
+              type: 'custom' as const,
+              render: (value: string, onChange: (v: string) => void) => {
+                return (
+                  <IMEIVerificationField
+                    value={value || ''}
+                    onChange={onChange}
+                    placeholder={t('employees:imei', { defaultValue: 'IMEI' })}
+                  />
+                );
+              },
+            };
+          }
+          
+          return field;
+        });
+        
         const templateFields = [
-          ...baseFields,
+          ...enhancedFields,
           ...(selectedTemplate?.customFields || [])
         ];
 
@@ -356,7 +355,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
               
               {/* Link to Settings for template management */}
               <TouchableOpacity
-                onPress={() => navigation.navigate('FormTemplateManagement')}
+                onPress={() => navigation.navigate('FormTemplateManagement', { module: 'employees' })}
                 style={{ 
                   marginTop: spacing.sm, 
                   padding: spacing.sm, 
@@ -400,8 +399,6 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                   <CustomFieldsManager<EmployeeCustomField>
                     customFields={customFields}
                     onChange={handleCustomFieldsChange}
-                    availableGlobalFields={globalFields}
-                    onGlobalFieldsChange={handleGlobalFieldsChange}
                     module="employees"
                     errors={errors}
                   />
@@ -437,6 +434,7 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                         updateField('username', undefined);
                         updateField('password', undefined);
                         updateField('userRole', undefined);
+                        updateField('package', undefined);
                       } else {
                         // Auto-generate username when enabling user account
                         const suggested = generateUsername(formData.firstName as string, formData.lastName as string);
@@ -462,7 +460,6 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                             value={formData.username}
                             onChangeText={(text) => updateField('username', text)}
                             placeholder={t('username_placeholder', { defaultValue: 'Username' })}
-                            error={!!errors.username}
                           />
                           {errors.username && (
                             <Text style={{ fontSize: 12, color: colors.error, marginTop: spacing.xs }}>
@@ -482,7 +479,6 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                             onChangeText={(text) => updateField('password', text)}
                             placeholder={t('password_placeholder', { defaultValue: 'Password' })}
                             secureTextEntry
-                            error={!!errors.password}
                           />
                           {errors.password && (
                             <Text style={{ fontSize: 12, color: colors.error, marginTop: spacing.xs }}>
@@ -500,9 +496,53 @@ export default function EmployeeFormScreen({ mode }: EmployeeFormScreenProps = {
                             value={formData.userRole}
                             options={roleOptions}
                             placeholder={t('select_role', { defaultValue: 'Select Role' })}
-                            onChange={(value) => updateField('userRole', value)}
+                                                         onChange={(value) => {
+                               updateField('userRole', value);
+                               // Set default package based on role
+                               // STAFF doesn't need package - it uses owner's package
+                               if (value === Role.STAFF) {
+                                 // Clear package for staff
+                                 updateField('package', undefined);
+                               } else if ((value === Role.OWNER || value === Role.ADMIN) && !formData.package) {
+                                 // Default to owner's package or 'free'
+                                 const ownerPackage = (currentUser as any)?.package || 'free';
+                                 updateField('package', ownerPackage);
+                               }
+                             }}
                           />
                         </View>
+
+                        {/* Package Selection - Only for OWNER and ADMIN, not for STAFF */}
+                        {(formData.userRole === Role.OWNER || formData.userRole === Role.ADMIN) && (
+                          <View>
+                            <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: spacing.sm, color: colors.text }}>
+                              {t('employees:package', { defaultValue: 'Package' })}
+                            </Text>
+                            <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.xs }}>
+                              {t('employees:package_desc', { defaultValue: 'Select package for this owner. Staff will inherit permissions from owner\'s package.' })}
+                            </Text>
+                            <Select
+                              value={formData.package || 'free'}
+                              options={(packages as any[]).map((pkg: any) => ({
+                                label: `${pkg.name}${pkg.price > 0 ? ` - ${pkg.price}₺` : ''}`,
+                                value: pkg.id,
+                              }))}
+                              placeholder={t('employees:select_package', { defaultValue: 'Select Package' })}
+                              onChange={(value) => {
+                                updateField('package', value);
+                              }}
+                            />
+                          </View>
+                        )}
+                        
+                        {/* Info for STAFF - Package info */}
+                        {formData.userRole === Role.STAFF && (
+                          <View style={{ padding: spacing.md, backgroundColor: colors.primary + '10', borderRadius: 8, borderWidth: 1, borderColor: colors.primary + '30' }}>
+                            <Text style={{ fontSize: 13, color: colors.text }}>
+                              {t('employees:staff_package_info', { defaultValue: 'Staff paketi yoktur. Staff yetkileri owner\'ın paketine göre belirlenir.' })}
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     </Card>
 

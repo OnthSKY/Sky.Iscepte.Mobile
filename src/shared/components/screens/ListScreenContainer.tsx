@@ -88,11 +88,13 @@ export function ListScreenContainer<T extends BaseEntity>({
       {title && (
         <View style={[styles.header, headerStyle]}>
           <Text style={[styles.title, { color: colors.text }]}>{screenTitle}</Text>
-          {!hideCreate && permissions.canCreate && (
+          {!hideCreate && (
             <Button
               title={t('common:create', { defaultValue: 'Create' })}
               onPress={handleCreate}
               style={[styles.createButton, width < 640 && styles.createButtonFullWidth]}
+              disabled={!permissions.canCreate}
+              showLockIcon={true}
             />
           )}
         </View>

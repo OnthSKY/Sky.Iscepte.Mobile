@@ -105,6 +105,13 @@ export default function SalesDashboardScreen() {
       route: 'SalesList',
     },
     {
+      key: 'debt-sales',
+      label: t('sales:debt_sales', { defaultValue: 'Borçlu Satışlar' }),
+      icon: 'cash-outline',
+      color: isDark ? '#F59E0B' : '#D97706',
+      route: 'DebtSales',
+    },
+    {
       key: 'add-sale',
       label: t('sales:new_sale', { defaultValue: 'Yeni Satış' }),
       icon: 'add-circle-outline',

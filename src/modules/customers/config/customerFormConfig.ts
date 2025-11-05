@@ -14,6 +14,7 @@ export const customerFormFields: DynamicField[] = [
   { name: 'address', labelKey: 'address', type: 'text' },
   // Note: 'group' field removed from form - still exists in Customer interface for backward compatibility
   { name: 'debtLimit', labelKey: 'debt_limit', type: 'number', defaultValue: 0 },
+  { name: 'photo', labelKey: 'photo', type: 'image', required: false },
 ];
 
 export const customerValidator = (data: Partial<Customer>): Record<string, string> => {

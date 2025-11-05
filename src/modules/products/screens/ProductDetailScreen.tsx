@@ -30,7 +30,7 @@ import { getDetailFields, formatFieldValue } from '../../../shared/utils/renderF
 
 export default function ProductDetailScreen() {
   const { colors } = useTheme();
-  const { t } = useTranslation(['products', 'stock', 'common']);
+  const { t } = useTranslation(['products', 'stock', 'common', 'packages']);
   const route = useRoute<any>();
   const navigation = useNavigation();
   const role = useAppStore((s) => s.role);
@@ -53,11 +53,25 @@ export default function ProductDetailScreen() {
 
   const handleEdit = () => {
     if (!productId) return;
+    if (!canEdit) {
+      const { showPermissionAlert } = require('../../../shared/utils/permissionUtils');
+      const { useTranslation } = require('react-i18next');
+      const { t } = useTranslation(['common', 'packages']);
+      showPermissionAlert(role, 'product:edit', navigation, t);
+      return;
+    }
     navigation.navigate('StockEdit' as never, { id: productId });
   };
 
   const handleDelete = async () => {
     if (!productId || !data) return;
+    if (!canDelete) {
+      const { showPermissionAlert } = require('../../../shared/utils/permissionUtils');
+      const { useTranslation } = require('react-i18next');
+      const { t } = useTranslation(['common', 'packages']);
+      showPermissionAlert(role, 'product:delete', navigation, t);
+      return;
+    }
     // Delete logic would be handled by mutation hook
     // For now, just navigate back
     if (navigation.canGoBack()) {

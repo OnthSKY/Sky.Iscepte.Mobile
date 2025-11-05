@@ -18,6 +18,22 @@
   "module": "Raporlar",
   "module_name": "Raporlama",
   "module_overview": "Modül Özeti",
-  "module_description": "Raporlama modülü ile satış, gelir, gider ve stok raporlarınızı görüntüleyebilirsiniz. İş performansınızı analiz ederek gelecek planlamalarınızı daha iyi yapabilirsiniz."
+  "module_description": "Raporlama modülü ile satış, gelir, gider ve stok raporlarınızı görüntüleyebilirsiniz. İş performansınızı analiz ederek gelecek planlamalarınızı daha iyi yapabilirsiniz.",
+  "period_day": "Gün",
+  "period_week": "Hafta",
+  "period_month": "Ay",
+  "period_year": "Yıl",
+  "select_period": "Dönem Seçin",
+  "income": "Gelir",
+  "expenses": "Gider",
+  "net": "Net",
+  "module_reports": "Modül Raporları",
+  "module_reports_description": "Modül bazlı detaylı raporları görüntülemek için kartlara tıklayın",
+  "no_modules_available": "Görüntülenebilecek modül bulunamadı",
+  "error_loading": "Veriler yüklenirken hata oluştu",
+  "filters": "Filtreler",
+  "select_filters": "Raporu görmek için filtreleri seçin",
+  "no_data": "Rapor verisi bulunamadı",
+  "details": "Detaylar"
 }
 

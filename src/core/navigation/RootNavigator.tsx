@@ -8,6 +8,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import FullScreenMenu from '../../shared/components/FullScreenMenu';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAppStore } from '../../store/useAppStore';
+import { transformMenuText, getCompactFontSize } from '../utils/menuTextUtils';
 import AdminDashboardScreen from '../../screens/AdminDashboardScreen';
 import OwnerDashboardScreen from '../../screens/OwnerDashboardScreen';
 import StaffDashboardScreen from '../../screens/StaffDashboardScreen';
@@ -170,10 +172,25 @@ type TabBarProps = React.ComponentProps<typeof Tab.Navigator> extends { tabBar?:
 function CustomTabBar({ state, navigation, onOpenMenu, onStateChange }: TabBarProps & { onOpenMenu: () => void; onStateChange?: (routeName: string) => void }) {
   const { t } = useTranslation(['common']);
   const { colors } = useTheme();
+  const menuTextCase = useAppStore((s) => s.menuTextCase);
+  const language = useAppStore((s) => s.language);
+  
   const shortcuts = [
-    { key: 'Dashboard', label: t('dashboard') || 'Dashboard', icon: 'home-outline' },
-    { key: 'MENU', label: t('menu', { defaultValue: 'Menu' }) || 'Menu', icon: 'apps-outline' },
-    { key: 'Profile', label: t('profile') || 'Profile', icon: 'person-circle-outline' },
+    { 
+      key: 'Dashboard', 
+      label: transformMenuText(t('dashboard') || 'Dashboard', menuTextCase, language), 
+      icon: 'home-outline' 
+    },
+    { 
+      key: 'MENU', 
+      label: transformMenuText(t('menu', { defaultValue: 'Menu' }) || 'Menu', menuTextCase, language), 
+      icon: 'apps-outline' 
+    },
+    { 
+      key: 'Profile', 
+      label: transformMenuText(t('profile') || 'Profile', menuTextCase, language), 
+      icon: 'person-circle-outline' 
+    },
   ];
 
   const activeName = state.routeNames[state.index];
@@ -265,7 +282,18 @@ function CustomTabBar({ state, navigation, onOpenMenu, onStateChange }: TabBarPr
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <Ionicons name={shortcut.icon as any} size={24} color={focused ? colors.primary : colors.muted} />
-            <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{shortcut.label}</Text>
+            <Text 
+              style={[
+                styles.tabLabel, 
+                focused && styles.tabLabelActive,
+                { fontSize: getCompactFontSize(11, menuTextCase) }
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
+              {shortcut.label}
+            </Text>
           </TouchableOpacity>
         );
       })}

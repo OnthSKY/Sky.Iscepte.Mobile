@@ -39,6 +39,15 @@ export default function EmployeesModuleSettingsScreen() {
       color: '#10B981',
       permission: 'employees:edit',
     },
+    {
+      key: 'verification-settings',
+      label: t('employees:verification_settings', { defaultValue: 'Doğrulama Ayarları' }),
+      desc: t('employees:verification_settings_desc', { defaultValue: 'TC Kimlik ve IMEI sorgulama ayarlarını yönetin' }),
+      icon: 'shield-checkmark-outline',
+      route: 'EmployeeVerificationSettings',
+      color: '#F59E0B',
+      permission: 'employees:edit',
+    },
   ];
 
   // Filter settings based on permissions

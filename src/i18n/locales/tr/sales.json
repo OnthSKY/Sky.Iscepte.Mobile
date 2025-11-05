@@ -36,6 +36,27 @@
   "quick_sale_description": "Ürün seçip satış yapabilirsiniz",
   "no_items": "Lütfen en az bir ürün ekleyin",
   "sale_completed": "Satış tamamlandı",
-  "invalid_price": "Geçersiz fiyat"
+  "invalid_price": "Geçersiz fiyat",
+  "debt_collection_date": "Borç Alınacak Tarih",
+  "debt_collection_reminder": "Borç Alma Hatırlatıcısı",
+  "debt_collection_approaching": "{{customerName}} müşterisinden borç alma tarihi yaklaşıyor",
+  "debt_collection_today": "{{customerName}} müşterisinden bugün borç alınacak",
+  "debt_collection_overdue": "{{customerName}} müşterisinden borç alma tarihi geçti",
+  "debt_collection_amount": "Tutar: {{amount}} {{currency}}",
+  "debt_sales": "Borçlu Satışlar",
+  "mark_as_paid": "Ödeme Alındı İşaretle",
+  "mark_as_paid_confirmation": "{{customerName}} müşterisinden {{amount}} tutarındaki ödemeyi alındı olarak işaretlemek istediğinize emin misiniz?",
+  "marked_as_paid": "Ödeme alındı olarak işaretlendi",
+  "paid": "Ödendi",
+  "overdue": "Süresi Geçti",
+  "due_today": "Bugün Ödenecek",
+  "due_in_days": "{{days}} Gün Sonra",
+  "no_debt_sales": "Borçlu satış bulunamadı",
+  "no_debt_sales_subtitle": "Tüm ödemeler alındı",
+  "sale_date": "Satış Tarihi",
+  "bulk_sale": "Toplu Satış",
+  "select_product": "Ürün Seç",
+  "add": "Ekle",
+  "insufficient_stock": "Yetersiz stok"
 }
 

@@ -3,13 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n';
 import authService from '../shared/services/authService';
 import { getRoleByUsername, getUserIdByRole, getUserIdByUsername } from '../core/utils/roleManager';
-import { Role, Language, ThemePreference } from '../core/config/appConstants';
+import { Role, Language, ThemePreference, MenuTextCase } from '../core/config/appConstants';
 import { UserProfile } from '../shared/services/userService';
 
 type AppState = {
   isAuthenticated: boolean;
   themePreference: ThemePreference;
   language: Language;
+  menuTextCase: MenuTextCase;
   role: Role;
   token: string | null;
   refreshToken: string | null;
@@ -21,6 +22,7 @@ type AppState = {
   logout: () => void;
   setTheme: (pref: ThemePreference) => Promise<void>;
   setLanguage: (lng: Language) => Promise<void>;
+  setMenuTextCase: (caseType: MenuTextCase) => Promise<void>;
   setRole: (role: Role) => void;
   setUser: (user: UserProfile | null) => void;
   fetchProfile: () => Promise<void>;
@@ -34,6 +36,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAuthenticated: false,
   themePreference: ThemePreference.SYSTEM,
   language: Language.TR,
+  menuTextCase: MenuTextCase.NORMAL,
   role: Role.GUEST,
   token: null,
   refreshToken: null,
@@ -76,12 +79,19 @@ export const useAppStore = create<AppState>((set, get) => ({
         // Fetch user profile
         await get().fetchProfile();
         
-        // Load permissions for the user
-        const userId = getUserIdByUsername(u);
-        if (userId) {
-          const { usePermissionStore } = await import('./permissionsStore');
-          const permStore = usePermissionStore.getState();
-          permStore.loadPermissions(userId);
+        // Load permissions from JWT token (primary method)
+        const { usePermissionStore } = await import('./permissionsStore');
+        const permStore = usePermissionStore.getState();
+        
+        // Try loading from JWT first
+        if (response.accessToken) {
+          permStore.loadPermissionsFromToken(response.accessToken);
+        } else {
+          // Fallback to user data
+          const userId = getUserIdByUsername(u);
+          if (userId) {
+            permStore.loadPermissions(userId);
+          }
         }
         
         return true;
@@ -121,6 +131,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ language: lng });
     await AsyncStorage.setItem('lang', lng);
     i18n.changeLanguage(lng);
+  },
+  async setMenuTextCase(caseType) {
+    set({ menuTextCase: caseType });
+    await AsyncStorage.setItem('menuTextCase', caseType);
   },
   setRole(role) {
     set({ role });
@@ -166,12 +180,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Restore preferences
     const pref = (await AsyncStorage.getItem('themePreference')) as ThemePreference | null;
     const lng = (await AsyncStorage.getItem('lang')) as Language | null;
+    const menuCase = (await AsyncStorage.getItem('menuTextCase')) as MenuTextCase | null;
     if (pref && Object.values(ThemePreference).includes(pref)) {
       set({ themePreference: pref });
     }
     if (lng && Object.values(Language).includes(lng)) {
       set({ language: lng });
       i18n.changeLanguage(lng);
+    }
+    if (menuCase && Object.values(MenuTextCase).includes(menuCase)) {
+      set({ menuTextCase: menuCase });
     }
     
     // Try silent login
@@ -200,12 +218,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Fetch user profile
       await get().fetchProfile();
       
-      // Load permissions for the restored role using centralized helper
-      const userId = getUserIdByRole(role);
-      if (userId) {
-        const { usePermissionStore } = await import('./permissionsStore');
-        const permStore = usePermissionStore.getState();
-        permStore.loadPermissions(userId);
+      // Load permissions from JWT token
+      const { usePermissionStore } = await import('./permissionsStore');
+      const permStore = usePermissionStore.getState();
+      
+      // Try loading from JWT first
+      if (accessToken) {
+        permStore.loadPermissionsFromToken(accessToken);
+      } else {
+        // Fallback to user data
+        const userId = getUserIdByRole(role);
+        if (userId) {
+          permStore.loadPermissions(userId);
+        }
       }
       
       return true;
@@ -231,12 +256,19 @@ export const useAppStore = create<AppState>((set, get) => ({
         // Fetch user profile after token refresh
         await get().fetchProfile();
         
-        // Load permissions for the restored role using centralized helper
-        const userId = getUserIdByRole(role);
-        if (userId) {
-          const { usePermissionStore } = await import('./permissionsStore');
-          const permStore = usePermissionStore.getState();
-          permStore.loadPermissions(userId);
+        // Load permissions from JWT token
+        const { usePermissionStore } = await import('./permissionsStore');
+        const permStore = usePermissionStore.getState();
+        
+        // Try loading from JWT first
+        if (response.accessToken) {
+          permStore.loadPermissionsFromToken(response.accessToken);
+        } else {
+          // Fallback to user data
+          const userId = getUserIdByRole(role);
+          if (userId) {
+            permStore.loadPermissions(userId);
+          }
         }
         
         return true;

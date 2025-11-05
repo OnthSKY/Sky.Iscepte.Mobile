@@ -25,7 +25,9 @@ export interface Purchase {
   employeeId?: string | number;
   purchaseTypeId?: string;
   purchaseTypeName?: string;
+  signature?: string; // İmza alanı (SVG path data)
   customFields?: PurchaseCustomField[]; // Her purchase'a özel custom field'lar
+  isStockPurchase?: boolean; // true = stok için alış, false = gider olarak kaydedilecek
 }
 
 interface PurchaseState {

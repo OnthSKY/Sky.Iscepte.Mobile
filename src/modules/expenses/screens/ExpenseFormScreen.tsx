@@ -20,7 +20,6 @@ import { baseExpenseFormFields, expenseValidator } from '../config/expenseFormCo
 import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
 import Card from '../../../shared/components/Card';
 import spacing from '../../../core/constants/spacing';
-import globalFieldsService from '../services/globalFieldsService';
 import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 
 interface ExpenseFormScreenProps {
@@ -38,40 +37,29 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
 
   const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
-  const [globalFields, setGlobalFields] = useState<ExpenseCustomField[]>([]);
 
   useEffect(() => {
     loadExpenseTypes();
-    loadGlobalFields();
   }, []);
-
-  const loadGlobalFields = async () => {
-    try {
-      const fields = await globalFieldsService.getAll();
-      setGlobalFields(fields);
-    } catch (error) {
-      console.error('Failed to load global fields:', error);
-    }
-  };
 
   const loadExpenseTypes = async () => {
     setLoadingTypes(true);
     try {
-      const types = await expenseTypeService.list();
-      setExpenseTypes(types);
+      const response = await expenseTypeService.list();
+      // Handle both cases: PaginatedData format or direct array
+      let types: ExpenseType[] = [];
+      if (Array.isArray(response)) {
+        types = response;
+      } else if (response && typeof response === 'object' && 'items' in response) {
+        // PaginatedData format
+        types = (response as any).items || [];
+      }
+      setExpenseTypes(Array.isArray(types) ? types : []);
     } catch (err) {
       // Failed to load expense types - will use empty list
+      setExpenseTypes([]);
     } finally {
       setLoadingTypes(false);
-    }
-  };
-
-  const handleGlobalFieldsChange = async (fields: ExpenseCustomField[]) => {
-    setGlobalFields(fields);
-    try {
-      await globalFieldsService.save(fields);
-    } catch (error) {
-      console.error('Failed to save global fields:', error);
     }
   };
 
@@ -84,7 +72,7 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
 
   const enhancedValidator = createEnhancedValidator<Expense>(
     expenseValidator,
-    globalFields,
+    [],
     'expenses'
   );
 
@@ -157,8 +145,6 @@ export default function ExpenseFormScreen({ mode }: ExpenseFormScreenProps = {})
               <CustomFieldsManager<ExpenseCustomField>
                 customFields={customFields}
                 onChange={handleCustomFieldsChange}
-                availableGlobalFields={globalFields}
-                onGlobalFieldsChange={handleGlobalFieldsChange}
                 module="expenses"
               />
             </Card>

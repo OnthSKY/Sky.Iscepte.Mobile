@@ -15,7 +15,11 @@ import spacing from '../../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppStore } from '../../store/useAppStore';
 import { usePermissions } from '../../core/hooks/usePermissions';
-import { generateFieldName, normalizeFieldName, getFieldNameExample } from '../utils/fieldNameUtils';
+import { useNavigation } from '@react-navigation/native';
+import { Role } from '../../core/config/appConstants';
+import { showPermissionAlert } from '../utils/permissionUtils';
+import SignatureInput from './SignatureInput';
+import ImageInput from './ImageInput';
 
 import { BaseCustomField, CustomFieldType } from '../types/customFields';
 
@@ -25,8 +29,6 @@ export type { BaseCustomField, CustomFieldType } from '../types/customFields';
 type Props<T extends BaseCustomField> = {
   customFields: T[];
   onChange: (fields: T[]) => void;
-  availableGlobalFields?: T[];
-  onGlobalFieldsChange?: (fields: T[]) => void;
   module: string; // Module name for permission checks (e.g., 'stock', 'customers', 'sales')
   errors?: Record<string, string>; // Validation errors from form
 };
@@ -34,26 +36,21 @@ type Props<T extends BaseCustomField> = {
 export default function CustomFieldsManager<T extends BaseCustomField>({ 
   customFields, 
   onChange,
-  availableGlobalFields = [],
-  onGlobalFieldsChange,
   module,
   errors = {}
 }: Props<T>) {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'packages']);
   const { colors } = useTheme();
+  const navigation = useNavigation<any>();
   const role = useAppStore((s) => s.role);
   const permissions = usePermissions(role);
   const [newFieldKey, setNewFieldKey] = useState('');
   const [newFieldLabel, setNewFieldLabel] = useState('');
   const [newFieldType, setNewFieldType] = useState<CustomFieldType>('text');
   const [newFieldOptions, setNewFieldOptions] = useState('');
-  const [newFieldRequired, setNewFieldRequired] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [isGlobalField, setIsGlobalField] = useState(false);
-  const [addStep, setAddStep] = useState<'scope' | 'form' | null>(null);
 
   // Permission checks
-  const canManageGlobalFields = permissions.can(`${module}:custom_form`);
   const canAddSpecificFields = permissions.can(`${module}:custom_fields`);
   const canEditValues = permissions.can(`${module}:custom_value`);
 
@@ -64,105 +61,71 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
     { label: t('select', { defaultValue: 'Select' }), value: 'select' },
     { label: t('boolean', { defaultValue: 'Yes/No' }), value: 'boolean' },
     { label: t('textarea', { defaultValue: 'Text Area' }), value: 'textarea' },
+    { label: t('signature', { defaultValue: 'Signature' }), value: 'signature' },
+    { label: t('image', { defaultValue: 'Image' }), value: 'image' },
   ];
 
-  // Check if user can add fields (either global or specific)
-  const canAddFields = canManageGlobalFields || canAddSpecificFields;
-
   const handleStartAdding = () => {
-    if (canManageGlobalFields && !canAddSpecificFields) {
-      setIsGlobalField(true);
-      setAddStep('form');
-    } else if (!canManageGlobalFields && canAddSpecificFields) {
-      setIsGlobalField(false);
-      setAddStep('form');
-    } else {
-      setAddStep('scope');
+    if (!canAddSpecificFields) {
+      showPermissionAlert(role, `${module}:custom_fields`, navigation, t);
+      return;
     }
     setIsAdding(true);
   };
 
   const handleCancelAdding = () => {
     setIsAdding(false);
-    setAddStep(null);
     setNewFieldKey('');
     setNewFieldLabel('');
     setNewFieldType('text');
     setNewFieldOptions('');
-    setNewFieldRequired(false);
-    setIsGlobalField(false);
   };
 
   const handleAddField = () => {
     // Permission check
-    if (isGlobalField && !canManageGlobalFields) {
-      return;
-    }
-    if (!isGlobalField && !canAddSpecificFields) {
+    if (!canAddSpecificFields) {
       return;
     }
 
-    if (isGlobalField) {
-      if (!newFieldKey.trim() || !newFieldLabel.trim()) {
-        return;
-      }
-    } else {
-      if (!newFieldLabel.trim()) {
-        return;
-      }
+    if (!newFieldLabel.trim()) {
+      return;
     }
 
     // Check if field key already exists
-    const allFields = [...customFields, ...availableGlobalFields];
-    const fieldKeyToCheck = isGlobalField ? newFieldKey.trim() : (newFieldKey.trim() || newFieldLabel.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'));
-    if (allFields.find(f => f.key === fieldKeyToCheck)) {
+    const fieldKeyToCheck = newFieldKey.trim() || newFieldLabel.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    if (customFields.find(f => f.key === fieldKeyToCheck)) {
       return;
     }
 
-    if (isGlobalField) {
-      // Global field - type and options required
-      const options = newFieldType === 'select' && newFieldOptions.trim()
-        ? newFieldOptions.split(',').map(opt => ({
-            label: opt.trim(),
-            value: opt.trim(),
-          }))
-        : undefined;
-
-      const newField = {
-        key: newFieldKey.trim(),
-        label: newFieldLabel.trim(),
-        type: newFieldType,
-        value: newFieldType === 'boolean' ? false : newFieldType === 'number' ? 0 : '',
-        options,
-        isGlobal: true,
-        required: newFieldRequired,
-      } as T;
-
-      if (onGlobalFieldsChange) {
-        onGlobalFieldsChange([...availableGlobalFields, newField]);
-        onChange([...customFields, { ...newField, isGlobal: true } as T]);
-      }
-    } else {
-      // Item-specific field - only label and value, no type
-      const newField = {
-        key: newFieldKey.trim(),
-        label: newFieldLabel.trim(),
-        type: 'text',
-        value: '',
-        isGlobal: false,
-      } as T;
-
-      onChange([...customFields, newField]);
+    // Prevent adding 'signature' field in purchases module (it's already in base fields)
+    if (module === 'purchases' && (fieldKeyToCheck === 'signature' || newFieldLabel.trim().toLowerCase() === t('signature', { defaultValue: 'signature' }).toLowerCase())) {
+      return;
     }
+
+    // Item-specific field
+    const options = newFieldType === 'select' && newFieldOptions.trim()
+      ? newFieldOptions.split(',').map(opt => ({
+          label: opt.trim(),
+          value: opt.trim(),
+        }))
+      : undefined;
+
+    const newField = {
+      key: fieldKeyToCheck,
+      label: newFieldLabel.trim(),
+      type: newFieldType,
+      value: newFieldType === 'boolean' ? false : newFieldType === 'number' ? 0 : (newFieldType === 'signature' || newFieldType === 'image' ? '' : ''),
+      options,
+      isGlobal: false,
+    } as T;
+
+    onChange([...customFields, newField]);
 
     setNewFieldKey('');
     setNewFieldLabel('');
     setNewFieldType('text');
     setNewFieldOptions('');
-    setNewFieldRequired(false);
-    setIsGlobalField(false);
     setIsAdding(false);
-    setAddStep(null);
   };
 
   const handleRemoveField = (key: string) => {
@@ -173,10 +136,6 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
     onChange(customFields.map(f => f.key === key ? { ...f, value } : f));
   };
 
-  // Separate global and item-specific fields
-  const specificFields = customFields.filter(f => !f.isGlobal);
-  const globalFields = customFields.filter(f => f.isGlobal);
-
   return (
     <View style={styles.container}>
       <View style={styles.mainHeader}>
@@ -185,15 +144,26 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
             {t('custom_fields', { defaultValue: 'Custom Fields' })}
           </Text>
           <Text style={[styles.sectionInfo, { color: colors.muted, marginTop: 4 }]}>
-            {t('custom_fields_info', { defaultValue: 'Manage global and item-specific fields.' })}
+            {t('custom_fields_info', { defaultValue: 'Add custom fields specific to this item.' })}
           </Text>
         </View>
-        {canAddFields && !isAdding && (
+        {!isAdding && (
           <TouchableOpacity
             onPress={handleStartAdding}
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            style={[
+              styles.addButton, 
+              { 
+                backgroundColor: canAddSpecificFields ? colors.primary : colors.muted,
+                opacity: canAddSpecificFields ? 1 : 0.6,
+              }
+            ]}
+            disabled={!canAddSpecificFields}
           >
-            <Ionicons name="add-outline" size={20} color="#fff" />
+            <Ionicons 
+              name={canAddSpecificFields ? "add-outline" : "lock-closed-outline"} 
+              size={20} 
+              color="#fff" 
+            />
             <Text style={styles.addButtonText}>
               {t('add', { defaultValue: 'Add' })}
             </Text>
@@ -203,393 +173,79 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
 
       {isAdding && (
         <Card style={styles.addFieldCard}>
-          {addStep === 'scope' && (
+          <View style={styles.addFieldForm}>
+            {/* Field Description */}
             <View>
-              <Text style={[styles.scopeTitle, { color: colors.text }]}>
-                {t('select_field_scope', { defaultValue: 'Select Field Scope' })}
+              <Text style={[styles.label, { color: colors.text }]}>
+                {t('field_description', { defaultValue: 'Field Description' })} *
               </Text>
-              <Text style={[styles.scopeInfo, { color: colors.muted }]}>
-                {t('select_field_scope_info', { defaultValue: 'Choose whether to create a reusable global field or a field specific to this item.' })}
+              <Text style={[styles.hint, { color: colors.muted }]}>
+                {t('field_description_hint', { defaultValue: 'Description for this item-specific field' })}
               </Text>
-
-              <View style={styles.fieldScopeRow}>
-                {canManageGlobalFields && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setIsGlobalField(true);
-                      setAddStep('form');
-                    }}
-                    style={[styles.scopeOption, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  >
-                    <Ionicons name="earth" size={24} color={colors.primary} />
-                    <View style={{ flex: 1, marginLeft: spacing.md }}>
-                      <Text style={[styles.scopeOptionTitle, { color: colors.text }]}>
-                        {t('global_field', { defaultValue: 'Global Field' })}
-                      </Text>
-                      <Text style={[styles.scopeOptionDesc, { color: colors.muted }]}>
-                        {t('global_field_desc', { defaultValue: 'Reusable field for all items.' })}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-                {canAddSpecificFields && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setIsGlobalField(false);
-                      setAddStep('form');
-                    }}
-                    style={[styles.scopeOption, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  >
-                    <Ionicons name="document-text" size={24} color={colors.primary} />
-                    <View style={{ flex: 1, marginLeft: spacing.md }}>
-                      <Text style={[styles.scopeOptionTitle, { color: colors.text }]}>
-                        {t('item_specific_field', { defaultValue: 'Item-Specific Field' })}
-                      </Text>
-                      <Text style={[styles.scopeOptionDesc, { color: colors.muted }]}>
-                        {t('item_specific_field_desc', { defaultValue: 'Field for this item only.' })}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Button
-                      title={t('cancel', { defaultValue: 'Cancel' })}
-                onPress={handleCancelAdding}
-                style={{ backgroundColor: colors.muted, marginTop: spacing.md }}
+              <Input
+                value={newFieldLabel}
+                onChangeText={(text) => {
+                  setNewFieldLabel(text);
+                  const autoKey = text.toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_+|_+$/g, '');
+                  setNewFieldKey(autoKey || '');
+                }}
+                placeholder={t('field_description_placeholder', { defaultValue: 'E.g., Special Note, Additional Info...' })}
               />
             </View>
-          )}
 
-          {addStep === 'form' && (
-            <>
-              {isGlobalField ? (
-                /* Global Field Addition Form */
-                <View style={styles.addFieldForm}>
-                  {/* Info Box */}
-                  <View style={[styles.infoBox, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
-                    <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-                    <Text style={[styles.hint, { color: colors.muted, fontSize: 11, flex: 1 }]}>
-                      {t('field_name_example', { 
-                        defaultValue: `Örnek: "${getFieldNameExample()}" (Türkçe karakterler otomatik dönüştürülür: ğ→g, ö→o, ü→u, ş→s, ı→i, ç→c)` 
-                      })}
-                    </Text>
-                  </View>
-                  
-                  {/* Field Label (Görünür İsmi) */}
-                  <View style={{ marginTop: spacing.sm }}>
-                    <Text style={[styles.label, { color: colors.text, marginBottom: spacing.xs }]}>
-                      {t('field_label', { defaultValue: 'Alan Etiketi (Gösterim Adı)' })} *
-                    </Text>
-                    <Input
-                      value={newFieldLabel}
-                      onChangeText={(text) => {
-                        setNewFieldLabel(text);
-                        // Auto-generate field name from label
-                        if (text.trim()) {
-                          const generated = generateFieldName(text);
-                          setNewFieldKey(generated);
-                        } else {
-                          setNewFieldKey('');
-                        }
-                      }}
-                      placeholder={t('enter_field_label', { defaultValue: 'Örn: Ürün Adı' })}
-                    />
-                  </View>
-                  
-                  {/* Field Key (Alan Adı - Teknik) */}
-                  <View style={{ marginTop: spacing.sm }}>
-                    <Text style={[styles.label, { color: colors.text, marginBottom: spacing.xs }]}>
-                      {t('field_name', { defaultValue: 'Alan Adı (Teknik)' })} *
-                    </Text>
-                    <Input
-                      value={newFieldKey}
-                      onChangeText={(text) => {
-                        // Normalize on change
-                        const normalized = normalizeFieldName(text);
-                        setNewFieldKey(normalized);
-                      }}
-                      placeholder={getFieldNameExample()}
-                    />
-                  </View>
-
-                  {/* Field Type */}
-                  <View>
-                    <Text style={[styles.label, { color: colors.text }]}>
-                      {t('field_type', { defaultValue: 'Field Type' })}
-                    </Text>
-                    <Select
-                      value={newFieldType}
-                      options={fieldTypes}
-                      onChange={(val) => setNewFieldType(val as CustomFieldType)}
-                    />
-                  </View>
-
-                  {/* Options for select type */}
-                  {newFieldType === 'select' && (
-                    <View>
-                      <Text style={[styles.label, { color: colors.text }]}>
-                        {t('options', { defaultValue: 'Options' })} *
-                      </Text>
-                      <Text style={[styles.hint, { color: colors.muted }]}>
-                        {t('options_hint', { defaultValue: 'Comma-separated values (e.g., Red, Green, Blue)' })}
-                      </Text>
-                      <Input
-                        value={newFieldOptions}
-                        onChangeText={setNewFieldOptions}
-                        placeholder="Red, Green, Blue"
-                      />
-                    </View>
-                  )}
-
-                  {/* Options for boolean type */}
-                  {newFieldType === 'boolean' && (
-                    <View style={styles.formRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.label, { color: colors.text }]}>
-                          {t('yes_label', { defaultValue: 'Yes Label' })}
-                        </Text>
-                        <Input
-                          value={newFieldOptions.split(',')[0] || 'Yes'}
-                          onChangeText={(val) => {
-                            const parts = newFieldOptions.split(',');
-                            parts[0] = val;
-                            setNewFieldOptions(parts.join(','));
-                          }}
-                          placeholder="Yes"
-                        />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: spacing.sm }}>
-                        <Text style={[styles.label, { color: colors.text }]}>
-                          {t('no_label', { defaultValue: 'No Label' })}
-                        </Text>
-                        <Input
-                          value={newFieldOptions.split(',')[1] || 'No'}
-                          onChangeText={(val) => {
-                            const parts = newFieldOptions.split(',');
-                            parts[1] = val;
-                            setNewFieldOptions(parts.join(','));
-                          }}
-                          placeholder="No"
-                        />
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Required toggle for global fields */}
-                  <TouchableOpacity
-                    onPress={() => setNewFieldRequired(!newFieldRequired)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
-                  >
-                    <View
-                      style={[
-                        styles.checkbox,
-                        { borderColor: colors.primary },
-                        newFieldRequired && { backgroundColor: colors.primary }
-                      ]}
-                    >
-                      {newFieldRequired && (
-                        <Ionicons name="checkmark" size={16} color="#fff" />
-                      )}
-                    </View>
-                    <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>
-                      {t('field_required', { defaultValue: 'Required field' })}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.formActions}>
-                    <Button
-                      title={t('cancel', { defaultValue: 'Cancel' })}
-                      onPress={handleCancelAdding}
-                      style={[styles.actionButton, { backgroundColor: colors.muted }]}
-                    />
-                    <Button
-                      title={t('add', { defaultValue: 'Add' })}
-                      onPress={handleAddField}
-                      style={styles.actionButton}
-                    />
-                  </View>
-                </View>
-              ) : (
-                /* Item-Specific Field Addition Form */
-                <View style={styles.addFieldForm}>
-                  {/* For Item-Specific: Only Label (Description) */}
-                  <View>
-                    <Text style={[styles.label, { color: colors.text }]}>
-                      {t('field_description', { defaultValue: 'Field Description' })} *
-                    </Text>
-                    <Text style={[styles.hint, { color: colors.muted }]}>
-                      {t('field_description_hint', { defaultValue: 'Description for this item-specific field' })}
-                    </Text>
-                    <Input
-                      value={newFieldLabel}
-                      onChangeText={(text) => {
-                        setNewFieldLabel(text);
-                        const autoKey = text.toLowerCase()
-                          .replace(/[^a-z0-9]+/g, '_')
-                          .replace(/^_+|_+$/g, '');
-                        setNewFieldKey(autoKey || '');
-                      }}
-                      placeholder={t('field_description_placeholder', { defaultValue: 'E.g., Special Note, Additional Info...' })}
-                    />
-                  </View>
-
-                  {/* Show type and options for Item-Specific fields */}
-                  <View style={styles.formRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.label, { color: colors.text }]}>
-                        {t('field_type', { defaultValue: 'Field Type' })}
-                      </Text>
-                      <Select
-                        value={newFieldType}
-                        options={fieldTypes.map(ft => ({ label: ft.label, value: ft.value }))}
-                        onChange={(val) => {
-                          setNewFieldType(val as CustomFieldType);
-                          setNewFieldOptions('');
-                        }}
-                      />
-                    </View>
-                    {newFieldType === 'select' && (
-                      <View style={{ flex: 1, marginLeft: spacing.sm }}>
-                        <Text style={[styles.label, { color: colors.text }]}>
-                          {t('field_options', { defaultValue: 'Options' })}
-                        </Text>
-                        <Input
-                          value={newFieldOptions}
-                          onChangeText={setNewFieldOptions}
-                          placeholder="Option1, Option2, Option3"
-                        />
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.formActions}>
-                    <Button
-                      title={t('cancel', { defaultValue: 'Cancel' })}
-                      onPress={handleCancelAdding}
-                      style={[styles.actionButton, { backgroundColor: colors.muted }]}
-                    />
-                    <Button
-                      title={t('add', { defaultValue: 'Add' })}
-                      onPress={handleAddField}
-                      style={styles.actionButton}
-                    />
-                  </View>
+            {/* Field Type and Options */}
+            <View style={styles.formRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  {t('field_type', { defaultValue: 'Field Type' })}
+                </Text>
+                <Select
+                  value={newFieldType}
+                  options={fieldTypes.map(ft => ({ label: ft.label, value: ft.value }))}
+                  onChange={(val) => {
+                    setNewFieldType(val as CustomFieldType);
+                    setNewFieldOptions('');
+                  }}
+                />
+              </View>
+              {newFieldType === 'select' && (
+                <View style={{ flex: 1, marginLeft: spacing.sm }}>
+                  <Text style={[styles.label, { color: colors.text }]}>
+                    {t('field_options', { defaultValue: 'Options' })}
+                  </Text>
+                  <Input
+                    value={newFieldOptions}
+                    onChangeText={setNewFieldOptions}
+                    placeholder="Option1, Option2, Option3"
+                  />
                 </View>
               )}
-            </>
-          )}
+            </View>
+
+            <View style={styles.formActions}>
+              <Button
+                title={t('cancel', { defaultValue: 'Cancel' })}
+                onPress={handleCancelAdding}
+                style={[styles.actionButton, { backgroundColor: colors.muted }]}
+              />
+              <Button
+                title={t('add', { defaultValue: 'Add' })}
+                onPress={handleAddField}
+                style={styles.actionButton}
+              />
+            </View>
+          </View>
         </Card>
       )}
 
-      {/* Global Fields Section */}
+      {/* Custom Fields Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('global_fields', { defaultValue: 'Global Fields' })}
-            </Text>
-            <Text style={[styles.sectionInfo, { color: colors.muted }]}>
-              {t('global_fields_info', { defaultValue: 'Fields available for all items. You can add or remove these fields.' })}
-            </Text>
-          </View>
-        </View>
-
-        {availableGlobalFields.length > 0 && (
-          <View style={styles.fieldsList}>
-            {availableGlobalFields.map((field) => {
-              const isActive = globalFields.some(f => f.key === field.key);
-              return (
-                <Card key={field.key} style={styles.fieldCard}>
-                  <View style={styles.fieldHeader}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
-                        <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                          {field.label}
-                        </Text>
-                        <View style={[styles.globalBadge, { backgroundColor: colors.primary + '20' }]}>
-                          <Text style={[styles.globalBadgeText, { color: colors.primary }]}>
-                            {t('global', { defaultValue: 'Global' })}
-                          </Text>
-                        </View>
-                        {field.required && (
-                          <View style={[styles.requiredBadge, { backgroundColor: '#EF4444' + '20' }]}>
-                            <Text style={[styles.globalBadgeText, { color: '#EF4444' }]}>
-                              {t('required', { defaultValue: 'Required' })}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={[styles.fieldKey, { color: colors.muted }]}>
-                        {field.key} ({field.type})
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (isActive) {
-                          onChange(customFields.filter(f => f.key !== field.key));
-                        } else {
-                          onChange([...customFields, { ...field, isGlobal: true } as T]);
-                        }
-                      }}
-                      style={[
-                        styles.toggleButton,
-                        { 
-                          backgroundColor: isActive ? colors.primary : colors.surface,
-                          borderColor: colors.primary,
-                          borderWidth: 1,
-                        }
-                      ]}
-                    >
-                      <Ionicons 
-                        name={isActive ? "checkmark-circle" : "add-circle-outline"} 
-                        size={20} 
-                        color={isActive ? '#fff' : colors.primary} 
-                      />
-                      <Text style={[styles.toggleButtonText, { color: isActive ? '#fff' : colors.primary }]}>
-                        {isActive ? t('active', { defaultValue: 'Active' }) : t('add', { defaultValue: 'Add' })}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  
-                  {isActive && canEditValues && (
-                    <View style={styles.fieldValue}>
-                      {renderFieldInput(
-                        globalFields.find(f => f.key === field.key) || field,
-                        (value) => {
-                          const updatedFields = customFields.map(f => 
-                            f.key === field.key ? { ...f, value } : f
-                          );
-                          onChange(updatedFields);
-                        },
-                        colors
-                      )}
-                      {errors[`customField_${field.key}`] && (
-                        <Text style={{ fontSize: 12, color: colors.error, marginTop: spacing.xs }}>
-                          {errors[`customField_${field.key}`]}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                  {isActive && !canEditValues && (
-                    <View style={styles.fieldValue}>
-                      <Text style={{ color: colors.muted, fontSize: 12 }}>
-                        {t('no_permission_to_edit', { defaultValue: 'No permission to edit values' })}
-                      </Text>
-                    </View>
-                  )}
-                </Card>
-              );
-            })}
-          </View>
-        )}
-      </View>
-
-      {/* Item-Specific Fields Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('item_specific_fields', { defaultValue: 'Item-Specific Fields' })}
+              {t('custom_fields', { defaultValue: 'Custom Fields' })}
             </Text>
             <Text style={[styles.sectionInfo, { color: colors.muted }]}>
               {t('item_specific_fields_info', { defaultValue: 'Fields specific to this item only. These fields will not appear on other items.' })}
@@ -597,9 +253,9 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
           </View>
         </View>
 
-        {specificFields.length > 0 && (
+        {customFields.length > 0 && (
           <View style={styles.fieldsList}>
-            {specificFields.map((field) => (
+            {customFields.map((field) => (
               <Card key={field.key} style={styles.fieldCard}>
                 <View style={styles.fieldHeader}>
                   <View style={{ flex: 1 }}>
@@ -610,37 +266,60 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
                       {field.key}
                     </Text>
                   </View>
-                  {canAddSpecificFields && (
                   <TouchableOpacity
-                    onPress={() => handleRemoveField(field.key)}
-                    style={[styles.removeButton, { backgroundColor: '#EF4444' }]}
+                    onPress={() => {
+                      if (!canAddSpecificFields) {
+                        showPermissionAlert(role, `${module}:custom_fields`, navigation, t);
+                        return;
+                      }
+                      handleRemoveField(field.key);
+                    }}
+                    style={[
+                      styles.removeButton, 
+                      { 
+                        backgroundColor: canAddSpecificFields ? '#EF4444' : colors.muted,
+                        opacity: canAddSpecificFields ? 1 : 0.6,
+                      }
+                    ]}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#fff" />
+                    <Ionicons 
+                      name={canAddSpecificFields ? "trash-outline" : "lock-closed-outline"} 
+                      size={18} 
+                      color="#fff" 
+                    />
                   </TouchableOpacity>
-                  )}
                 </View>
 
-                {canEditValues && (
                 <View style={styles.fieldValue}>
                     {renderFieldInput(
                       field,
-                      (value) => handleUpdateFieldValue(field.key, value),
-                      colors
+                      (value) => {
+                        if (!canEditValues) {
+                          showPermissionAlert(role, `${module}:custom_value`, navigation, t);
+                          return;
+                        }
+                        handleUpdateFieldValue(field.key, value);
+                      },
+                      colors,
+                      canEditValues
                     )}
                     {errors[`customField_${field.key}`] && (
                       <Text style={{ fontSize: 12, color: colors.error, marginTop: spacing.xs }}>
                         {errors[`customField_${field.key}`]}
                       </Text>
                     )}
+                    {!canEditValues && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}>
+                        <Ionicons name="lock-closed-outline" size={14} color={colors.muted} />
+                        <Text style={{ color: colors.muted, fontSize: 11 }}>
+                          {t('permission_required_hint', { 
+                            defaultValue: 'Bu alanı düzenlemek için {{module}}:custom_value yetkisi gereklidir',
+                            module: module
+                          })}
+                        </Text>
+                      </View>
+                    )}
                 </View>
-                )}
-                {!canEditValues && (
-                  <View style={styles.fieldValue}>
-                    <Text style={{ color: colors.muted, fontSize: 12 }}>
-                      {t('no_permission_to_edit', { defaultValue: 'No permission to edit values' })}
-                    </Text>
-                  </View>
-                )}
               </Card>
             ))}
           </View>
@@ -653,7 +332,8 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
 function renderFieldInput(
   field: BaseCustomField,
   onChange: (value: any) => void,
-  colors: any
+  colors: any,
+  editable: boolean = true
 ) {
   switch (field.type) {
     case 'text':
@@ -662,6 +342,7 @@ function renderFieldInput(
           value={field.value != null ? String(field.value) : ''}
           onChangeText={onChange}
           placeholder={field.label}
+          editable={editable}
         />
       );
     case 'textarea':
@@ -672,6 +353,7 @@ function renderFieldInput(
           placeholder={field.label}
           multiline
           numberOfLines={4}
+          editable={editable}
         />
       );
     case 'number':
@@ -684,6 +366,7 @@ function renderFieldInput(
           }}
           keyboardType="numeric"
           placeholder="0"
+          editable={editable}
         />
       );
     case 'date':
@@ -692,6 +375,7 @@ function renderFieldInput(
           value={field.value != null ? String(field.value) : ''}
           onChangeText={onChange}
           placeholder="YYYY-MM-DD"
+          editable={editable}
         />
       );
     case 'select':
@@ -700,14 +384,16 @@ function renderFieldInput(
           value={field.value != null ? String(field.value) : ''}
           options={field.options || []}
           onChange={onChange}
+          disabled={!editable}
         />
       );
     case 'boolean':
       const boolValue = field.value === true || field.value === 'true';
       return (
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', gap: spacing.sm, opacity: editable ? 1 : 0.6 }}>
           <TouchableOpacity
             onPress={() => onChange(true)}
+            disabled={!editable}
             style={{
               flex: 1,
               padding: spacing.sm,
@@ -722,6 +408,7 @@ function renderFieldInput(
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onChange(false)}
+            disabled={!editable}
             style={{
               flex: 1,
               padding: spacing.sm,
@@ -735,6 +422,24 @@ function renderFieldInput(
             </Text>
           </TouchableOpacity>
         </View>
+      );
+    case 'signature':
+      return (
+        <SignatureInput
+          value={field.value != null ? String(field.value) : ''}
+          onChange={onChange}
+          placeholder={field.label}
+          disabled={!editable}
+        />
+      );
+    case 'image':
+      return (
+        <ImageInput
+          value={field.value != null ? String(field.value) : ''}
+          onChange={onChange}
+          placeholder={field.label}
+          disabled={!editable}
+        />
       );
     default:
       return null;

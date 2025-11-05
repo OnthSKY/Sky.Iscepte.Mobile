@@ -6,6 +6,8 @@ import ScreenLayout from '../shared/layouts/ScreenLayout';
 import { useTheme } from '../core/contexts/ThemeContext';
 import spacing from '../core/constants/spacing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useAppStore } from '../store/useAppStore';
+import { MenuTextCase } from '../core/config/appConstants';
 
 /**
  * General Module Settings Screen
@@ -15,6 +17,19 @@ export default function GeneralModuleSettingsScreen() {
   const navigation = useNavigation<any>();
   const { t, i18n } = useTranslation(['settings', 'common']);
   const { colors, theme } = useTheme();
+  const menuTextCase = useAppStore((s) => s.menuTextCase);
+
+  const getMenuTextCaseLabel = () => {
+    switch (menuTextCase) {
+      case MenuTextCase.UPPERCASE:
+        return t('settings:menu_text_case_uppercase', { defaultValue: 'BÜYÜK HARF' });
+      case MenuTextCase.LOWERCASE:
+        return t('settings:menu_text_case_lowercase', { defaultValue: 'küçük harf' });
+      case MenuTextCase.NORMAL:
+      default:
+        return t('settings:menu_text_case_normal', { defaultValue: 'Normal' });
+    }
+  };
 
   const generalSettings = [
     {
@@ -36,6 +51,15 @@ export default function GeneralModuleSettingsScreen() {
       currentValue: theme === 'light' ? t('settings:light', { defaultValue: 'Açık' }) : 
                    theme === 'dark' ? t('settings:dark', { defaultValue: 'Koyu' }) : 
                    t('settings:system', { defaultValue: 'Sistem' }),
+    },
+    {
+      key: 'menuTextCase',
+      label: t('settings:menu_text_case', { defaultValue: 'Menü Metin Boyutu' }),
+      desc: t('settings:menu_text_case_desc', { defaultValue: 'Menü metinlerinin görünümünü seçin' }),
+      icon: 'text-outline',
+      route: 'MenuTextCaseSettings',
+      color: '#8B5CF6',
+      currentValue: getMenuTextCaseLabel(),
     },
   ];
 

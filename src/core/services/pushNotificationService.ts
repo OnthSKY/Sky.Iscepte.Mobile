@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Product } from '../../modules/products/services/productService';
+import { Sale } from '../../modules/sales/services/salesService';
 
 /**
  * Push Notification Service
@@ -47,6 +48,14 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF9500',
+        sound: 'default',
+      });
+      
+      await Notifications.setNotificationChannelAsync('debt-collection-alerts', {
+        name: 'Borç Alma Hatırlatıcıları',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF6B6B',
         sound: 'default',
       });
     }
@@ -165,6 +174,107 @@ export async function scheduleLowStockNotification(product: Product, stock: numb
 }
 
 /**
+ * Düşük stoklu ürünler için toplu arka plan bildirimi gönder
+ */
+export async function scheduleBatchLowStockNotification(
+  products: Product[],
+  threshold: number
+): Promise<void> {
+  try {
+    if (!products || products.length === 0) {
+      return;
+    }
+
+    // Web platform için bildirimleri destekleme
+    if (Platform.OS === 'web') {
+      if (__DEV__) {
+        console.log('Notifications not supported on web.');
+      }
+      return;
+    }
+
+    // Bildirim içeriğini hazırla
+    const productCount = products.length;
+    const title = productCount === 1 
+      ? 'Düşük Stok Uyarısı'
+      : `${productCount} Üründe Düşük Stok Uyarısı`;
+    
+    // Ürün listesini oluştur (maksimum 5 ürün göster, kalanı için "ve X ürün daha" ekle)
+    let body = '';
+    if (productCount === 1) {
+      const product = products[0];
+      const stock = product.stock ?? 0;
+      body = `${product.name}: ${stock} (Eşik: ${threshold})`;
+    } else {
+      const displayCount = Math.min(productCount, 5);
+      const displayedProducts = products.slice(0, displayCount);
+      const productNames = displayedProducts
+        .map(p => {
+          const stock = p.stock ?? 0;
+          return `${p.name} (${stock})`;
+        })
+        .join(', ');
+      
+      if (productCount > 5) {
+        body = `${productNames} ve ${productCount - 5} ürün daha`;
+      } else {
+        body = productNames;
+      }
+      body += ` (Eşik: ${threshold})`;
+    }
+
+    // Title ve body'nin dolu olduğundan emin ol
+    if (!title || !body) {
+      console.warn('Notification title or body is empty:', { title, body });
+      return;
+    }
+
+    // Bildirim içeriğini hazırla
+    const notificationContent = {
+      title,
+      body,
+      data: {
+        type: 'low-stock-batch',
+        productCount,
+        productIds: products.map(p => p.id),
+        threshold,
+      },
+      sound: true,
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+      // Android için channel ID belirt
+      ...(Platform.OS === 'android' && {
+        android: {
+          channelId: 'low-stock-alerts',
+        },
+      }),
+    };
+
+    // Sadece geliştirme modunda log göster
+    if (__DEV__) {
+      console.log('Sending batch notification:', { title, body, productCount });
+    }
+
+    // Anında gösterim için scheduleNotificationAsync kullan
+    try {
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
+        trigger: null, // Hemen göster
+      });
+      console.log('Batch notification scheduled successfully:', { title, body, notificationId });
+      
+      // Bildirim ID'sini sakla (gerekirse iptal etmek için)
+      if (notificationId) {
+        await AsyncStorage.setItem('batch_low_stock_notification', notificationId);
+      }
+    } catch (error) {
+      console.error('Failed to schedule batch notification:', error);
+    }
+  } catch (error) {
+    console.error('Error sending batch notification:', error);
+  }
+}
+
+/**
  * Belirli bir ürün için bildirimi iptal et
  */
 export async function cancelNotificationForProduct(productId: string): Promise<void> {
@@ -216,6 +326,86 @@ export async function backgroundNotificationHandler(notification: Notifications.
 }
 
 /**
+ * Borç alma tarihi için bildirim gönder
+ */
+export async function scheduleDebtCollectionNotification(
+  sale: Sale,
+  daysUntil: number
+): Promise<void> {
+  try {
+    if (!sale.debtCollectionDate || !sale.customerName) {
+      return;
+    }
+
+    const customerName = sale.customerName || 'Müşteri';
+    const amount = sale.total || sale.amount || 0;
+    const currency = sale.currency || 'TRY';
+    
+    let title = 'Borç Alma Hatırlatıcısı';
+    let body = '';
+    
+    if (daysUntil === 0) {
+      body = `${customerName} müşterisinden bugün borç alınacak`;
+    } else if (daysUntil < 0) {
+      body = `${customerName} müşterisinden borç alma tarihi ${Math.abs(daysUntil)} gün önce geçti`;
+    } else {
+      body = `${customerName} müşterisinden borç alma tarihi ${daysUntil} gün sonra`;
+    }
+    
+    body += ` (Tutar: ${amount} ${currency})`;
+
+    const notificationContent = {
+      title,
+      body,
+      data: {
+        type: 'debt-collection',
+        saleId: sale.id,
+        customerId: sale.customerId,
+        customerName,
+        amount,
+        currency,
+        debtCollectionDate: sale.debtCollectionDate,
+        daysUntil,
+      },
+      sound: true,
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+      ...(Platform.OS === 'android' && {
+        android: {
+          channelId: 'debt-collection-alerts',
+        },
+      }),
+    };
+
+    if (Platform.OS === 'web') {
+      if (__DEV__) {
+        console.log('Notifications not supported on web.');
+      }
+      return;
+    }
+
+    if (__DEV__) {
+      console.log('Sending debt collection notification:', { title, body });
+    }
+
+    try {
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
+        trigger: null, // Hemen göster
+      });
+      console.log('Debt collection notification scheduled successfully:', { title, body, notificationId });
+      
+      if (notificationId) {
+        await AsyncStorage.setItem(`notification_debt_${sale.id}`, notificationId);
+      }
+    } catch (error) {
+      console.error('Failed to schedule debt collection notification:', error);
+    }
+  } catch (error) {
+    console.error('Error sending debt collection notification:', error);
+  }
+}
+
+/**
  * Bildirim tıklama handler'ı
  * Uygulama başlangıcında çağrılmalı
  */
@@ -236,6 +426,12 @@ export function setupNotificationHandlers(): void {
     if (data?.type === 'low-stock') {
       // Ürün detayına git veya uygulamayı aç
       console.log('Low stock notification tapped:', data);
+    } else if (data?.type === 'low-stock-batch') {
+      // Toplu düşük stok bildirimi tıklandı - stok listesine git
+      console.log('Batch low stock notification tapped:', data);
+    } else if (data?.type === 'debt-collection') {
+      // Borç alma bildirimi tıklandı - satış detayına git
+      console.log('Debt collection notification tapped:', data);
     }
   });
 

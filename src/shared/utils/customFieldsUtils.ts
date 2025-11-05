@@ -12,7 +12,7 @@ import i18n from '../../i18n';
  */
 export function createEnhancedValidator<T extends { customFields?: BaseCustomField[] }>(
   baseValidator: (data: Partial<T>) => Record<string, string>,
-  globalFields: BaseCustomField[],
+  globalFields: BaseCustomField[], // Kept for backward compatibility but not used
   namespace: string,
   templateFields?: DynamicField[] // Template fields (baseFields + customFields from template)
 ): (data: Partial<T>) => Record<string, string> {
@@ -56,95 +56,6 @@ export function createEnhancedValidator<T extends { customFields?: BaseCustomFie
               });
             } else {
               errors[field.name] = errorMessage;
-            }
-          }
-        }
-      });
-    }
-    
-    // Validate required global custom fields
-    // Only validate fields that are:
-    // 1. Required
-    // 2. Active in the current form (present in data.customFields)
-    if (data.customFields && globalFields) {
-      const activeGlobalFields = data.customFields.filter(f => f.isGlobal);
-      globalFields.forEach(globalField => {
-        if (globalField.required) {
-          // Check if field is active (exists in customFields)
-          const activeField = activeGlobalFields.find(f => f.key === globalField.key);
-          
-          // If field is not active (not added to form), skip validation
-          if (!activeField) {
-            return; // Skip validation for inactive fields
-          }
-          
-          // For boolean fields, false is a valid value, only check if field doesn't exist
-          if (globalField.type === 'boolean') {
-            if (!activeField || activeField.value === null || activeField.value === undefined) {
-              // Try namespace-specific validation.required, fallback to common
-              const errorMessage = i18n.t(`${namespace}:validation.required`, { 
-                field: globalField.label,
-                defaultValue: undefined
-              });
-              if (errorMessage === `${namespace}:validation.required`) {
-                // Fallback to common validation message
-                errors[`customField_${globalField.key}`] = i18n.t('common:errors.validation.required', { 
-                  field: globalField.label,
-                  defaultValue: `${globalField.label} gereklidir`
-                });
-              } else {
-                errors[`customField_${globalField.key}`] = errorMessage;
-              }
-            }
-          } else {
-            // For other field types, check if value is empty
-            const isEmpty = !activeField || 
-              activeField.value === null || 
-              activeField.value === undefined ||
-              (typeof activeField.value === 'string' && activeField.value.trim() === '') ||
-              (globalField.type === 'select' && (!activeField.value || activeField.value === '')) ||
-              (Array.isArray(activeField.value) && activeField.value.length === 0);
-            
-            // For number fields, 0 is a valid value, only check if field is null/undefined/empty string
-            if (globalField.type === 'number') {
-              const isEmpty = !activeField || 
-                activeField.value === null || 
-                activeField.value === undefined ||
-                activeField.value === '' ||
-                isNaN(Number(activeField.value));
-              
-              if (isEmpty) {
-                // Try namespace-specific validation.required, fallback to common
-                const errorMessage = i18n.t(`${namespace}:validation.required`, { 
-                  field: globalField.label,
-                  defaultValue: undefined
-                });
-                if (errorMessage === `${namespace}:validation.required`) {
-                  // Fallback to common validation message
-                  errors[`customField_${globalField.key}`] = i18n.t('common:errors.validation.required', { 
-                    field: globalField.label,
-                    defaultValue: `${globalField.label} gereklidir`
-                  });
-                } else {
-                  errors[`customField_${globalField.key}`] = errorMessage;
-                }
-              }
-            } else if (isEmpty) {
-              // For other types (text, date, select, textarea), check isEmpty
-              // Try namespace-specific validation.required, fallback to common
-              const errorMessage = i18n.t(`${namespace}:validation.required`, { 
-                field: globalField.label,
-                defaultValue: undefined
-              });
-              if (errorMessage === `${namespace}:validation.required`) {
-                // Fallback to common validation message
-                errors[`customField_${globalField.key}`] = i18n.t('common:errors.validation.required', { 
-                  field: globalField.label,
-                  defaultValue: `${globalField.label} gereklidir`
-                });
-              } else {
-                errors[`customField_${globalField.key}`] = errorMessage;
-              }
             }
           }
         }

@@ -3,10 +3,14 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Input from './Input';
 import Select from './Select';
+import ImageInput from './ImageInput';
 import { Form, FormField, FormRow } from './Form';
 import spacing from '../../core/constants/spacing';
+import TCKimlikVerificationField from './TCKimlikVerificationField';
+import IMEIVerificationField from './IMEIVerificationField';
+import { useModuleVerificationSettings } from '../hooks/useModuleVerificationSettings';
 
-export type DynamicFieldType = 'text' | 'number' | 'textarea' | 'select' | 'date' | 'custom';
+export type DynamicFieldType = 'text' | 'number' | 'textarea' | 'select' | 'date' | 'image' | 'custom' | 'tc_verification' | 'imei_verification';
 
 export type DynamicFieldOption = { label: string; value: string };
 
@@ -23,6 +27,7 @@ export type DynamicField = {
   isActive?: boolean; // Whether this field is active (can be deactivated if used)
   isUsed?: boolean; // Whether this field is used in any saved data
   isLocked?: boolean; // Whether this field is locked (cannot be removed from templates, e.g., 'name', 'id')
+  readonly?: boolean; // Whether this field is read-only (user cannot manually edit)
 };
 
 type DynamicFormProps<T extends Record<string, any>> = {
@@ -41,6 +46,9 @@ export default function DynamicForm<T extends Record<string, any>>({
   namespace,
 }: DynamicFormProps<T>) {
   const { t } = useTranslation(namespace);
+  // Get module name from namespace (e.g., 'employees', 'customers')
+  const module = namespace || '';
+  const verificationSettings = useModuleVerificationSettings(module);
 
   const grouped = useMemo(() => {
     // Simple grouping by pairs for columns; renderer handles responsiveness
@@ -78,7 +86,13 @@ export default function DynamicForm<T extends Record<string, any>>({
                   values[field.name] ?? field.defaultValue ?? '', 
                   (v) => setValue(field.name, v), 
                   t,
-                  namespace
+                  namespace,
+                  verificationSettings,
+                  (data) => {
+                    // Auto-fill callback - can be used to auto-fill other fields
+                    // For example, TC verification can auto-fill firstName/lastName
+                    // This is handled in the verification component itself
+                  }
                 )}
               </FormField>
             );
@@ -94,7 +108,9 @@ function renderField(
   value: any,
   onChange: (v: any) => void,
   t: (k: string) => string,
-  namespace?: string
+  namespace?: string,
+  verificationSettings?: { tcVerificationEnabled: boolean; imeiVerificationEnabled: boolean },
+  onAutoFill?: (data: Record<string, any>) => void
 ) {
   const getTranslation = (key: string) => {
     return namespace ? t(`${namespace}:${key}`) : t(key);
@@ -107,6 +123,37 @@ function renderField(
   } as const;
 
   switch (field.type) {
+    case 'tc_verification':
+      // Only render verification component if enabled in settings
+      if (verificationSettings?.tcVerificationEnabled) {
+        return (
+          <TCKimlikVerificationField
+            value={value || ''}
+            onChange={onChange}
+            placeholder={common.placeholder}
+            onAutoFill={onAutoFill}
+            disabled={field.readonly}
+          />
+        );
+      }
+      // Fallback to regular text input if verification not enabled (readonly)
+      return <Input value={value} onChangeText={onChange} {...common} editable={!field.readonly} />;
+    
+    case 'imei_verification':
+      // Only render verification component if enabled in settings
+      if (verificationSettings?.imeiVerificationEnabled) {
+        return (
+          <IMEIVerificationField
+            value={value || ''}
+            onChange={onChange}
+            placeholder={common.placeholder}
+            disabled={field.readonly}
+          />
+        );
+      }
+      // Fallback to regular text input if verification not enabled (readonly)
+      return <Input value={value} onChangeText={onChange} {...common} editable={!field.readonly} />;
+    
     case 'custom':
       return field.render ? field.render(value, onChange) : null;
     case 'number':
@@ -143,6 +190,14 @@ function renderField(
         <Input
           value={value}
           onChangeText={onChange}
+          placeholder={common.placeholder}
+        />
+      );
+    case 'image':
+      return (
+        <ImageInput
+          value={value}
+          onChange={onChange}
           placeholder={common.placeholder}
         />
       );

@@ -73,6 +73,14 @@
   "no_global_fields_desc": "You can add global fields by clicking the button above.",
   "options": "Options",
   "field_required": "Required field",
-  "required": "Required"
+  "required": "Required",
+  "signature": "Signature",
+  "purchase_type": "Purchase Type",
+  "product_in_stock_title": "Product In Stock",
+  "product_in_stock_message": "Product \"{{productName}}\" is in stock (Stock: {{stock}}). Would you like to be redirected to Quick Purchase screen to increase stock?",
+  "go_to_quick_purchase": "Go to Quick Purchase",
+  "continue_normal_purchase": "Continue Normal Purchase",
+  "is_stock_purchase": "Stock Purchase",
+  "is_stock_purchase_description": "If checked, purchase will be for stock. If unchecked, it will be recorded as an expense."
 }
 

@@ -23,7 +23,7 @@ import { ListScreenContainer } from '../../../shared/components/screens/ListScre
 import { useListScreen } from '../../../core/hooks/useListScreen';
 import { permissionsRegistry } from '../../../core/config/permissions';
 import { MODULE_CONFIGS, getModuleConfig } from '../../../core/config/moduleConfig';
-import { getModuleActions } from '../utils/permissionsUtils';
+import { getModuleActions, getModuleActionsFilteredByOwnerPackage, isPermissionAllowedByOwnerPackage } from '../utils/permissionsUtils';
 import { ModuleStat } from '../../../shared/components/dashboard/ModuleStatsHeader';
 import { StatCard } from '../../../shared/components/dashboard/StatCard';
 import { useEmployeeStatsQuery } from '../hooks/useEmployeesQuery';
@@ -74,6 +74,7 @@ export default function EmployeePermissionsScreen() {
   const { t } = useTranslation(translationNamespaces);
   const currentUser = useAppStore((s) => s.user);
   const currentUserId = currentUser?.id;
+  const currentUserPackage = (currentUser as any)?.package || 'free'; // Get owner's package
   
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -257,9 +258,10 @@ export default function EmployeePermissionsScreen() {
       actions: [],
     };
 
-    const moduleActions = getModuleActions(moduleKey);
+    // Filter actions based on owner's package - owner can only grant permissions they have
+    const moduleActions = getModuleActionsFilteredByOwnerPackage(moduleKey, currentUserPackage);
     const isExpanded = expandedModules[moduleKey] || false;
-    const allActionsSelected = moduleActions.every(action => modulePerms.actions?.includes(action));
+    const allActionsSelected = moduleActions.length > 0 && moduleActions.every(action => modulePerms.actions?.includes(action));
     const isStockModule = moduleKey === 'stock';
 
     return (
@@ -310,8 +312,15 @@ export default function EmployeePermissionsScreen() {
               <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: spacing.sm, color: colors.muted }}>
                 {t('employees:actions', { defaultValue: 'İşlemler' })}
               </Text>
-              <View style={{ gap: spacing.xs }}>
-                {moduleActions.map((action) => {
+              {moduleActions.length === 0 ? (
+                <View style={{ padding: spacing.md, backgroundColor: colors.warning + '10', borderRadius: 8, borderWidth: 1, borderColor: colors.warning + '30' }}>
+                  <Text style={{ fontSize: 13, color: colors.text }}>
+                    {t('employees:no_permissions_available', { defaultValue: 'Bu modül için paketinizde yetki bulunmuyor. Paket yükseltmek için Paketler ekranına gidin.' })}
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ gap: spacing.xs }}>
+                  {moduleActions.map((action) => {
                   // Special handling for stock module special permissions
                   const isStockSpecialPermission = isStockModule && (action === 'manage_global_fields' || action === 'add_product_custom_fields');
                   const translationKey = isStockSpecialPermission 
@@ -330,6 +339,12 @@ export default function EmployeePermissionsScreen() {
                       <Switch
                         value={modulePerms.actions?.includes(action) || false}
                       onValueChange={(value) => {
+                        // Check if permission is allowed by owner's package
+                        const permission = `${moduleKey}:${action}`;
+                        if (value && !isPermissionAllowedByOwnerPackage(permission, currentUserPackage)) {
+                          // Don't allow adding permission not in owner's package
+                          return;
+                        }
                         const current = modifiedPermissions || {};
                         const currentModulePerms = current[moduleKey] || { actions: [] };
                         const actions = value
@@ -346,7 +361,8 @@ export default function EmployeePermissionsScreen() {
                     </View>
                   );
                 })}
-              </View>
+                </View>
+              )}
             </View>
 
           </View>

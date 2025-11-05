@@ -1,22 +1,37 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, GestureResponderEvent, ViewStyle, Platform, StyleProp } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, GestureResponderEvent, ViewStyle, Platform, StyleProp, View } from 'react-native';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 import { typography } from '../../core/constants/typography';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type Props = {
   title: string;
   onPress?: (event: GestureResponderEvent) => void;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  icon?: string;
+  showLockIcon?: boolean;
 };
 
-export default function Button({ title, onPress, disabled, style }: Props) {
+export default function Button({ title, onPress, disabled, style, icon, showLockIcon }: Props) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const displayIcon = showLockIcon && disabled ? 'lock-closed-outline' : icon;
+  
   return (
     <TouchableOpacity activeOpacity={0.85} style={[styles.button, disabled && styles.disabled, style]} onPress={onPress} disabled={disabled}>
-      <Text style={styles.text}>{title}</Text>
+      <View style={styles.buttonContent}>
+        {displayIcon && (
+          <Ionicons 
+            name={displayIcon} 
+            size={18} 
+            color="#fff" 
+            style={styles.icon}
+          />
+        )}
+        <Text style={styles.text}>{title}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -42,6 +57,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   disabled: {
     backgroundColor: colors.muted,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  icon: {
+    marginRight: 0,
   },
   text: {
     color: '#fff',

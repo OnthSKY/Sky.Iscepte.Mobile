@@ -20,13 +20,11 @@ import { customerFormFields, customerValidator } from '../config/customerFormCon
 import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
 import Card from '../../../shared/components/Card';
 import spacing from '../../../core/constants/spacing';
-import globalFieldsService from '../services/globalFieldsService';
 import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormTemplate } from '../../../shared/types/formTemplate';
 import Select from '../../../shared/components/Select';
-import { customFieldToDynamicField } from '../../../shared/utils/formTemplateUtils';
 
 interface CustomerFormScreenProps {
   mode?: 'create' | 'edit';
@@ -41,9 +39,6 @@ export default function CustomerFormScreen({ mode }: CustomerFormScreenProps = {
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
-
-  // Global fields state
-  const [globalFields, setGlobalFields] = useState<CustomerCustomField[]>([]);
 
   // Form template state - default to 'default' to use customerFormFields
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | number | null>('default');
@@ -70,70 +65,6 @@ export default function CustomerFormScreen({ mode }: CustomerFormScreenProps = {
     }
     return templates.find((t: FormTemplate) => String(t.id) === String(selectedTemplateId)) || null;
   }, [templates, selectedTemplateId]);
-
-  // Load global fields on mount
-  useEffect(() => {
-    const loadGlobalFields = async () => {
-      try {
-        const fields = await globalFieldsService.getAll();
-        setGlobalFields(fields);
-      } catch (error) {
-        console.error('Failed to load global fields:', error);
-      }
-    };
-    loadGlobalFields();
-  }, []);
-
-  // Handle global fields change
-  const handleGlobalFieldsChange = async (fields: CustomerCustomField[]) => {
-    const previousGlobalFields = globalFields;
-    setGlobalFields(fields);
-    try {
-      await globalFieldsService.save(fields);
-      
-      // If a template is selected, check if a new global field was added and add it to the template
-      if (selectedTemplate && selectedTemplateId) {
-        // Find newly added global fields (those in new list but not in previous list)
-        const newGlobalFields = fields.filter(newField => 
-          !previousGlobalFields.some(prevField => prevField.key === newField.key)
-        );
-        
-        if (newGlobalFields.length > 0) {
-          // Convert new global fields to DynamicField format
-          const newTemplateFields = newGlobalFields.map(customField => 
-            customFieldToDynamicField(customField)
-          );
-          
-          // Get current template custom fields
-          const currentCustomFields = selectedTemplate.customFields || [];
-          
-          // Add new fields to template (avoid duplicates)
-          const updatedCustomFields = [...currentCustomFields];
-          newTemplateFields.forEach(newField => {
-            if (!updatedCustomFields.some(f => f.name === newField.name)) {
-              updatedCustomFields.push(newField);
-            }
-          });
-          
-          // Update the template with new custom fields
-          try {
-            await formTemplateService.update(selectedTemplateId, {
-              customFields: updatedCustomFields,
-            });
-            
-            // Invalidate and refetch templates to get the updated one
-            queryClient.invalidateQueries({ queryKey: ['customers', 'form-templates', 'list'] });
-            
-            console.log('Global field(s) added to selected template:', newGlobalFields.map(f => f.label).join(', '));
-          } catch (error) {
-            console.error('Failed to update template with new global fields:', error);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to save global fields:', error);
-    }
-  };
 
   // Default values for create mode
   const getInitialData = (): Partial<Customer> => {
@@ -171,7 +102,7 @@ export default function CustomerFormScreen({ mode }: CustomerFormScreenProps = {
         // Create enhanced validator with template fields
         const validatorWithTemplate = createEnhancedValidator<Customer>(
           customerValidator,
-          globalFields,
+          [],
           'customers',
           templateFields
         );
@@ -273,7 +204,7 @@ export default function CustomerFormScreen({ mode }: CustomerFormScreenProps = {
               
               {/* Link to Settings for template management */}
               <TouchableOpacity
-                onPress={() => navigation.navigate('FormTemplateManagement')}
+                onPress={() => navigation.navigate('FormTemplateManagement', { module: 'customers' })}
                 style={{ 
                   marginTop: spacing.sm, 
                   padding: spacing.sm, 
@@ -311,8 +242,6 @@ export default function CustomerFormScreen({ mode }: CustomerFormScreenProps = {
                   <CustomFieldsManager<CustomerCustomField>
                     customFields={customFields}
                     onChange={handleCustomFieldsChange}
-                    availableGlobalFields={globalFields}
-                    onGlobalFieldsChange={handleGlobalFieldsChange}
                     module="customers"
                     errors={errors}
                   />

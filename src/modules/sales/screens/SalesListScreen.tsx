@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useSaleStatsQuery } from '../hooks/useSalesQuery';
@@ -72,85 +72,84 @@ export default function SalesListScreen() {
     ];
   }, [stats, t, isDark]);
 
+  // Stats header component for ListHeaderComponent
+  const statsHeader = React.useMemo(() => {
+    if (statsLoading) {
+      return (
+        <View style={{ padding: spacing.lg }}>
+          <LoadingState />
+        </View>
+      );
+    }
+    return (
+      <ModuleStatsHeader 
+        stats={moduleStats}
+        mainStatKey="total-revenue"
+        translationNamespace="sales"
+      />
+    );
+  }, [statsLoading, moduleStats]);
+
   return (
     <ScreenLayout 
       noPadding
       title={t('sales:sales', { defaultValue: 'Satışlar' })}
       titleIcon="receipt-outline"
     >
-      <ScrollView 
-        style={{ flex: 1, backgroundColor: colors.page }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
-        {/* Stats Header */}
-        {statsLoading ? (
-          <View style={{ padding: spacing.lg }}>
-            <LoadingState />
-          </View>
-        ) : (
-          <ModuleStatsHeader 
-            stats={moduleStats}
-            mainStatKey="total-revenue"
-            translationNamespace="sales"
-          />
-        )}
-
-        {/* List Section */}
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-          <ListScreenContainer
-            service={salesEntityService}
-            config={{
-              entityName: 'sales',
-              translationNamespace: 'sales',
-              defaultPageSize: 10,
-              filterOptions: [
-                {
-                  key: 'status',
-                  label: 'sales:status',
-                  type: 'text',
-                },
-                {
-                  key: 'currency',
-                  label: 'sales:currency',
-                  type: 'select',
-                  options: [
-                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
-                    { label: 'TRY', value: 'TRY' },
-                    { label: 'USD', value: 'USD' },
-                    { label: 'EUR', value: 'EUR' },
-                  ],
-                },
-                {
-                  key: 'amountMin',
-                  label: 'sales:amount_min',
-                  type: 'number',
-                },
-                {
-                  key: 'amountMax',
-                  label: 'sales:amount_max',
-                  type: 'number',
-                },
-                {
-                  key: 'date',
-                  label: 'sales:date',
-                  type: 'date',
-                },
-              ],
-            }}
-            title={t('sales:sales', { defaultValue: 'Satışlar' })}
-            renderItem={(item: Sale) => (
-              <Card
-                style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('SalesDetail', { id: item.id, title: item.title, amount: item.amount })}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title || t('sales:sale', { defaultValue: 'Satış' })}</Text>
-              </Card>
-            )}
-            keyExtractor={(item: Sale) => String(item.id)}
-          />
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing.lg }}>
+        <ListScreenContainer
+          service={salesEntityService}
+          config={{
+            entityName: 'sales',
+            translationNamespace: 'sales',
+            defaultPageSize: 10,
+            filterOptions: [
+              {
+                key: 'status',
+                label: 'sales:status',
+                type: 'text',
+              },
+              {
+                key: 'currency',
+                label: 'sales:currency',
+                type: 'select',
+                options: [
+                  { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                  { label: 'TRY', value: 'TRY' },
+                  { label: 'USD', value: 'USD' },
+                  { label: 'EUR', value: 'EUR' },
+                ],
+              },
+              {
+                key: 'amountMin',
+                label: 'sales:amount_min',
+                type: 'number',
+              },
+              {
+                key: 'amountMax',
+                label: 'sales:amount_max',
+                type: 'number',
+              },
+              {
+                key: 'date',
+                label: 'sales:date',
+                type: 'date',
+              },
+            ],
+          }}
+          title={t('sales:sales', { defaultValue: 'Satışlar' })}
+          ListHeaderComponent={statsHeader}
+          renderItem={(item: Sale) => (
+            <Card
+              style={{ marginBottom: 12 }}
+              onPress={() => navigation.navigate('SalesDetail', { id: item.id, title: item.title, amount: item.amount })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title || t('sales:sale', { defaultValue: 'Satış' })}</Text>
+            </Card>
+          )}
+          keyExtractor={(item: Sale) => String(item.id)}
+        />
+      </View>
     </ScreenLayout>
   );
 }

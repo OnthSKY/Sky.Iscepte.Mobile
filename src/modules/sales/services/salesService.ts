@@ -12,18 +12,31 @@ export type Currency = 'TRY' | 'USD' | 'EUR';
 // Sale custom field - inherits from BaseCustomField
 export type SalesCustomField = BaseCustomField;
 
+// Sale item interface for bulk sales
+export interface SaleItem {
+  productId: string;
+  productName?: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+  currency?: Currency;
+}
+
 export interface Sale {
   id: string;
   customerId?: string;
   customerName?: string;
-  productId?: string;
-  productName?: string;
-  quantity?: number;
-  price?: number;
+  productId?: string; // Deprecated: Use items array for bulk sales
+  productName?: string; // Deprecated: Use items array for bulk sales
+  quantity?: number; // Deprecated: Use items array for bulk sales
+  price?: number; // Deprecated: Use items array for bulk sales
   currency?: Currency;
   total?: number;
   date?: string;
   status?: string;
+  debtCollectionDate?: string; // Borç alınacak tarih
+  isPaid?: boolean; // Ödeme alındı mı?
+  items?: SaleItem[]; // Toplu satış için ürün listesi
   customFields?: SalesCustomField[];
 }
 
@@ -78,6 +91,14 @@ export const salesService = {
     request<Sale>('PUT', apiEndpoints.sales.update(id), payload),
 
   remove: (id: string) => request<void>('DELETE', apiEndpoints.sales.remove(id)),
+
+  // Borçlu satışlar listesi
+  debtList: (req: GridRequest) =>
+    request<Paginated<Sale>>('GET', `${apiEndpoints.sales.debtList}${toQueryParams(req)}`),
+
+  // Ödeme alındı işaretle
+  markAsPaid: (id: string) =>
+    request<Sale>('PUT', apiEndpoints.sales.markAsPaid(id), { isPaid: true }),
 };
 
 export default salesService;

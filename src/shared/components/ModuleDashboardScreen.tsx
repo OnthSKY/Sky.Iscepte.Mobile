@@ -23,6 +23,8 @@ import PaginatedList from './PaginatedList';
 import EmptyState from './EmptyState';
 import ConfirmDialog from './ConfirmDialog';
 import { MODULE_CONFIGS, getModuleConfig } from '../../core/config/moduleConfig';
+import { useAppStore } from '../../store/useAppStore';
+import { showPermissionAlert } from '../utils/permissionUtils';
 
 export interface ModuleStat {
   key: string;
@@ -200,6 +202,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
   
   const [deleteDialog, setDeleteDialog] = useState<{ visible: boolean; item: T | null }>({ visible: false, item: null });
   const [listRefreshKey, setListRefreshKey] = useState(0);
+  const role = useAppStore((s) => s.role);
 
   if (finalLoading) {
     return (
@@ -284,6 +287,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
             </View>
           </View>
         )}
+
 
         {/* Summary Stats Cards - Top Section */}
         {finalStats && finalStats.length > 0 && (
@@ -511,6 +515,7 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
             </View>
           </View>
         )}
+
     </ScrollView>
   );
 
@@ -560,40 +565,68 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
             </View>
           </TouchableOpacity>
           
-          {(permissions.canEdit || permissions.canDelete) && (
-            <View style={styles.cardActions}>
-              {permissions.canEdit && (
-                <TouchableOpacity
-                  style={[styles.cardActionButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleEdit(item);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="create-outline" size={18} color={colors.primary} />
-                  <Text style={[styles.cardActionButtonText, { color: colors.primary }]}>
-                    {t('common:edit', { defaultValue: 'Düzenle' })}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {permissions.canDelete && (
-                <TouchableOpacity
-                  style={[styles.cardActionButton, { backgroundColor: (colors.error || '#DC2626') + '15', borderColor: (colors.error || '#DC2626') + '30' }]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    setDeleteDialog({ visible: true, item });
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="trash-outline" size={18} color={colors.error || '#DC2626'} />
-                  <Text style={[styles.cardActionButtonText, { color: colors.error || '#DC2626' }]}>
-                    {t('common:delete', { defaultValue: 'Sil' })}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          <View style={styles.cardActions}>
+            {permissions.canEdit ? (
+              <TouchableOpacity
+                style={[styles.cardActionButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleEdit(item);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="create-outline" size={18} color={colors.primary} />
+                <Text style={[styles.cardActionButtonText, { color: colors.primary }]}>
+                  {t('common:edit', { defaultValue: 'Düzenle' })}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.cardActionButton, { backgroundColor: colors.muted + '15', borderColor: colors.muted + '30', opacity: 0.6 }]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  showPermissionAlert(role, `${config.entityName}:edit`, navigation, t);
+                }}
+                activeOpacity={0.7}
+                disabled={true}
+              >
+                <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
+                <Text style={[styles.cardActionButtonText, { color: colors.muted }]}>
+                  {t('common:edit', { defaultValue: 'Düzenle' })}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {permissions.canDelete ? (
+              <TouchableOpacity
+                style={[styles.cardActionButton, { backgroundColor: (colors.error || '#DC2626') + '15', borderColor: (colors.error || '#DC2626') + '30' }]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setDeleteDialog({ visible: true, item });
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash-outline" size={18} color={colors.error || '#DC2626'} />
+                <Text style={[styles.cardActionButtonText, { color: colors.error || '#DC2626' }]}>
+                  {t('common:delete', { defaultValue: 'Sil' })}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.cardActionButton, { backgroundColor: colors.muted + '15', borderColor: colors.muted + '30', opacity: 0.6 }]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  showPermissionAlert(role, `${config.entityName}:delete`, navigation, t);
+                }}
+                activeOpacity={0.7}
+                disabled={true}
+              >
+                <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
+                <Text style={[styles.cardActionButtonText, { color: colors.muted }]}>
+                  {t('common:delete', { defaultValue: 'Sil' })}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       );
     };

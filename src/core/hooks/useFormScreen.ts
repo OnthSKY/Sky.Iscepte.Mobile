@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { BaseEntityService } from '../services/baseEntityService.types';
@@ -8,6 +8,9 @@ import { useAsyncData } from './useAsyncData';
 import { createError, errorMessages } from '../utils/errorUtils';
 import { log } from '../utils/logger';
 import { getNavigationFallback } from '../config/navigationConfig';
+import { usePermissions } from './usePermissions';
+import { useAppStore } from '../../store/useAppStore';
+import { showPermissionAlert } from '../../shared/utils/permissionUtils';
 
 /**
  * Single Responsibility: Handles form screen logic (form state, validation, submission)
@@ -19,13 +22,55 @@ export function useFormScreen<T extends BaseEntity>(
   initialData?: Partial<T>,
   validator?: (data: Partial<T>) => Record<string, string>
 ) {
-  const { t } = useTranslation([config.translationNamespace, 'common']);
+  const { t } = useTranslation([config.translationNamespace, 'common', 'packages']);
   const route = useRoute<any>();
   const navigation = useNavigation();
   const navHandler = useNavigationHandler();
+  const role = useAppStore((s) => s.role);
+  const permissions = usePermissions(role);
 
   const idParamKey = config.idParamKey || 'id';
   const entityId = config.mode === 'edit' ? route.params?.[idParamKey] : undefined;
+
+  // Permission checks
+  // Map entityName to module name for permissions (e.g., stock_item -> stock)
+  const getPermissionModule = (entityName: string): string => {
+    if (entityName === 'stock_item') return 'stock';
+    return entityName;
+  };
+
+  const requiredPermission = useMemo(() => {
+    const moduleName = getPermissionModule(config.entityName);
+    return config.mode === 'create' 
+      ? `${moduleName}:create`
+      : `${moduleName}:edit`;
+  }, [config.mode, config.entityName]);
+
+  const hasPermission = useMemo(() => {
+    return permissions.can(requiredPermission);
+  }, [permissions, requiredPermission]);
+
+  // Check permission on mount and redirect if needed
+  // Only check after permissions are loaded to avoid false negatives
+  useEffect(() => {
+    // Wait for permissions to load before checking
+    if (!permissions.arePermissionsLoaded) {
+      return;
+    }
+    
+    if (!hasPermission) {
+      showPermissionAlert(role, requiredPermission, navigation, t);
+      // Navigate back if user doesn't have permission
+      const entityRouteName = config.entityName === 'stock_item' ? 'Stock' : 
+                              config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
+      const fallbackRoute = getNavigationFallback(`${entityRouteName}Create`) || entityRouteName;
+      if (navHandler.canNavigate(fallbackRoute)) {
+        navHandler.navigate(fallbackRoute);
+      } else if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    }
+  }, [hasPermission, requiredPermission, role, navigation, t, navHandler, config.entityName, permissions.arePermissionsLoaded]);
 
   // Form state
   const [formData, setFormData] = useState<Partial<T>>(initialData || {});
@@ -97,6 +142,11 @@ export function useFormScreen<T extends BaseEntity>(
 
   // Submit handler
   const handleSubmit = useCallback(async () => {
+    if (!hasPermission) {
+      showPermissionAlert(role, requiredPermission, navigation, t);
+      return;
+    }
+
     if (!validate()) {
       return;
     }
@@ -121,7 +171,7 @@ export function useFormScreen<T extends BaseEntity>(
     } finally {
       setSubmitting(false);
     }
-  }, [formData, config.mode, entityId, validate, service, navigation, navHandler, config.entityName]);
+  }, [formData, config.mode, entityId, validate, service, navigation, navHandler, config.entityName, hasPermission, requiredPermission, role, t]);
 
   const handleCancel = useCallback(() => {
     // Always navigate to fallback route directly to avoid tab history issues
@@ -141,6 +191,9 @@ export function useFormScreen<T extends BaseEntity>(
     loading,
     submitting,
     isEditMode: config.mode === 'edit',
+
+    // Permissions
+    hasPermission,
 
     // Handlers
     updateField,

@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Bu uygulama fotoğraf çekmek için kamera erişimine ihtiyaç duyar.",
+        "NSPhotoLibraryUsageDescription": "Bu uygulama fotoğraf seçmek için galeri erişimine ihtiyaç duyar."
+      }
     },
     "android": {
       "versionCode": 1,
@@ -26,7 +30,10 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "plugins": [

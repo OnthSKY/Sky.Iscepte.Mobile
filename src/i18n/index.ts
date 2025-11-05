@@ -42,6 +42,10 @@ import enPurchases from './locales/en/purchases.json';
 import trPurchases from './locales/tr/purchases.json';
 import enSuppliers from './locales/en/suppliers.json';
 import trSuppliers from './locales/tr/suppliers.json';
+import enPackages from './locales/en/packages.json';
+import trPackages from './locales/tr/packages.json';
+import enCalendar from './locales/en/calendar.json';
+import trCalendar from './locales/tr/calendar.json';
 
 const resources = {
   en: {
@@ -61,6 +65,8 @@ const resources = {
     purchases: enPurchases,
     suppliers: enSuppliers,
     'dynamic-fields': enDynamic,
+    packages: enPackages,
+    calendar: enCalendar,
   },
   tr: {
     common: trCommon,
@@ -79,6 +85,8 @@ const resources = {
     purchases: trPurchases,
     suppliers: trSuppliers,
     'dynamic-fields': trDynamic,
+    packages: trPackages,
+    calendar: trCalendar,
   },
 };
 
@@ -92,7 +100,7 @@ if (!i18n.isInitialized) {
     .init({
       compatibilityJSON: 'v4',
       resources,
-      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'revenue', 'settings', 'stock', 'products', 'employees', 'purchases', 'suppliers', 'dynamic-fields'],
+      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'revenue', 'settings', 'stock', 'products', 'employees', 'purchases', 'suppliers', 'dynamic-fields', 'packages', 'calendar'],
       defaultNS: 'common',
       lng: 'tr', // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
       fallbackLng: 'tr',

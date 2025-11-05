@@ -10,12 +10,13 @@ import ErrorReportModal from '../shared/components/ErrorReportModal';
 import { useAppStore } from '../store/useAppStore';
 import { usePermissions } from '../core/hooks/usePermissions';
 import { MODULE_CONFIGS } from '../core/config/moduleConfig';
+import { Role } from '../core/config/appConstants';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   // Get all translation namespaces from MODULE_CONFIGS
   const translationNamespaces = useMemo(() => {
-    const namespaces = new Set(['settings', 'common']);
+    const namespaces = new Set(['settings', 'common', 'packages']);
     MODULE_CONFIGS.forEach((module) => {
       namespaces.add(module.translationNamespace);
     });
@@ -37,7 +38,7 @@ export default function SettingsScreen() {
       route: string;
       requiredPermission: string;
     }> = [];
-    
+
     // General Settings Module - Always available (settings:view)
     if (permissions.can('settings:view')) {
       userSettingsList.push({
@@ -50,8 +51,32 @@ export default function SettingsScreen() {
       });
     }
 
+    // My Package - Only for OWNER role
+    if (role === Role.OWNER && permissions.can('settings:view')) {
+      userSettingsList.push({
+        key: 'my_package',
+        title: t('packages:my_package', { defaultValue: 'Paketim' }),
+        desc: t('packages:my_package_desc', { defaultValue: 'Mevcut paketinizin özeti ve özellikleri' }),
+        icon: 'cube-outline',
+        route: 'MyPackage',
+        requiredPermission: 'settings:view',
+      });
+    }
+
+    // Packages - Only for OWNER role
+    if (role === Role.OWNER && permissions.can('settings:view')) {
+      userSettingsList.push({
+        key: 'packages',
+        title: t('packages:packages', { defaultValue: 'Paketler' }),
+        desc: t('packages:select_package', { defaultValue: 'İşletmeniz için en uygun paketi seçin' }),
+        icon: 'cube-outline',
+        route: 'Packages',
+        requiredPermission: 'settings:view',
+      });
+    }
+
     return userSettingsList;
-  }, [t, permissions]);
+  }, [t, permissions, role]);
 
   // Module Settings (Tüm modül ayarları)
   const moduleSettings = useMemo(() => {
@@ -62,37 +87,41 @@ export default function SettingsScreen() {
       icon: string;
       route: string;
       requiredPermission: string;
+      isLocked?: boolean;
     }> = [];
 
     // Get module settings from MODULE_CONFIGS (same as FullScreenMenu)
     MODULE_CONFIGS.forEach((module) => {
-      if (permissions.can(module.requiredPermission)) {
-        // Route format: StockModuleSettings, CustomersModuleSettings, etc.
-        const moduleSettingsRoute = `${module.key.charAt(0).toUpperCase() + module.key.slice(1)}ModuleSettings`;
-        
-        // Get module name using same format as FullScreenMenu: t('stock:module_name')
-        const moduleName = t(`${module.translationNamespace}:${module.translationKey}`, {
-          defaultValue: module.key,
-        });
-        
-        // Get module description from translation: settings:stock_management
-        const moduleDesc = t(`settings:${module.key}_management`, { 
-          defaultValue: `${moduleName} ayarları` 
-        });
-        
-        modulesList.push({
-          key: module.key,
-          title: moduleName,
-          desc: moduleDesc,
-          icon: module.icon,
-          route: moduleSettingsRoute,
-          requiredPermission: module.requiredPermission,
-        });
-      }
+      const hasAccess = permissions.can(module.requiredPermission);
+      // Route format: StockModuleSettings, CustomersModuleSettings, etc.
+      const moduleSettingsRoute = `${module.key.charAt(0).toUpperCase() + module.key.slice(1)}ModuleSettings`;
+      
+      // Get module name using same format as FullScreenMenu: t('stock:module_name')
+      const moduleName = t(`${module.translationNamespace}:${module.translationKey}`, {
+        defaultValue: module.key,
+      });
+      
+      // Get module description from translation: settings:stock_management
+      const moduleDesc = t(`settings:${module.key}_management`, { 
+        defaultValue: `${moduleName} ayarları` 
+      });
+      
+      modulesList.push({
+        key: module.key,
+        title: moduleName,
+        desc: moduleDesc,
+        icon: module.icon,
+        route: moduleSettingsRoute,
+        requiredPermission: module.requiredPermission,
+        isLocked: !hasAccess,
+      });
     });
 
-    return modulesList;
-  }, [t, permissions]);
+    // Filter: Staff only sees unlocked items, Owner/Admin sees all (locked items shown with lock icon)
+    return role === 'staff' 
+      ? modulesList.filter(m => !m.isLocked)
+      : modulesList;
+  }, [t, permissions, role]);
 
   const styles = getStyles(colors);
 
@@ -161,24 +190,52 @@ export default function SettingsScreen() {
           <View style={styles.settingsGroup}>
             <Text style={styles.groupTitle}>{t('settings:module_settings', { defaultValue: 'Modül Ayarları' })}</Text>
             
-            {moduleSettings.map((module, index) => (
-              <View key={module.key} style={[styles.card, index < moduleSettings.length - 1 && { marginBottom: spacing.md }]}>
+                        {moduleSettings.map((module, index) => (
+              <View key={module.key} style={[styles.card, index < moduleSettings.length - 1 && { marginBottom: spacing.md }]}>                                  
                 <TouchableOpacity
-                  style={styles.settingItem}
-                  onPress={() => navigation.navigate(module.route)}
+                  style={[styles.settingItem, module.isLocked && { opacity: 0.6 }]}
+                  onPress={() => {
+                    if (module.isLocked) {
+                      // If locked, navigate to Packages screen to upgrade
+                      navigation.navigate('Packages');
+                    } else {
+                      navigation.navigate(module.route);
+                    }
+                  }}
                 >
                   <View style={styles.settingItemLeft}>
-                    <Ionicons name={module.icon as any} size={22} color={colors.primary} />
+                    <View style={{ position: 'relative' }}>
+                      <Ionicons name={module.icon as any} size={22} color={module.isLocked ? colors.muted : colors.primary} />                                                                     
+                      {module.isLocked && (
+                        <View style={{
+                          position: 'absolute',
+                          top: -4,
+                          right: -4,
+                          width: 14,
+                          height: 14,
+                          borderRadius: 7,
+                          backgroundColor: colors.muted,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}>
+                          <Ionicons name="lock-closed" size={8} color={colors.surface} />
+                        </View>
+                      )}
+                    </View>
                     <View style={styles.settingItemContent}>
-                      <Text style={[styles.settingItemTitle, { color: colors.text }]}>
+                      <Text style={[styles.settingItemTitle, { color: module.isLocked ? colors.muted : colors.text }]}>                                                                          
                         {module.title}
                       </Text>
-                      <Text style={[styles.settingItemDesc, { color: colors.muted }]}>
+                      <Text style={[styles.settingItemDesc, { color: colors.muted }]}>                                                                          
                         {module.desc}
                       </Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+                  {module.isLocked ? (
+                    <Ionicons name="lock-closed" size={20} color={colors.muted} />
+                  ) : (
+                    <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
+                  )}
                 </TouchableOpacity>
               </View>
             ))}

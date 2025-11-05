@@ -116,6 +116,59 @@ export async function recordReminderSent(productId: string, frequency: ReminderF
 }
 
 /**
+ * Check if we can send a batch reminder (for multiple products)
+ */
+export async function canSendBatchReminder(
+  frequency: ReminderFrequency,
+  limit: ReminderLimit
+): Promise<boolean> {
+  const BATCH_REMINDER_KEY = 'batch_low_stock_reminder';
+  const counts = await getReminderCounts();
+  const currentPeriod = getPeriodStart(frequency);
+  const batchCount = counts[BATCH_REMINDER_KEY];
+
+  // If no record exists, can send
+  if (!batchCount) {
+    return true;
+  }
+
+  // If period changed, reset count
+  if (batchCount.periodStart < currentPeriod) {
+    return true;
+  }
+
+  // Check if limit reached
+  return batchCount.count < limit;
+}
+
+/**
+ * Record that a batch reminder was sent
+ */
+export async function recordBatchReminderSent(frequency: ReminderFrequency): Promise<void> {
+  const BATCH_REMINDER_KEY = 'batch_low_stock_reminder';
+  const counts = await getReminderCounts();
+  const currentPeriod = getPeriodStart(frequency);
+  const batchCount = counts[BATCH_REMINDER_KEY];
+
+  if (!batchCount || batchCount.periodStart < currentPeriod) {
+    // New period, start fresh
+    counts[BATCH_REMINDER_KEY] = {
+      productId: BATCH_REMINDER_KEY,
+      count: 1,
+      periodStart: currentPeriod,
+    };
+  } else {
+    // Same period, increment count
+    counts[BATCH_REMINDER_KEY] = {
+      ...batchCount,
+      count: batchCount.count + 1,
+    };
+  }
+
+  await saveReminderCounts(counts);
+}
+
+/**
  * Clear all reminder counts (for testing or reset)
  */
 export async function clearReminderCounts(): Promise<void> {

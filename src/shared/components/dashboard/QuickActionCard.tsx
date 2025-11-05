@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { QuickAction } from '../../../core/hooks/useDashboardData';
+import { useAppStore } from '../../../store/useAppStore';
+import { transformMenuText, getCompactFontSize } from '../../../core/utils/menuTextUtils';
 
 /**
  * Single Responsibility: Renders a single quick action card
@@ -21,6 +23,8 @@ interface QuickActionCardProps {
 export const QuickActionCard: React.FC<QuickActionCardProps> = ({ action, onPress }) => {
   const { colors, activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
+  const menuTextCase = useAppStore((s) => s.menuTextCase);
+  const language = useAppStore((s) => s.language);
 
   return (
     <TouchableOpacity
@@ -38,7 +42,20 @@ export const QuickActionCard: React.FC<QuickActionCardProps> = ({ action, onPres
       <View style={[styles.iconWrap, { backgroundColor: `${action.color}20` }]}>
         <Ionicons name={action.icon as any} size={22} color={action.color} />
       </View>
-      <Text style={[styles.label, { color: colors.text }]}>{action.label}</Text>
+      <Text 
+        style={[
+          styles.label, 
+          { 
+            color: colors.text,
+            fontSize: getCompactFontSize(15, menuTextCase)
+          }
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit={true}
+        minimumFontScale={0.8}
+      >
+        {transformMenuText(action.label, menuTextCase, language)}
+      </Text>
       <Ionicons name="chevron-forward-outline" size={20} color={colors.muted} />
     </TouchableOpacity>
   );

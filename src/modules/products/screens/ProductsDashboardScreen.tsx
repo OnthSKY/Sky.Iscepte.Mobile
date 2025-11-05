@@ -133,14 +133,7 @@ export default function ProductsDashboardScreen() {
         color: colors.statWarning,
         route: 'StockList',
       },
-      // 4. Configuration & Management - Categories and Custom Fields
-      {
-        key: 'manage-global-fields',
-        label: t('stock:manage_global_fields', { defaultValue: 'Genel Alanları Yönet' }),
-        icon: 'grid-outline',
-        color: colors.statPrimary,
-        route: 'GlobalFieldsManagement',
-      },
+      // 4. Configuration & Management - Categories
       {
         key: 'stock-alert-settings',
         label: t('settings:stock_alerts', { defaultValue: 'Stok Uyarı Ayarları' }),

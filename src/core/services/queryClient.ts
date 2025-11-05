@@ -131,6 +131,7 @@ export const queryKeys = {
     details: () => [...queryKeys.sales.all, 'detail'] as const,
     detail: (id: string | number) => [...queryKeys.sales.details(), id] as const,
     stats: () => [...queryKeys.sales.all, 'stats'] as const, // Stats are persisted
+    debt: (filters?: Record<string, any>) => [...queryKeys.sales.all, 'debt', { filters }] as const, // Debt sales list
   },
   
   // Purchases (NON-CRITICAL - memory only, except stats)
@@ -201,6 +202,15 @@ export const queryKeys = {
     details: () => [...queryKeys.suppliers.all, 'detail'] as const,
     detail: (id: string | number) => [...queryKeys.suppliers.details(), id] as const,
     stats: () => [...queryKeys.suppliers.all, 'stats'] as const, // Stats are persisted
+  },
+  
+  // Accounting (NON-CRITICAL - memory only, except summary)
+  accounting: {
+    all: ['accounting'] as const,
+    summary: (period: 'day' | 'week' | 'month' | 'year' = 'month') => [...queryKeys.accounting.all, 'summary', period] as const,
+    detailedReport: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') => [...queryKeys.accounting.all, 'detailed-report', period] as const,
+    balanceSheet: (date?: string) => [...queryKeys.accounting.all, 'balance-sheet', date] as const,
+    profitLoss: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') => [...queryKeys.accounting.all, 'profit-loss', period] as const,
   },
   
   // Modules helper (for form templates and other module-specific queries)

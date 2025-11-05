@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { usePurchaseStatsQuery } from '../hooks/usePurchasesQuery';
@@ -72,85 +72,84 @@ export default function PurchaseListScreen() {
     ];
   }, [stats, t, isDark]);
 
+  // Stats header component for ListHeaderComponent
+  const statsHeader = React.useMemo(() => {
+    if (statsLoading) {
+      return (
+        <View style={{ padding: spacing.lg }}>
+          <LoadingState />
+        </View>
+      );
+    }
+    return (
+      <ModuleStatsHeader 
+        stats={moduleStats}
+        mainStatKey="total-cost"
+        translationNamespace="purchases"
+      />
+    );
+  }, [statsLoading, moduleStats]);
+
   return (
     <ScreenLayout 
       noPadding
       title={t('purchases:purchases', { defaultValue: 'Alışlar' })}
       titleIcon="cart-outline"
     >
-      <ScrollView 
-        style={{ flex: 1, backgroundColor: colors.page }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
-        {/* Stats Header */}
-        {statsLoading ? (
-          <View style={{ padding: spacing.lg }}>
-            <LoadingState />
-          </View>
-        ) : (
-          <ModuleStatsHeader 
-            stats={moduleStats}
-            mainStatKey="total-cost"
-            translationNamespace="purchases"
-          />
-        )}
-
-        {/* List Section */}
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-          <ListScreenContainer
-            service={purchaseEntityService}
-            config={{
-              entityName: 'purchases',
-              translationNamespace: 'purchases',
-              defaultPageSize: 10,
-              filterOptions: [
-                {
-                  key: 'status',
-                  label: 'purchases:status',
-                  type: 'text',
-                },
-                {
-                  key: 'currency',
-                  label: 'purchases:currency',
-                  type: 'select',
-                  options: [
-                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
-                    { label: 'TRY', value: 'TRY' },
-                    { label: 'USD', value: 'USD' },
-                    { label: 'EUR', value: 'EUR' },
-                  ],
-                },
-                {
-                  key: 'amountMin',
-                  label: 'purchases:amount_min',
-                  type: 'number',
-                },
-                {
-                  key: 'amountMax',
-                  label: 'purchases:amount_max',
-                  type: 'number',
-                },
-                {
-                  key: 'date',
-                  label: 'purchases:date',
-                  type: 'date',
-                },
-              ],
-            }}
-            title={t('purchases:purchases', { defaultValue: 'Alışlar' })}
-            renderItem={(item: Purchase) => (
-              <Card
-                style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('PurchaseDetail', { id: item.id, title: item.title, amount: item.amount })}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{item.title || item.productName || t('purchases:purchase', { defaultValue: 'Alış' })}</Text>
-              </Card>
-            )}
-            keyExtractor={(item: Purchase) => String(item.id)}
-          />
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing.lg }}>
+        <ListScreenContainer
+          service={purchaseEntityService}
+          config={{
+            entityName: 'purchases',
+            translationNamespace: 'purchases',
+            defaultPageSize: 10,
+            filterOptions: [
+              {
+                key: 'status',
+                label: 'purchases:status',
+                type: 'text',
+              },
+              {
+                key: 'currency',
+                label: 'purchases:currency',
+                type: 'select',
+                options: [
+                  { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                  { label: 'TRY', value: 'TRY' },
+                  { label: 'USD', value: 'USD' },
+                  { label: 'EUR', value: 'EUR' },
+                ],
+              },
+              {
+                key: 'amountMin',
+                label: 'purchases:amount_min',
+                type: 'number',
+              },
+              {
+                key: 'amountMax',
+                label: 'purchases:amount_max',
+                type: 'number',
+              },
+              {
+                key: 'date',
+                label: 'purchases:date',
+                type: 'date',
+              },
+            ],
+          }}
+          title={t('purchases:purchases', { defaultValue: 'Alışlar' })}
+          ListHeaderComponent={statsHeader}
+          renderItem={(item: Purchase) => (
+            <Card
+              style={{ marginBottom: 12 }}
+              onPress={() => navigation.navigate('PurchaseDetail', { id: item.id, title: item.title, amount: item.amount })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{item.title || item.productName || t('purchases:purchase', { defaultValue: 'Alış' })}</Text>
+            </Card>
+          )}
+          keyExtractor={(item: Purchase) => String(item.id)}
+        />
+      </View>
     </ScreenLayout>
   );
 }

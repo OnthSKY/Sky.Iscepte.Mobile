@@ -16,4 +16,6 @@ export { useDashboardPrefetch } from './useDashboardPrefetch';
 export { useNavigationPrefetch } from './useNavigationPrefetch';
 export { useDetailPrefetch } from './useDetailPrefetch';
 export { useDebounce } from './useDebounce';
+export { useLowStockAlert } from './useLowStockAlert';
+export { useDebtCollectionAlert } from './useDebtCollectionAlert';
 

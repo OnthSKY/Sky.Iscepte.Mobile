@@ -44,6 +44,7 @@ export function FormScreenContainer<T extends BaseEntity>({
     loading,
     submitting,
     isEditMode,
+    hasPermission,
     updateField,
     handleSubmit,
     handleCancel,
@@ -81,7 +82,8 @@ export function FormScreenContainer<T extends BaseEntity>({
         onPress={handleSubmit}
         style={[styles.footerButton, { flex: 1 }]}
         loading={submitting}
-        disabled={submitting}
+        disabled={submitting || !hasPermission}
+        showLockIcon={true}
       />
     </View>
   );

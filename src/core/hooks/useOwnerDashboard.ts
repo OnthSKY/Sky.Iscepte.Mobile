@@ -47,6 +47,9 @@ export function useOwnerDashboard() {
   const [showMoreTopProducts, setShowMoreTopProducts] = useState(false);
   const [showMoreEmployeeProducts, setShowMoreEmployeeProducts] = useState(false);
   
+  // Price visibility state
+  const [showTopProductsPrices, setShowTopProductsPrices] = useState(true);
+  
   // User data
   const userId = useAppStore((s: any) => s.userId);
   const token = useAppStore((s: any) => s.token);
@@ -158,6 +161,8 @@ export function useOwnerDashboard() {
     setShowMoreTopProducts,
     showMoreEmployeeProducts,
     setShowMoreEmployeeProducts,
+    showTopProductsPrices,
+    setShowTopProductsPrices,
     
     // Data
     employeeCards,

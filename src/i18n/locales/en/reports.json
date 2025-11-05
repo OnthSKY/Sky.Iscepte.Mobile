@@ -18,6 +18,22 @@
   "module": "Reports",
   "module_name": "Reporting",
   "module_overview": "Module Overview",
-  "module_description": "View sales, income, expense, and stock reports with the Reports module. Analyze your business performance and make better plans for the future."
+  "module_description": "View sales, income, expense, and stock reports with the Reports module. Analyze your business performance and make better plans for the future.",
+  "period_day": "Day",
+  "period_week": "Week",
+  "period_month": "Month",
+  "period_year": "Year",
+  "select_period": "Select Period",
+  "income": "Income",
+  "expenses": "Expenses",
+  "net": "Net",
+  "module_reports": "Module Reports",
+  "module_reports_description": "Click on cards to view detailed module-based reports",
+  "no_modules_available": "No modules available to view",
+  "error_loading": "Error loading data",
+  "filters": "Filters",
+  "select_filters": "Select filters to view report",
+  "no_data": "No report data available",
+  "details": "Details"
 }
 

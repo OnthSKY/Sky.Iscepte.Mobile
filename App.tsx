@@ -23,6 +23,7 @@ import { useNavigationPrefetch } from './src/core/hooks/useNavigationPrefetch';
 import SplashScreen from './src/shared/components/SplashScreen';
 import { useLowStockAlert } from './src/core/hooks/useLowStockAlert';
 import { useLowStockAlertStore } from './src/core/store/lowStockAlertStore';
+import { useDebtCollectionAlert } from './src/core/hooks/useDebtCollectionAlert';
 import { setupNotificationHandlers } from './src/core/services/pushNotificationService';
 
 const RootStack = createNativeStackNavigator();
@@ -39,11 +40,18 @@ function LowStockAlertMonitor() {
   return null;
 }
 
+// Component to monitor debt collection alerts
+function DebtCollectionAlertMonitor() {
+  useDebtCollectionAlert();
+  return null;
+}
+
 function MainApp() {
   const role = useAppStore(s => s.role) as Role;
   return (
     <>
       <LowStockAlertMonitor />
+      <DebtCollectionAlertMonitor />
       <RootNavigator role={role} />
     </>
   );

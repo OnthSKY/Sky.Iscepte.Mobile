@@ -7,8 +7,8 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { View } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { View, Alert } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { purchaseEntityService } from '../services/purchaseServiceAdapter';
@@ -22,7 +22,7 @@ import purchaseTypeService, { PurchaseType } from '../services/purchaseTypeServi
 import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
 import Card from '../../../shared/components/Card';
 import spacing from '../../../core/constants/spacing';
-import globalFieldsService from '../services/globalFieldsService';
+import SignatureInput from '../../../shared/components/SignatureInput';
 
 interface PurchaseFormScreenProps {
   mode?: 'create' | 'edit';
@@ -30,7 +30,8 @@ interface PurchaseFormScreenProps {
 
 export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {}) {
   const route = useRoute<any>();
-  const { t } = useTranslation('purchases');
+  const navigation = useNavigation<any>();
+  const { t } = useTranslation(['purchases', 'common']);
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
@@ -44,23 +45,10 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<PurchaseType | null>(null);
 
-  // Global fields state
-  const [globalFields, setGlobalFields] = useState<PurchaseCustomField[]>([]);
-
-  // Load purchase types and global fields on mount
+  // Load purchase types on mount
   useEffect(() => {
     loadPurchaseTypes();
-    loadGlobalFields();
   }, []);
-
-  const loadGlobalFields = async () => {
-    try {
-      const fields = await globalFieldsService.getAll();
-      setGlobalFields(fields);
-    } catch (error) {
-      console.error('Failed to load global fields:', error);
-    }
-  };
 
   const loadPurchaseTypes = async () => {
     setLoadingTypes(true);
@@ -158,6 +146,8 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
             label: `${p.name} (Stok: ${p.stock ?? 0})`,
             value: String(p.id),
           })),
+          // productId is optional - only required if isStockPurchase is true
+          required: false,
         };
       }
       if (field.name === 'supplierId') {
@@ -169,9 +159,22 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
           })),
         };
       }
+      // Handle signature field with custom render
+      if (field.name === 'signature') {
+        return {
+          ...field,
+          render: (value: string, onChange: (v: string) => void) => (
+            <SignatureInput
+              value={value}
+              onChange={onChange}
+              placeholder={t('signature', { defaultValue: 'İmza alanına dokunarak imzanızı çizin' })}
+            />
+          ),
+        };
+      }
       return field;
     });
-  }, [productsData, suppliersData, purchaseFields]);
+  }, [productsData, suppliersData, purchaseFields, t]);
 
   return (
     <FormScreenContainer
@@ -182,7 +185,7 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
         mode: formMode,
       }}
       validator={purchaseValidator}
-      initialData={formMode === 'create' ? { customFields: [] } : undefined}
+      initialData={formMode === 'create' ? { customFields: [], isStockPurchase: true } : undefined}
       renderForm={(formData, updateField, errors) => {
         // Get products and suppliers for lookup (closure over component scope)
         const products = productsData?.items || [];
@@ -202,19 +205,9 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
         }, [formData.purchaseTypeId, purchaseTypes, selectedPurchaseType]);
 
         const handleCustomFieldsChange = (fields: PurchaseCustomField[]) => {
-          // CustomFieldsManager merges global and specific fields automatically
-          // Directly update customFields (same as ProductFormScreen)
-          updateField('customFields' as keyof Purchase, fields);
-        };
-
-        // Handle global fields change
-        const handleGlobalFieldsChange = async (fields: PurchaseCustomField[]) => {
-          setGlobalFields(fields);
-          try {
-            await globalFieldsService.save(fields);
-          } catch (error) {
-            console.error('Failed to save global fields:', error);
-          }
+          // Filter out any signature fields to prevent duplicates (signature is already in base fields)
+          const filteredFields = fields.filter(f => f.key !== 'signature');
+          updateField('customFields' as keyof Purchase, filteredFields);
         };
 
         // Prepare form values including type-specific fields
@@ -250,6 +243,16 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                     }
                   }
                   
+                  // Handle isStockPurchase change
+                  if (key === 'isStockPurchase') {
+                    updateField('isStockPurchase' as keyof Purchase, newValue);
+                    // If switching to non-stock purchase, clear productId
+                    if (!newValue && formData.productId) {
+                      updateField('productId' as keyof Purchase, undefined);
+                      updateField('productName' as keyof Purchase, undefined);
+                    }
+                  }
+                  
                   // Handle type-specific fields - store them separately
                   if (key.startsWith('typeField_')) {
                     // Type-specific fields are stored with the typeField_ prefix in formValues
@@ -267,19 +270,89 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                     }
                   }
                   
-                  // Auto-fill price when product is selected
-                  if (key === 'productId' && newValue) {
+                  // Handle product selection with stock check
+                  // Only check stock if this is a stock purchase
+                  if (key === 'productId' && newValue && formData.isStockPurchase !== false) {
                     const selectedProduct = products.find((p: any) => String(p.id) === String(newValue));
-                    if (selectedProduct && selectedProduct.price) {
-                      // Only auto-fill if price is not already set or is 0
-                      const currentPrice = formData.price || 0;
-                      if (currentPrice === 0) {
-                        updateField('price' as keyof Purchase, selectedProduct.price);
-                        // Auto-calculate total if quantity is set
-                        const currentQuantity = formData.quantity || 1;
-                        if (currentQuantity > 0) {
-                          const total = selectedProduct.price * currentQuantity;
-                          updateField('total' as keyof Purchase, total);
+                    if (selectedProduct) {
+                      // Check if product is in stock (stock > 0)
+                      const productStock = selectedProduct.stock ?? 0;
+                      const isInStock = productStock > 0;
+                      
+                      // If product is in stock and we're in create mode, offer to redirect to QuickPurchase
+                      if (isInStock && formMode === 'create') {
+                        // First update the productId field
+                        updateField('productId' as keyof Purchase, newValue);
+                        
+                        // Then show alert with options
+                        Alert.alert(
+                          t('purchases:product_in_stock_title', { defaultValue: 'Ürün Stokta Mevcut' }),
+                          t('purchases:product_in_stock_message', { 
+                            productName: selectedProduct.name,
+                            stock: productStock,
+                            defaultValue: `"${selectedProduct.name}" ürünü stokta mevcut (Stok: ${productStock}). Stok artırmak için Hızlı Alış ekranına yönlendirilmek ister misiniz?` 
+                          }),
+                          [
+                            {
+                              text: t('purchases:continue_normal_purchase', { defaultValue: 'Normal Alış\'a Devam Et' }),
+                              style: 'cancel',
+                              onPress: () => {
+                                // Continue with normal purchase form
+                                // Auto-fill price if not set
+                                if (selectedProduct.price) {
+                                  const currentPrice = formData.price || 0;
+                                  if (currentPrice === 0) {
+                                    updateField('price' as keyof Purchase, selectedProduct.price);
+                                    // Auto-calculate total if quantity is set
+                                    const currentQuantity = formData.quantity || 1;
+                                    if (currentQuantity > 0) {
+                                      const total = selectedProduct.price * currentQuantity;
+                                      updateField('total' as keyof Purchase, total);
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              text: t('purchases:go_to_quick_purchase', { defaultValue: 'Hızlı Alış\'a Git' }),
+                              onPress: () => {
+                                // Navigate to QuickPurchase screen with productId
+                                navigation.navigate('QuickPurchase' as never, { productId: String(selectedProduct.id) } as never);
+                                // Clear the product selection to avoid confusion
+                                updateField('productId' as keyof Purchase, undefined);
+                              }
+                            }
+                          ],
+                          { cancelable: true }
+                        );
+                        // Auto-fill price if not set (for normal purchase flow)
+                        if (selectedProduct.price) {
+                          const currentPrice = formData.price || 0;
+                          if (currentPrice === 0) {
+                            updateField('price' as keyof Purchase, selectedProduct.price);
+                            // Auto-calculate total if quantity is set
+                            const currentQuantity = formData.quantity || 1;
+                            if (currentQuantity > 0) {
+                              const total = selectedProduct.price * currentQuantity;
+                              updateField('total' as keyof Purchase, total);
+                            }
+                          }
+                        }
+                        return;
+                      }
+                      
+                      // If product is not in stock or we're in edit mode, continue normally
+                      // Auto-fill price if not set
+                      if (selectedProduct.price) {
+                        const currentPrice = formData.price || 0;
+                        if (currentPrice === 0) {
+                          updateField('price' as keyof Purchase, selectedProduct.price);
+                          // Auto-calculate total if quantity is set
+                          const currentQuantity = formData.quantity || 1;
+                          if (currentQuantity > 0) {
+                            const total = selectedProduct.price * currentQuantity;
+                            updateField('total' as keyof Purchase, total);
+                          }
                         }
                       }
                     }
@@ -304,8 +377,6 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
               <CustomFieldsManager<PurchaseCustomField>
                 customFields={customFields}
                 onChange={handleCustomFieldsChange}
-                availableGlobalFields={globalFields}
-                onGlobalFieldsChange={handleGlobalFieldsChange}
                 module="purchases"
               />
             </Card>

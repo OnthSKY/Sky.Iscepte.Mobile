@@ -38,6 +38,9 @@ export const salesEndpoints = {
   create: '/sales',
   update: (id: string | number) => `/sales/${id}`,
   remove: (id: string | number) => `/sales/${id}`,
+  report: '/sales/report',
+  debtList: '/sales/debt', // Borçlu satışlar listesi
+  markAsPaid: (id: string | number) => `/sales/${id}/mark-paid`, // Ödeme alındı işaretle
 } as const;
 
 /**
@@ -50,6 +53,7 @@ export const customersEndpoints = {
   create: '/customers',
   update: (id: string | number) => `/customers/${id}`,
   remove: (id: string | number) => `/customers/${id}`,
+  report: '/customers/report',
 } as const;
 
 /**
@@ -64,6 +68,7 @@ export const stockEndpoints = {
   remove: (id: string | number) => `/stock/${id}`,
   history: (id: string | number) => `/stock/${id}/history`,
   alertSettings: '/stock/alert-settings',
+  report: '/stock/report',
 } as const;
 
 /**
@@ -76,6 +81,7 @@ export const purchasesEndpoints = {
   create: '/purchases',
   update: (id: string | number) => `/purchases/${id}`,
   remove: (id: string | number) => `/purchases/${id}`,
+  report: '/purchases/report',
 } as const;
 
 /**
@@ -88,6 +94,7 @@ export const expensesEndpoints = {
   create: '/expenses',
   update: (id: string | number) => `/expenses/${id}`,
   remove: (id: string | number) => `/expenses/${id}`,
+  report: '/expenses/report',
 } as const;
 
 /**
@@ -100,6 +107,7 @@ export const revenueEndpoints = {
   create: '/revenue',
   update: (id: string | number) => `/revenue/${id}`,
   remove: (id: string | number) => `/revenue/${id}`,
+  report: '/revenue/report',
 } as const;
 
 /**
@@ -112,6 +120,7 @@ export const employeesEndpoints = {
   create: '/employees',
   update: (id: string | number) => `/employees/${id}`,
   remove: (id: string | number) => `/employees/${id}`,
+  report: '/employees/report',
 } as const;
 
 /**
@@ -147,6 +156,7 @@ export const suppliersEndpoints = {
   create: '/suppliers',
   update: (id: string | number) => `/suppliers/${id}`,
   remove: (id: string | number) => `/suppliers/${id}`,
+  report: '/suppliers/report',
 } as const;
 
 /**
@@ -174,6 +184,16 @@ export const dashboardEndpoints = {
 } as const;
 
 /**
+ * Accounting endpoints
+ */
+export const accountingEndpoints = {
+  summary: (period: 'day' | 'week' | 'month' | 'year' = 'month') => `/accounting/summary?period=${period}`,
+  detailedReport: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') => `/accounting/detailed-report?period=${period}`,
+  balanceSheet: (date?: string) => date ? `/accounting/balance-sheet?date=${date}` : `/accounting/balance-sheet`,
+  profitLoss: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') => `/accounting/profit-loss?period=${period}`,
+} as const;
+
+/**
  * Form Templates endpoints
  */
 export const formTemplateEndpoints = {
@@ -184,6 +204,14 @@ export const formTemplateEndpoints = {
   remove: (module: string, id: string | number) => `/form-templates/${module}/${id}`,
   clone: (module: string, id: string | number) => `/form-templates/${module}/${id}/clone`,
   setDefault: (module: string, id: string | number) => `/form-templates/${module}/${id}/set-default`,
+} as const;
+
+/**
+ * Verification endpoints (TC Kimlik, IMEI)
+ */
+export const verificationEndpoints = {
+  verifyTC: '/verification/tc/verify',
+  verifyIMEI: '/verification/imei/verify',
 } as const;
 
 /**
@@ -209,8 +237,10 @@ export const apiEndpoints = {
   suppliers: suppliersEndpoints,
   modules: modulesEndpoints,
   dashboard: dashboardEndpoints,
+  accounting: accountingEndpoints,
   permissionGroups: permissionGroupsEndpoints,
   formTemplates: formTemplateEndpoints,
+  verification: verificationEndpoints,
 } as const;
 
 /**

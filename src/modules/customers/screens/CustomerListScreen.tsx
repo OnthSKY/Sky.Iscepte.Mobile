@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useCustomerStatsQuery } from '../hooks/useCustomersQuery';
@@ -60,64 +60,63 @@ export default function CustomerListScreen() {
     ];
   }, [stats, t, isDark]);
 
+  // Stats header component for ListHeaderComponent
+  const statsHeader = React.useMemo(() => {
+    if (statsLoading) {
+      return (
+        <View style={{ padding: spacing.lg }}>
+          <LoadingState />
+        </View>
+      );
+    }
+    return (
+      <ModuleStatsHeader 
+        stats={moduleStats}
+        mainStatKey="total-customers"
+        translationNamespace="customers"
+      />
+    );
+  }, [statsLoading, moduleStats]);
+
   return (
     <ScreenLayout noPadding>
-      <ScrollView 
-        style={{ flex: 1, backgroundColor: colors.page }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
-        {/* Stats Header */}
-        {statsLoading ? (
-          <View style={{ padding: spacing.lg }}>
-            <LoadingState />
-          </View>
-        ) : (
-          <ModuleStatsHeader 
-            stats={moduleStats}
-            mainStatKey="total-customers"
-            translationNamespace="customers"
-          />
-        )}
-
-        {/* List Section */}
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-          <ListScreenContainer
-            service={customerEntityService}
-            config={{
-              entityName: 'customer',
-              translationNamespace: 'customers',
-              defaultPageSize: 10,
-              filterOptions: [
-                {
-                  key: 'isActive',
-                  label: 'customers:active_status',
-                  type: 'select',
-                  options: [
-                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
-                    { label: t('common:active', { defaultValue: 'Aktif' }), value: 'true' },
-                    { label: t('common:inactive', { defaultValue: 'Pasif' }), value: 'false' },
-                  ],
-                },
-                {
-                  key: 'status',
-                  label: 'customers:status',
-                  type: 'text',
-                },
-              ],
-            }}
-            renderItem={(item: Customer) => (
-              <Card
-                style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('CustomerDetail', { id: item.id, name: item.name })}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.name}</Text>
-              </Card>
-            )}
-            keyExtractor={(item: Customer) => String(item.id)}
-          />
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing.lg }}>
+        <ListScreenContainer
+          service={customerEntityService}
+          config={{
+            entityName: 'customer',
+            translationNamespace: 'customers',
+            defaultPageSize: 10,
+            filterOptions: [
+              {
+                key: 'isActive',
+                label: 'customers:active_status',
+                type: 'select',
+                options: [
+                  { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                  { label: t('common:active', { defaultValue: 'Aktif' }), value: 'true' },
+                  { label: t('common:inactive', { defaultValue: 'Pasif' }), value: 'false' },
+                ],
+              },
+              {
+                key: 'status',
+                label: 'customers:status',
+                type: 'text',
+              },
+            ],
+          }}
+          ListHeaderComponent={statsHeader}
+          renderItem={(item: Customer) => (
+            <Card
+              style={{ marginBottom: 12 }}
+              onPress={() => navigation.navigate('CustomerDetail', { id: item.id, name: item.name })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.name}</Text>
+            </Card>
+          )}
+          keyExtractor={(item: Customer) => String(item.id)}
+        />
+      </View>
     </ScreenLayout>
   );
 }

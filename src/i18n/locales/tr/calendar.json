@@ -1,0 +1,16 @@
+{
+  "module_name": "Takvim",
+  "daily_report": "Günlük Rapor",
+  "total_revenue": "Toplam Ciro",
+  "total_expenses": "Toplam Gider",
+  "net_profit": "Net Kar",
+  "transactions": "İşlemler",
+  "no_transactions": "Bu tarih için işlem bulunmamaktadır",
+  "sales": "Satışlar",
+  "expenses": "Giderler",
+  "revenue": "Gelirler",
+  "purchases": "Alışlar",
+  "stock": "Stok",
+  "all_transactions": "Tüm İşlemler"
+}
+

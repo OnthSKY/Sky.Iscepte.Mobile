@@ -21,7 +21,6 @@ import { baseIncomeFormFields, incomeValidator } from '../config/incomeFormConfi
 import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
 import Card from '../../../shared/components/Card';
 import spacing from '../../../core/constants/spacing';
-import globalFieldsService from '../services/globalFieldsService';
 import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 
 interface IncomeFormScreenProps {
@@ -39,21 +38,10 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
 
   const [incomeTypes, setIncomeTypes] = useState<ExpenseType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
-  const [globalFields, setGlobalFields] = useState<IncomeCustomField[]>([]);
 
   useEffect(() => {
     loadIncomeTypes();
-    loadGlobalFields();
   }, []);
-
-  const loadGlobalFields = async () => {
-    try {
-      const fields = await globalFieldsService.getAll();
-      setGlobalFields(fields);
-    } catch (error) {
-      console.error('Failed to load global fields:', error);
-    }
-  };
 
   const loadIncomeTypes = async () => {
     setLoadingTypes(true);
@@ -67,15 +55,6 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
     }
   };
 
-  const handleGlobalFieldsChange = async (fields: IncomeCustomField[]) => {
-    setGlobalFields(fields);
-    try {
-      await globalFieldsService.save(fields);
-    } catch (error) {
-      console.error('Failed to save global fields:', error);
-    }
-  };
-
   const getInitialData = (): Partial<Income> => {
     return getInitialDataWithCustomFields<Income>(formMode, {
       source: 'manual',
@@ -84,7 +63,7 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
 
   const enhancedValidator = createEnhancedValidator<Income>(
     incomeValidator,
-    globalFields,
+    [],
     'income'
   );
 
@@ -157,8 +136,6 @@ export default function IncomeFormScreen({ mode }: IncomeFormScreenProps = {}) {
               <CustomFieldsManager<IncomeCustomField>
                 customFields={customFields}
                 onChange={handleCustomFieldsChange}
-                availableGlobalFields={globalFields}
-                onGlobalFieldsChange={handleGlobalFieldsChange}
                 module="income"
               />
             </Card>

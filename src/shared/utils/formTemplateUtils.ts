@@ -66,39 +66,4 @@ function mapDynamicFieldTypeToCustomFieldType(type: DynamicField['type']): Custo
   return mapping[type] || 'text';
 }
 
-/**
- * Load global fields for a module dynamically
- */
-export async function loadGlobalFieldsForModule(module: string): Promise<BaseCustomField[]> {
-  try {
-    // Dynamic import based on module
-    const moduleMapping: Record<string, () => Promise<any>> = {
-      stock: () => import('../../modules/products/services/globalFieldsService'),
-      customers: () => import('../../modules/customers/services/globalFieldsService'),
-      suppliers: () => import('../../modules/suppliers/services/globalFieldsService'),
-      sales: () => import('../../modules/sales/services/globalFieldsService'),
-      purchases: () => import('../../modules/purchases/services/globalFieldsService'),
-      expenses: () => import('../../modules/expenses/services/globalFieldsService'),
-      revenue: () => import('../../modules/revenue/services/globalFieldsService'),
-      employees: () => import('../../modules/employees/services/globalFieldsService'),
-    };
-
-    const importFn = moduleMapping[module];
-    if (!importFn) {
-      return [];
-    }
-
-    const moduleService = await importFn();
-    const service = moduleService.default || moduleService.globalFieldsService;
-    
-    if (service && typeof service.getAll === 'function') {
-      return await service.getAll();
-    }
-
-    return [];
-  } catch (error) {
-    console.warn(`Failed to load global fields for module ${module}:`, error);
-    return [];
-  }
-}
 

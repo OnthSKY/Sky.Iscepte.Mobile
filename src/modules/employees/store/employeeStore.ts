@@ -25,6 +25,7 @@ export interface Employee {
   password?: string; // Only for creation, not stored
   role?: Role; // User role (staff, owner, admin)
   userRole?: Role; // User role (staff, owner, admin)
+  package?: string; // Package ID (e.g., 'free', 'premium', 'premium+', 'gold')
   // Permissions
   customPermissions?: Record<string, {
     actions: string[];

@@ -14,6 +14,7 @@ export const productFormFields: DynamicField[] = [
   { name: 'price', labelKey: 'price', type: 'number' },
   { name: 'currency', labelKey: 'currency', type: 'custom' }, // Will be rendered as CurrencySelect in ProductFormScreen
   { name: 'stock', labelKey: 'stock', type: 'number', defaultValue: 1 },
+  { name: 'photo', labelKey: 'photo', type: 'image', required: false },
 ];
 
 export const productValidator = (data: Partial<Product>): Record<string, string> => {

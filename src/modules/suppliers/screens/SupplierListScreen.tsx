@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useSupplierStatsQuery } from '../hooks/useSuppliersQuery';
@@ -60,64 +60,63 @@ export default function SupplierListScreen() {
     ];
   }, [stats, t, isDark]);
 
+  // Stats header component for ListHeaderComponent
+  const statsHeader = React.useMemo(() => {
+    if (statsLoading) {
+      return (
+        <View style={{ padding: spacing.lg }}>
+          <LoadingState />
+        </View>
+      );
+    }
+    return (
+      <ModuleStatsHeader 
+        stats={moduleStats}
+        mainStatKey="total-suppliers"
+        translationNamespace="suppliers"
+      />
+    );
+  }, [statsLoading, moduleStats]);
+
   return (
     <ScreenLayout noPadding>
-      <ScrollView 
-        style={{ flex: 1, backgroundColor: colors.page }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
-        {/* Stats Header */}
-        {statsLoading ? (
-          <View style={{ padding: spacing.lg }}>
-            <LoadingState />
-          </View>
-        ) : (
-          <ModuleStatsHeader 
-            stats={moduleStats}
-            mainStatKey="total-suppliers"
-            translationNamespace="suppliers"
-          />
-        )}
-
-        {/* List Section */}
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-          <ListScreenContainer
-            service={supplierEntityService}
-            config={{
-              entityName: 'supplier',
-              translationNamespace: 'suppliers',
-              defaultPageSize: 10,
-              filterOptions: [
-                {
-                  key: 'isActive',
-                  label: 'suppliers:active_status',
-                  type: 'select',
-                  options: [
-                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
-                    { label: t('common:active', { defaultValue: 'Aktif' }), value: 'true' },
-                    { label: t('common:inactive', { defaultValue: 'Pasif' }), value: 'false' },
-                  ],
-                },
-                {
-                  key: 'status',
-                  label: 'suppliers:status',
-                  type: 'text',
-                },
-              ],
-            }}
-            renderItem={(item: Supplier) => (
-              <Card
-                style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('SupplierDetail', { id: item.id, name: item.name })}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.name}</Text>
-              </Card>
-            )}
-            keyExtractor={(item: Supplier) => String(item.id)}
-          />
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing.lg }}>
+        <ListScreenContainer
+          service={supplierEntityService}
+          config={{
+            entityName: 'supplier',
+            translationNamespace: 'suppliers',
+            defaultPageSize: 10,
+            filterOptions: [
+              {
+                key: 'isActive',
+                label: 'suppliers:active_status',
+                type: 'select',
+                options: [
+                  { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                  { label: t('common:active', { defaultValue: 'Aktif' }), value: 'true' },
+                  { label: t('common:inactive', { defaultValue: 'Pasif' }), value: 'false' },
+                ],
+              },
+              {
+                key: 'status',
+                label: 'suppliers:status',
+                type: 'text',
+              },
+            ],
+          }}
+          ListHeaderComponent={statsHeader}
+          renderItem={(item: Supplier) => (
+            <Card
+              style={{ marginBottom: 12 }}
+              onPress={() => navigation.navigate('SupplierDetail', { id: item.id, name: item.name })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.name}</Text>
+            </Card>
+          )}
+          keyExtractor={(item: Supplier) => String(item.id)}
+        />
+      </View>
     </ScreenLayout>
   );
 }

@@ -7,6 +7,7 @@ import { BaseEntityService } from '../services/baseEntityService.types';
 import { ListQuery, ListResponse, ListScreenConfig, BaseEntity } from '../types/screen.types';
 import { useNavigationHandler } from './useNavigationHandler';
 import { useDebounce } from './useDebounce';
+import { showPermissionAlert } from '../../shared/utils/permissionUtils';
 
 /**
  * Single Responsibility: Handles list screen logic (data fetching, search, filters, pagination)
@@ -16,7 +17,7 @@ export function useListScreen<T extends BaseEntity>(
   service: BaseEntityService<T>,
   config: ListScreenConfig<T>
 ) {
-  const { t } = useTranslation([config.translationNamespace, 'common']);
+  const { t } = useTranslation([config.translationNamespace, 'common', 'packages']);
   const navigation = useNavigation<any>();
   const role = useAppStore((s) => s.role);
   const { can } = usePermissions(role);
@@ -32,18 +33,32 @@ export function useListScreen<T extends BaseEntity>(
   const debouncedQuery = useDebounce(query, 500);
 
   // Permission checks
-  const screenPermissions = useMemo(() => ({
-    canView: can(`${config.entityName}:view`),
-    canCreate: can(`${config.entityName}:create`),
-    canEdit: can(`${config.entityName}:edit`),
-    canDelete: can(`${config.entityName}:delete`),
-  }), [can, config.entityName]);
+  // Map entityName to module name for permissions (e.g., stock_item -> stock)
+  const getPermissionModule = (entityName: string): string => {
+    if (entityName === 'stock_item') return 'stock';
+    return entityName;
+  };
+
+  const screenPermissions = useMemo(() => {
+    const moduleName = getPermissionModule(config.entityName);
+    return {
+      canView: can(`${moduleName}:view`),
+      canCreate: can(`${moduleName}:create`),
+      canEdit: can(`${moduleName}:edit`),
+      canDelete: can(`${moduleName}:delete`),
+    };
+  }, [can, config.entityName]);
 
   // Navigation handlers
   const handleCreate = useCallback(() => {
+    if (!screenPermissions.canCreate) {
+      const moduleName = getPermissionModule(config.entityName);
+      showPermissionAlert(role, `${moduleName}:create`, navigation, t);
+      return;
+    }
     const routeName = config.routeNames?.create || `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Create`;
     navHandler.navigate(routeName);
-  }, [navHandler, config.entityName, config.routeNames?.create]);
+  }, [navHandler, config.entityName, config.routeNames?.create, screenPermissions.canCreate, role, navigation, t]);
 
   const handleViewDetail = useCallback((item: T) => {
     const routeName = config.routeNames?.detail || `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Detail`;
@@ -51,9 +66,14 @@ export function useListScreen<T extends BaseEntity>(
   }, [navHandler, config.entityName, config.routeNames?.detail]);
 
   const handleEdit = useCallback((item: T) => {
+    if (!screenPermissions.canEdit) {
+      const moduleName = getPermissionModule(config.entityName);
+      showPermissionAlert(role, `${moduleName}:edit`, navigation, t);
+      return;
+    }
     const routeName = config.routeNames?.edit || `${config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1)}Edit`;
     navHandler.navigate(routeName, { id: item.id });
-  }, [navHandler, config.entityName, config.routeNames?.edit]);
+  }, [navHandler, config.entityName, config.routeNames?.edit, screenPermissions.canEdit, role, navigation, t]);
 
   // Query builder - uses debounced query for API calls
   const buildQuery = useCallback((page: number, pageSize: number): ListQuery => {

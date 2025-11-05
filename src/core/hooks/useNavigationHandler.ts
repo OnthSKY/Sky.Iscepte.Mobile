@@ -12,7 +12,7 @@ export interface NavigationFallback {
 }
 
 export interface NavigationHandler {
-  navigate(route: string): boolean;
+  navigate(route: string, params?: any): boolean;
   canNavigate(route: string): boolean;
 }
 

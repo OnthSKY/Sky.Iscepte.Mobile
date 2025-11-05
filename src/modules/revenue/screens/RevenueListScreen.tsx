@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useRevenueStatsQuery } from '../hooks/useRevenueQuery';
@@ -65,75 +65,74 @@ export default function RevenueListScreen() {
     ];
   }, [stats, t, isDark]);
 
+  // Stats header component for ListHeaderComponent
+  const statsHeader = React.useMemo(() => {
+    if (statsLoading) {
+      return (
+        <View style={{ padding: spacing.lg }}>
+          <LoadingState />
+        </View>
+      );
+    }
+    return (
+      <ModuleStatsHeader 
+        stats={moduleStats}
+        mainStatKey="total-revenue"
+        translationNamespace="revenue"
+      />
+    );
+  }, [statsLoading, moduleStats]);
+
   return (
     <ScreenLayout noPadding>
-      <ScrollView 
-        style={{ flex: 1, backgroundColor: colors.page }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
-        {/* Stats Header */}
-        {statsLoading ? (
-          <View style={{ padding: spacing.lg }}>
-            <LoadingState />
-          </View>
-        ) : (
-          <ModuleStatsHeader 
-            stats={moduleStats}
-            mainStatKey="total-revenue"
-            translationNamespace="revenue"
-          />
-        )}
-
-        {/* List Section */}
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-          <ListScreenContainer
-            service={revenueEntityService}
-            config={{
-              entityName: 'revenue',
-              translationNamespace: 'revenue',
-              defaultPageSize: 10,
-              filterOptions: [
-                {
-                  key: 'source',
-                  label: 'revenue:source',
-                  type: 'select',
-                  options: [
-                    { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
-                    { label: t('revenue:sales', { defaultValue: 'Satış' }), value: 'sales' },
-                    { label: t('revenue:manual', { defaultValue: 'Manuel' }), value: 'manual' },
-                  ],
-                },
-                {
-                  key: 'amountMin',
-                  label: 'revenue:amount_min',
-                  type: 'number',
-                },
-                {
-                  key: 'amountMax',
-                  label: 'revenue:amount_max',
-                  type: 'number',
-                },
-                {
-                  key: 'date',
-                  label: 'revenue:date',
-                  type: 'date',
-                },
-              ],
-            }}
-            renderItem={(item: Revenue) => (
-              <Card
-                style={{ marginBottom: 12 }}
-                onPress={() => navigation.navigate('RevenueDetail', { id: item.id, title: item.title, amount: item.amount })}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
-                <Text style={{ color: '#10B981', fontWeight: '600' }}>+{formatCurrency(item.amount || 0, item.currency || 'TRY')}</Text>
-              </Card>
-            )}
-            keyExtractor={(item: Revenue) => String(item.id)}
-          />
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing.lg }}>
+        <ListScreenContainer
+          service={revenueEntityService}
+          config={{
+            entityName: 'revenue',
+            translationNamespace: 'revenue',
+            defaultPageSize: 10,
+            filterOptions: [
+              {
+                key: 'source',
+                label: 'revenue:source',
+                type: 'select',
+                options: [
+                  { label: t('common:all', { defaultValue: 'Tümü' }), value: '' },
+                  { label: t('revenue:sales', { defaultValue: 'Satış' }), value: 'sales' },
+                  { label: t('revenue:manual', { defaultValue: 'Manuel' }), value: 'manual' },
+                ],
+              },
+              {
+                key: 'amountMin',
+                label: 'revenue:amount_min',
+                type: 'number',
+              },
+              {
+                key: 'amountMax',
+                label: 'revenue:amount_max',
+                type: 'number',
+              },
+              {
+                key: 'date',
+                label: 'revenue:date',
+                type: 'date',
+              },
+            ],
+          }}
+          ListHeaderComponent={statsHeader}
+          renderItem={(item: Revenue) => (
+            <Card
+              style={{ marginBottom: 12 }}
+              onPress={() => navigation.navigate('RevenueDetail', { id: item.id, title: item.title, amount: item.amount })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
+              <Text style={{ color: '#10B981', fontWeight: '600' }}>+{formatCurrency(item.amount || 0, item.currency || 'TRY')}</Text>
+            </Card>
+          )}
+          keyExtractor={(item: Revenue) => String(item.id)}
+        />
+      </View>
     </ScreenLayout>
   );
 }

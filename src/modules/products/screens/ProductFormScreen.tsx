@@ -20,7 +20,6 @@ import { productFormFields, productValidator } from '../config/productFormConfig
 import CustomFieldsManager from '../../../shared/components/CustomFieldsManager';
 import Card from '../../../shared/components/Card';
 import spacing from '../../../core/constants/spacing';
-import globalFieldsService from '../services/globalFieldsService';
 import { useProductsQuery } from '../hooks/useProductsQuery';
 import CategorySelect from '../components/CategorySelect';
 import CurrencySelect from '../components/CurrencySelect';
@@ -53,9 +52,6 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
       isActive: true,
     });
   };
-
-  // Global fields state
-  const [globalFields, setGlobalFields] = useState<ProductCustomField[]>([]);
 
   // Form template state - default to 'default' to use productFormFields
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | number | null>('default');
@@ -124,77 +120,6 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
     });
   }, []);
 
-  // Load global fields on mount
-  useEffect(() => {
-    const loadGlobalFields = async () => {
-      try {
-        const fields = await globalFieldsService.getAll();
-        setGlobalFields(fields);
-      } catch (error) {
-        console.error('Failed to load global fields:', error);
-      }
-    };
-    loadGlobalFields();
-  }, []);
-
-  // Handle global fields change
-  const handleGlobalFieldsChange = async (fields: ProductCustomField[]) => {
-    const previousGlobalFields = globalFields;
-    setGlobalFields(fields);
-    try {
-      await globalFieldsService.save(fields);
-      
-      // If a template is selected, check if a new global field was added and add it to the template
-      if (selectedTemplate && selectedTemplateId) {
-        // Find newly added global fields (those in new list but not in previous list)
-        const newGlobalFields = fields.filter(newField => 
-          !previousGlobalFields.some(prevField => prevField.key === newField.key)
-        );
-        
-        if (newGlobalFields.length > 0) {
-          // Convert new global fields to DynamicField format
-          const newTemplateFields = newGlobalFields.map(customField => 
-            customFieldToDynamicField(customField)
-          );
-          
-          // Get current template custom fields
-          const currentCustomFields = selectedTemplate.customFields || [];
-          
-          // Add new fields to template (avoid duplicates)
-          const updatedCustomFields = [...currentCustomFields];
-          newTemplateFields.forEach(newField => {
-            if (!updatedCustomFields.some(f => f.name === newField.name)) {
-              updatedCustomFields.push(newField);
-            }
-          });
-          
-          // Update the template with new custom fields
-          try {
-            const updatedTemplate = await formTemplateService.update(selectedTemplateId, {
-              customFields: updatedCustomFields,
-            });
-            
-            // Invalidate and refetch templates to get the updated one
-            queryClient.invalidateQueries({ queryKey: ['stock', 'form-templates', 'list'] });
-            
-            // Optionally, show a toast or notification
-            console.log('Global field(s) added to selected template:', newGlobalFields.map(f => f.label).join(', '));
-          } catch (error) {
-            console.error('Failed to update template with new global fields:', error);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to save global fields:', error);
-    }
-  };
-
-  // Enhanced validator for required global custom fields
-  const enhancedValidator = createEnhancedValidator<Product>(
-    productValidator,
-    globalFields,
-    'stock'
-  );
 
   // Get title based on mode
   const screenTitle = formMode === 'edit' 
@@ -223,7 +148,7 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
         // Create enhanced validator with template fields
         const validatorWithTemplate = createEnhancedValidator<Product>(
           productValidator,
-          globalFields,
+          [],
           'stock',
           templateFields
         );
@@ -358,7 +283,7 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
               
               {/* Link to Settings for template management */}
               <TouchableOpacity
-                onPress={() => navigation.navigate('FormTemplateManagement')}
+                onPress={() => navigation.navigate('FormTemplateManagement', { module: 'stock' })}
                 style={{ 
                   marginTop: spacing.sm, 
                   padding: spacing.sm, 
@@ -399,8 +324,6 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
               <CustomFieldsManager<ProductCustomField>
                 customFields={customFields}
                 onChange={handleCustomFieldsChange}
-                availableGlobalFields={globalFields}
-                onGlobalFieldsChange={handleGlobalFieldsChange}
                 module="stock"
                 errors={errors}
               />

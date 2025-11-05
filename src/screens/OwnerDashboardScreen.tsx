@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useLayoutEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import ScreenLayout from '../shared/layouts/ScreenLayout';
@@ -19,7 +19,8 @@ import { formatCurrency } from '../modules/products/utils/currency';
 export default function OwnerDashboardScreen() {
   const navigation = useNavigation<any>();
   const { colors, activeTheme } = useTheme();
-
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollPositionRef = useRef<number>(0);
 
   const {
     activeTab,
@@ -40,6 +41,8 @@ export default function OwnerDashboardScreen() {
     setShowMoreTopProducts,
     showMoreEmployeeProducts,
     setShowMoreEmployeeProducts,
+    showTopProductsPrices,
+    setShowTopProductsPrices,
     employeeCards,
     stats,
     employeeStats,
@@ -48,6 +51,24 @@ export default function OwnerDashboardScreen() {
     isLoading,
     t,
   } = useOwnerDashboard();
+
+  // Save scroll position when it changes
+  const handleScroll = (event: any) => {
+    scrollPositionRef.current = event.nativeEvent.contentOffset.y;
+  };
+
+  // Restore scroll position after employee selection (when data is loaded)
+  useLayoutEffect(() => {
+    if (!isLoading && scrollViewRef.current && scrollPositionRef.current > 0) {
+      // Use requestAnimationFrame to ensure layout is complete
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollTo({
+          y: scrollPositionRef.current,
+          animated: false,
+        });
+      });
+    }
+  }, [isLoading, selectedEmployeeId]);
 
   if (isLoading) {
     return (
@@ -60,9 +81,12 @@ export default function OwnerDashboardScreen() {
   return (
     <ScreenLayout>
       <ScrollView 
+        ref={scrollViewRef}
         style={{ flex: 1 }} 
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {/* Welcome Header with Gradient, Premium badge and compact totals */}
         <LinearGradient
@@ -166,6 +190,9 @@ export default function OwnerDashboardScreen() {
               <Text style={{ color: colors.text, fontWeight: '700', marginLeft: 8, flex: 1 }} numberOfLines={1}>
                 {t('dashboard:top_products', { defaultValue: 'En Çok Satan Ürünler' })}
               </Text>
+              <TouchableOpacity onPress={() => setShowTopProductsPrices(!showTopProductsPrices)} style={{ marginRight: 8 }} accessibilityRole="button">
+                <Ionicons name={showTopProductsPrices ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.muted} />
+              </TouchableOpacity>
               <Text style={{ color: colors.muted, fontSize: 11 }}>
                 {topProductsCount} {t('dashboard:products', { defaultValue: 'ürün' })}
               </Text>
@@ -187,7 +214,7 @@ export default function OwnerDashboardScreen() {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ color: colors.success, fontSize: 16, fontWeight: '700' }}>
-                    {formatCurrency(product.totalAmount, product.currency || 'TRY')}
+                    {showTopProductsPrices ? formatCurrency(product.totalAmount, product.currency || 'TRY') : '••••••'}
                   </Text>
                 </View>
               </View>
@@ -217,11 +244,11 @@ export default function OwnerDashboardScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }}>
           <TouchableOpacity
             onPress={() => setSelectedEmployeeId('total')}
-            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: selectedEmployeeId === 'total' ? colors.primary : (colors.card || colors.surface), borderWidth: 1, borderColor: selectedEmployeeId === 'total' ? colors.primary : colors.border, marginRight: 8 }}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: selectedEmployeeId === 'total' ? colors.primary : (colors.card || colors.surface), borderWidth: 1, borderColor: selectedEmployeeId === 'total' ? colors.primary : colors.border, marginRight: 10, minHeight: 44 }}
             activeOpacity={0.8}
           >
-            <Ionicons name="people-outline" size={14} color={selectedEmployeeId === 'total' ? '#fff' : colors.muted} />
-            <Text style={{ color: selectedEmployeeId === 'total' ? '#fff' : colors.text, fontWeight: '600', fontSize: 12, marginLeft: 6 }} numberOfLines={1}>
+            <Ionicons name="people-outline" size={18} color={selectedEmployeeId === 'total' ? '#fff' : colors.muted} />
+            <Text style={{ color: selectedEmployeeId === 'total' ? '#fff' : colors.text, fontWeight: '600', fontSize: 14, marginLeft: 8 }} numberOfLines={1}>
               {t('dashboard:all_employees', { defaultValue: 'Tüm çalışanlar' })} ({employeeCards.length})
             </Text>
           </TouchableOpacity>
@@ -230,18 +257,18 @@ export default function OwnerDashboardScreen() {
             <TouchableOpacity
               key={e.id}
               onPress={() => setSelectedEmployeeId(e.id)}
-              style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: selectedEmployeeId === e.id ? colors.primary : (colors.card || colors.surface), borderWidth: 1, borderColor: selectedEmployeeId === e.id ? colors.primary : colors.border, marginRight: 8 }}
+              style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: selectedEmployeeId === e.id ? colors.primary : (colors.card || colors.surface), borderWidth: 1, borderColor: selectedEmployeeId === e.id ? colors.primary : colors.border, marginRight: 10, minHeight: 44 }}
               activeOpacity={0.8}
             >
-              <Ionicons name="person-outline" size={14} color={selectedEmployeeId === e.id ? '#fff' : colors.muted} />
-              <Text style={{ color: selectedEmployeeId === e.id ? '#fff' : colors.text, fontWeight: '600', fontSize: 12, marginLeft: 6 }} numberOfLines={1}>{e.name}</Text>
+              <Ionicons name="person-outline" size={18} color={selectedEmployeeId === e.id ? '#fff' : colors.muted} />
+              <Text style={{ color: selectedEmployeeId === e.id ? '#fff' : colors.text, fontWeight: '600', fontSize: 14, marginLeft: 8 }} numberOfLines={1}>{e.name}</Text>
             </TouchableOpacity>
           ))}
 
           {employeeCards.length > 8 && (
-            <TouchableOpacity onPress={() => setEmployeePickerVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}>
-              <Ionicons name="ellipsis-horizontal" size={14} color={colors.muted} />
-              <Text style={{ color: colors.text, fontWeight: '600', fontSize: 12, marginLeft: 6 }}>{t('common:more', { defaultValue: 'Daha fazla' })}</Text>
+            <TouchableOpacity onPress={() => setEmployeePickerVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, minHeight: 44 }}>
+              <Ionicons name="ellipsis-horizontal" size={18} color={colors.muted} />
+              <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14, marginLeft: 8 }}>{t('common:more', { defaultValue: 'Daha fazla' })}</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -335,11 +362,17 @@ export default function OwnerDashboardScreen() {
               <View style={{ width: '100%', maxWidth: 420, backgroundColor: colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.border }}>
                 <Text style={{ color: colors.text, fontWeight: '700', marginBottom: 12 }}>{t('dashboard:all_employees', { defaultValue: 'Tüm çalışanlar' })}</Text>
                 <ScrollView style={{ maxHeight: 360 }}>
-                  <TouchableOpacity onPress={() => { setSelectedEmployeeId('total'); setEmployeePickerVisible(false); }} style={{ paddingVertical: 10 }}>
+                  <TouchableOpacity onPress={() => { 
+                    setSelectedEmployeeId('total'); 
+                    setEmployeePickerVisible(false); 
+                  }} style={{ paddingVertical: 10 }}>
                     <Text style={{ color: colors.text }}>{t('dashboard:all_employees', { defaultValue: 'Tüm çalışanlar' })}</Text>
                   </TouchableOpacity>
                   {employeeCards.map((e: any) => (
-                    <TouchableOpacity key={e.id} onPress={() => { setSelectedEmployeeId(e.id); setEmployeePickerVisible(false); }} style={{ paddingVertical: 10 }}>
+                    <TouchableOpacity key={e.id} onPress={() => { 
+                      setSelectedEmployeeId(e.id); 
+                      setEmployeePickerVisible(false); 
+                    }} style={{ paddingVertical: 10 }}>
                       <Text style={{ color: colors.text }}>{e.name}</Text>
                     </TouchableOpacity>
                   ))}

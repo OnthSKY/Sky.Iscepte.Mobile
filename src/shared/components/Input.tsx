@@ -7,12 +7,21 @@ export default function Input(props: TextInputProps) {
   const [focused, setFocused] = React.useState(false);
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const isEditable = props.editable !== false;
   return (
     <TextInput
       placeholderTextColor={colors.muted}
-      style={[styles.input, focused && styles.inputFocused, props.multiline ? styles.multiline : null, props.style]}
+      style={[
+        styles.input, 
+        focused && isEditable && styles.inputFocused, 
+        !isEditable && styles.inputDisabled,
+        props.multiline ? styles.multiline : null, 
+        props.style
+      ]}
       onFocus={(e) => {
-        setFocused(true);
+        if (isEditable) {
+          setFocused(true);
+        }
         props.onFocus?.(e);
       }}
       onBlur={(e) => {
@@ -49,6 +58,12 @@ const getStyles = (colors: any) => StyleSheet.create({
         shadowRadius: 6,
       },
     }),
+  },
+  inputDisabled: {
+    backgroundColor: colors.background, // Use background color for disabled state
+    borderColor: colors.border,
+    color: colors.muted,
+    opacity: 0.6,
   },
   multiline: { minHeight: 100 },
 });
