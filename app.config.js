@@ -71,6 +71,21 @@ module.exports = {
       //     },
       //   },
       // ],
+      // Code Obfuscation Plugin
+      // Production build'lerde kod obfuscation için
+      [
+        './plugins/withCodeObfuscation.js',
+        {
+          android: {
+            enableProguard: true,
+            enableR8: true,
+          },
+          // iOS obfuscation için native modül gerekir (opsiyonel)
+          ios: {
+            enableOptimization: true,
+          },
+        },
+      ],
     ],
     web: {
       favicon: './assets/favicon.png',

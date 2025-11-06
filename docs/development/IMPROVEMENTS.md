@@ -36,9 +36,12 @@ Bu dokümantasyon, projede yapılabilecek iyileştirmeleri, eksiklikleri ve geli
 - ✅ **Certificate pinning** - HTTPS certificate pinning eklendi (certificatePinningService, Android network security config, iOS ATS config)
 - ✅ **Certificate pinning plugin** - Expo config plugin eklendi (withCertificatePinning.js)
 - ✅ **CERTIFICATE_PINNING.md** - Certificate pinning kullanım kılavuzu eklendi
+- ✅ **Code obfuscation** - Production build'lerde kod obfuscation eklendi (ProGuard/R8, Android minification, ProGuard rules)
+- ✅ **Code obfuscation plugin** - Expo config plugin eklendi (withCodeObfuscation.js)
+- ✅ **CODE_OBFUSCATION.md** - Code obfuscation kullanım kılavuzu eklendi
 - ⚠️ **Sensitive data encryption** - Keychain zaten şifreliyor, ekstra encryption opsiyonel
-- ⚠️ **Code obfuscation** - Production build'lerde kod obfuscation yapılmalı (kalan)
 - ⚠️ **iOS native certificate pinning** - iOS için native Swift/Objective-C kodu eklenebilir (opsiyonel, şu an ATS config var)
+- ⚠️ **iOS Swift obfuscation** - iOS için Swift obfuscation tool'ları eklenebilir (opsiyonel, build optimization var)
 
 ### 4. Environment Configuration ✅ TAMAMLANDI
 
