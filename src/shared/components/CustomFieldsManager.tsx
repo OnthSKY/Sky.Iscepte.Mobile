@@ -3,7 +3,7 @@
  * Works for any module (products, customers, etc.)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../core/contexts/ThemeContext';
@@ -20,6 +20,8 @@ import { Role } from '../../core/config/appConstants';
 import { showPermissionAlert } from '../utils/permissionUtils';
 import SignatureInput from './SignatureInput';
 import ImageInput from './ImageInput';
+import DateTimePicker from './DateTimePicker';
+import { formatDate } from '../../core/utils/dateUtils';
 
 import { BaseCustomField, CustomFieldType } from '../types/customFields';
 
@@ -301,7 +303,8 @@ export default function CustomFieldsManager<T extends BaseCustomField>({
                         handleUpdateFieldValue(field.key, value);
                       },
                       colors,
-                      canEditValues
+                      canEditValues,
+                      field.key
                     )}
                     {errors[`customField_${field.key}`] && (
                       <Text style={{ fontSize: 12, color: colors.error, marginTop: spacing.xs }}>
@@ -333,7 +336,8 @@ function renderFieldInput(
   field: BaseCustomField,
   onChange: (value: any) => void,
   colors: any,
-  editable: boolean = true
+  editable: boolean = true,
+  fieldKey?: string
 ) {
   switch (field.type) {
     case 'text':
@@ -371,11 +375,13 @@ function renderFieldInput(
       );
     case 'date':
       return (
-        <Input
+        <CustomDateFieldWrapper
           value={field.value != null ? String(field.value) : ''}
-          onChangeText={onChange}
+          onChange={onChange}
           placeholder="YYYY-MM-DD"
+          label={field.label}
           editable={editable}
+          fieldKey={fieldKey || field.key}
         />
       );
     case 'select':
@@ -444,6 +450,67 @@ function renderFieldInput(
     default:
       return null;
   }
+}
+
+// CustomDateFieldWrapper component for custom date fields with DateTimePicker
+function CustomDateFieldWrapper({
+  value,
+  onChange,
+  placeholder,
+  label,
+  editable = true,
+  fieldKey,
+}: {
+  value: string;
+  onChange: (value: any) => void;
+  placeholder: string;
+  label: string;
+  editable?: boolean;
+  fieldKey: string;
+}) {
+  const [dateTimePickerVisible, setDateTimePickerVisible] = useState(false);
+  const { colors } = useTheme();
+  const todayDate = formatDate(new Date());
+  
+  const displayDateTime = useMemo(() => {
+    if (!value) return '';
+    return value;
+  }, [value]);
+
+  if (!editable) {
+    return (
+      <Input
+        value={displayDateTime}
+        editable={false}
+        placeholder={placeholder}
+      />
+    );
+  }
+
+  return (
+    <>
+      <TouchableOpacity onPress={() => setDateTimePickerVisible(true)}>
+        <Input
+          value={displayDateTime}
+          editable={false}
+          pointerEvents="none"
+          placeholder={placeholder || todayDate}
+          style={{ backgroundColor: colors.surface, color: colors.text }}
+        />
+      </TouchableOpacity>
+      <DateTimePicker
+        visible={dateTimePickerVisible}
+        onClose={() => setDateTimePickerVisible(false)}
+        value={displayDateTime || todayDate}
+        onConfirm={(dateTime: string) => {
+          onChange(dateTime);
+          setDateTimePickerVisible(false);
+        }}
+        label={label}
+        showTime={true}
+      />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

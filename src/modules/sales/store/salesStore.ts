@@ -14,6 +14,7 @@ export interface SaleItem {
   price: number;
   subtotal: number;
   currency?: Currency;
+  customFields?: SalesCustomField[]; // Custom fields for this sale item
 }
 
 export interface Sale {

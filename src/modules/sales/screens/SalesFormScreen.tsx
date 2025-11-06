@@ -9,7 +9,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { TouchableOpacity, View, Text, Platform, Switch, ScrollView, FlatList } from 'react-native';
+import { TouchableOpacity, View, Text, Platform, Switch, ScrollView, Modal as RNModal } from 'react-native';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { salesEntityService } from '../services/salesServiceAdapter';
 import DynamicForm from '../../../shared/components/DynamicForm';
@@ -32,262 +32,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { formatCurrency } from '../../products/utils/currency';
 import { Product } from '../../products/services/productService';
 import notificationService from '../../../shared/services/notificationService';
+import CurrencySelect from '../../products/components/CurrencySelect';
+import { Currency } from '../store/salesStore';
+import DateTimePicker from '../../../shared/components/DateTimePicker';
 
 interface SalesFormScreenProps {
   mode?: 'create' | 'edit';
-}
-
-// Date Picker Modal Component
-function DatePickerModalComponent({
-  visible,
-  onClose,
-  value,
-  onConfirm,
-  colors,
-  t,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  value: string;
-  onConfirm: (date: string) => void;
-  colors: any;
-  t: (key: string) => string;
-}) {
-  const [tempDate, setTempDate] = useState(value || formatDate(new Date()));
-  
-  React.useEffect(() => {
-    if (visible) {
-      setTempDate(value || formatDate(new Date()));
-    }
-  }, [visible, value]);
-  
-  if (Platform.OS === 'web') {
-    return (
-      <Modal visible={visible} onRequestClose={onClose}>
-        <View style={{ gap: spacing.md }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>
-            {t('date')}
-          </Text>
-          <input
-            type="date"
-            value={tempDate}
-            onChange={(e) => setTempDate(e.target.value)}
-            style={{
-              width: '100%',
-              padding: spacing.md,
-              fontSize: 16,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 12,
-              backgroundColor: colors.surface,
-              color: colors.text,
-            }}
-          />
-          <View style={{ flexDirection: 'row', gap: spacing.md, justifyContent: 'flex-end' }}>
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                paddingVertical: spacing.md,
-                paddingHorizontal: spacing.lg,
-                borderRadius: 8,
-                backgroundColor: colors.border,
-              }}
-            >
-              <Text style={{ color: colors.text }}>İptal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => onConfirm(tempDate)}
-              style={{
-                paddingVertical: spacing.md,
-                paddingHorizontal: spacing.lg,
-                borderRadius: 8,
-                backgroundColor: colors.primary,
-              }}
-            >
-              <Text style={{ color: '#fff' }}>Tamam</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    );
-  }
-  
-  return (
-    <Modal visible={visible} onRequestClose={onClose}>
-      <View style={{ gap: spacing.md }}>
-        <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>
-          {t('date')}
-        </Text>
-        <Input
-          value={tempDate}
-          onChangeText={(text) => {
-            // Format as YYYY-MM-DD
-            const cleaned = text.replace(/[^\d-]/g, '');
-            if (cleaned.length <= 10) {
-              let formatted = cleaned;
-              if (cleaned.length > 4 && cleaned[4] !== '-') {
-                formatted = cleaned.slice(0, 4) + '-' + cleaned.slice(4);
-              }
-              if (cleaned.length > 7 && formatted[7] !== '-') {
-                formatted = formatted.slice(0, 7) + '-' + formatted.slice(7);
-              }
-              setTempDate(formatted);
-            }
-          }}
-          placeholder="YYYY-MM-DD"
-          keyboardType="numeric"
-        />
-        <View style={{ flexDirection: 'row', gap: spacing.md, justifyContent: 'flex-end' }}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={{
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              borderRadius: 8,
-              backgroundColor: colors.border,
-            }}
-          >
-            <Text style={{ color: colors.text }}>İptal</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onConfirm(tempDate)}
-            style={{
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              borderRadius: 8,
-              backgroundColor: colors.primary,
-            }}
-          >
-            <Text style={{ color: '#fff' }}>Tamam</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-// Time Picker Modal Component
-function TimePickerModalComponent({
-  visible,
-  onClose,
-  value,
-  onConfirm,
-  colors,
-  t,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  value: string;
-  onConfirm: (time: string) => void;
-  colors: any;
-  t: (key: string) => string;
-}) {
-  const [tempTime, setTempTime] = useState(value || '');
-  
-  React.useEffect(() => {
-    if (visible) {
-      setTempTime(value || '');
-    }
-  }, [visible, value]);
-  
-  if (Platform.OS === 'web') {
-    return (
-      <Modal visible={visible} onRequestClose={onClose}>
-        <View style={{ gap: spacing.md }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>
-            {t('time')}
-          </Text>
-          <input
-            type="time"
-            value={tempTime}
-            onChange={(e) => setTempTime(e.target.value)}
-            style={{
-              width: '100%',
-              padding: spacing.md,
-              fontSize: 16,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 12,
-              backgroundColor: colors.surface,
-              color: colors.text,
-            }}
-          />
-          <View style={{ flexDirection: 'row', gap: spacing.md, justifyContent: 'flex-end' }}>
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                paddingVertical: spacing.md,
-                paddingHorizontal: spacing.lg,
-                borderRadius: 8,
-                backgroundColor: colors.border,
-              }}
-            >
-              <Text style={{ color: colors.text }}>İptal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => onConfirm(tempTime)}
-              style={{
-                paddingVertical: spacing.md,
-                paddingHorizontal: spacing.lg,
-                borderRadius: 8,
-                backgroundColor: colors.primary,
-              }}
-            >
-              <Text style={{ color: '#fff' }}>Tamam</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    );
-  }
-  
-  return (
-    <Modal visible={visible} onRequestClose={onClose}>
-      <View style={{ gap: spacing.md }}>
-        <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>
-          {t('time')}
-        </Text>
-        <Input
-          value={tempTime}
-          onChangeText={(text) => {
-            // Format as HH:mm
-            const cleaned = text.replace(/[^\d:]/g, '');
-            if (cleaned.length <= 5) {
-              let formatted = cleaned;
-              if (cleaned.length > 2 && cleaned[2] !== ':') {
-                formatted = cleaned.slice(0, 2) + ':' + cleaned.slice(2);
-              }
-              setTempTime(formatted);
-            }
-          }}
-          placeholder="HH:mm"
-          keyboardType="numeric"
-        />
-        <View style={{ flexDirection: 'row', gap: spacing.md, justifyContent: 'flex-end' }}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={{
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              borderRadius: 8,
-              backgroundColor: colors.border,
-            }}
-          >
-            <Text style={{ color: colors.text }}>İptal</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onConfirm(tempTime)}
-            style={{
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              borderRadius: 8,
-              backgroundColor: colors.primary,
-            }}
-          >
-            <Text style={{ color: '#fff' }}>Tamam</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
 }
 
 export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
@@ -295,9 +45,8 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
   const { t } = useTranslation('sales');
   const { colors } = useTheme();
   
-  // State for date/time pickers
-  const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  // State for datetime picker
+  const [dateTimePickerVisible, setDateTimePickerVisible] = useState(false);
   
   // State for bulk sale mode
   const [isBulkSale, setIsBulkSale] = useState(false);
@@ -306,6 +55,9 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
   const [quantity, setQuantity] = useState('1');
   const [price, setPrice] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [expandedItemIndex, setExpandedItemIndex] = useState<number | null>(null); // For custom fields expansion
+  const [productModalVisible, setProductModalVisible] = useState(false); // For full screen product selection modal
+  const [modalSearchQuery, setModalSearchQuery] = useState(''); // Search query for modal
   
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
@@ -314,6 +66,7 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
   const getInitialData = (): Partial<Sale> => {
     return getInitialDataWithCustomFields<Sale>(formMode, {
       date: formatDate(new Date()),
+      currency: 'TRY',
     });
   };
 
@@ -385,11 +138,11 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
         const currentDate = formData.date || '';
         const displayDate = currentDate || (formMode === 'create' ? todayDate : '');
         
-        const [dateValue, timeValue] = useMemo(() => {
-          if (!displayDate) return ['', ''];
-          const parts = displayDate.split(' ');
-          return [parts[0] || displayDate, parts[1] || ''];
-        }, [displayDate]);
+        // Format display value for datetime picker
+        const displayDateTime = useMemo(() => {
+          if (!displayDate) return formMode === 'create' ? todayDate : '';
+          return displayDate;
+        }, [displayDate, formMode, todayDate]);
 
         // Filter products for search
         const filteredProducts = useMemo(() => {
@@ -421,6 +174,17 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
           return bulkSaleItems.reduce((sum, item) => sum + item.subtotal, 0);
         }, [bulkSaleItems]);
 
+        // Sync bulkSaleItems to formData.items when items change
+        useEffect(() => {
+          if (isBulkSale && bulkSaleItems.length > 0) {
+            updateField('items' as keyof Sale, bulkSaleItems);
+            updateField('total' as keyof Sale, bulkTotal);
+          } else if (isBulkSale && bulkSaleItems.length === 0) {
+            updateField('items' as keyof Sale, []);
+            updateField('total' as keyof Sale, 0);
+          }
+        }, [bulkSaleItems, bulkTotal, isBulkSale]);
+
         // Handle bulk sale item add
         const handleAddBulkItem = () => {
           if (!selectedProduct) {
@@ -448,6 +212,9 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
 
           const subtotal = itemPrice * qty;
 
+          // Get selected currency from form or use product currency or default to TRY
+          const selectedCurrency = formData.currency || selectedProduct.currency || 'TRY';
+          
           // Check if item already exists
           const existingIndex = bulkSaleItems.findIndex(item => item.productId === selectedProductId);
           if (existingIndex >= 0) {
@@ -467,7 +234,7 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                 quantity: qty,
                 price: itemPrice,
                 subtotal,
-                currency: selectedProduct.currency || 'TRY',
+                currency: selectedCurrency,
               },
             ]);
           }
@@ -521,10 +288,12 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
         useEffect(() => {
           if (isBulkSale && bulkSaleItems.length > 0) {
             const total = bulkSaleItems.reduce((sum, item) => sum + item.subtotal, 0);
-            const firstCurrency = bulkSaleItems[0]?.currency || 'TRY';
             updateField('amount' as keyof Sale, total);
             updateField('total' as keyof Sale, total);
-            updateField('currency' as keyof Sale, firstCurrency);
+            // Only update currency if not already set
+            if (!formData.currency) {
+              updateField('currency' as keyof Sale, bulkSaleItems[0]?.currency || 'TRY');
+            }
             updateField('items' as keyof Sale, bulkSaleItems);
           } else if (isBulkSale && bulkSaleItems.length === 0) {
             updateField('items' as keyof Sale, []);
@@ -583,6 +352,10 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                             const currentPrice = formData.price || 0;
                             if (currentPrice === 0) {
                               updateField('price' as keyof Sale, selectedProduct.price);
+                              // Auto-set currency from product if not set
+                              if (!formData.currency && selectedProduct.currency) {
+                                updateField('currency' as keyof Sale, selectedProduct.currency);
+                              }
                               // Auto-calculate amount if quantity is set
                               const currentQuantity = formData.quantity || 1;
                               if (currentQuantity > 0) {
@@ -607,63 +380,45 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                     }}
                   />
             
-            {/* Date and Time Section */}
-            <FormRow columns={2}>
-              <FormField label={t('date')} required>
-                <TouchableOpacity onPress={() => setDatePickerVisible(true)}>
-                  <Input
-                    value={dateValue}
-                    editable={false}
-                    pointerEvents="none"
-                    placeholder={formMode === 'create' && !currentDate ? todayDate : "YYYY-MM-DD"}
-                    style={{ backgroundColor: colors.surface }}
-                  />
-                </TouchableOpacity>
+            {/* Currency Selection */}
+            <FormRow columns={1}>
+              <FormField label={t('currency')}>
+                <CurrencySelect
+                  value={formData.currency || 'TRY'}
+                  onChange={(currency: Currency) => {
+                    updateField('currency' as keyof Sale, currency);
+                  }}
+                  placeholder={t('currency', { defaultValue: 'Para Birimi Seçiniz' })}
+                />
               </FormField>
-              <FormField label={t('time')}>
-                <TouchableOpacity onPress={() => setTimePickerVisible(true)}>
+            </FormRow>
+            
+            {/* Date and Time Section */}
+            <FormRow columns={1}>
+              <FormField label={t('date')} required>
+                <TouchableOpacity onPress={() => setDateTimePickerVisible(true)}>
                   <Input
-                    value={timeValue}
+                    value={displayDateTime}
                     editable={false}
                     pointerEvents="none"
-                    placeholder="HH:mm (opsiyonel)"
-                    style={{ backgroundColor: colors.surface }}
+                    placeholder={formMode === 'create' ? todayDate : "YYYY-MM-DD"}
+                    style={{ backgroundColor: colors.surface, color: colors.text }}
                   />
                 </TouchableOpacity>
               </FormField>
             </FormRow>
             
-            {/* Date Picker Modal */}
-            <DatePickerModalComponent
-              visible={datePickerVisible}
-              onClose={() => setDatePickerVisible(false)}
-              value={dateValue || (formMode === 'create' ? todayDate : '')}
-              onConfirm={(date: string) => {
-                const timePart = timeValue || '';
-                const newDateValue = timePart ? `${date} ${timePart}`.trim() : date;
-                updateField('date' as keyof Sale, newDateValue);
-                setDatePickerVisible(false);
+            {/* DateTime Picker Modal */}
+            <DateTimePicker
+              visible={dateTimePickerVisible}
+              onClose={() => setDateTimePickerVisible(false)}
+              value={displayDateTime}
+              onConfirm={(dateTime: string) => {
+                updateField('date' as keyof Sale, dateTime);
+                setDateTimePickerVisible(false);
               }}
-              colors={colors}
-              t={t}
-            />
-            
-            {/* Time Picker Modal */}
-            <TimePickerModalComponent
-              visible={timePickerVisible}
-              onClose={() => setTimePickerVisible(false)}
-              value={timeValue}
-              onConfirm={(time: string) => {
-                const datePart = dateValue || (formMode === 'create' ? todayDate : '');
-                if (time) {
-                  updateField('date' as keyof Sale, `${datePart} ${time}`.trim());
-                } else {
-                  updateField('date' as keyof Sale, datePart || '');
-                }
-                setTimePickerVisible(false);
-              }}
-              colors={colors}
-              t={t}
+              label={t('date')}
+              showTime={true}
             />
             
             {/* Notes Field - Full Width and More Prominent */}
@@ -711,13 +466,57 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                     });
                   }}
                 />
+                
+                {/* Currency Selection */}
+                <View style={{ marginTop: spacing.md }}>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                    {t('currency', { defaultValue: 'Para Birimi' })}
+                  </Text>
+                  <CurrencySelect
+                    value={formData.currency || 'TRY'}
+                    onChange={(currency: Currency) => {
+                      updateField('currency' as keyof Sale, currency);
+                      // Update all items currency if they don't have one set
+                      if (bulkSaleItems.length > 0) {
+                        const updatedItems = bulkSaleItems.map(item => ({
+                          ...item,
+                          currency: item.currency || currency,
+                        }));
+                        setBulkSaleItems(updatedItems);
+                      }
+                    }}
+                    placeholder={t('currency', { defaultValue: 'Para Birimi Seçiniz' })}
+                  />
+                </View>
               </Card>
 
               {/* Product Search and Selection */}
               <Card>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: spacing.md }}>
-                  {t('select_product', { defaultValue: 'Ürün Seç' })}
-                </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                    {t('select_product', { defaultValue: 'Ürün Seç' })}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalSearchQuery('');
+                      setProductModalVisible(true);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: spacing.xs,
+                      paddingHorizontal: spacing.md,
+                      paddingVertical: spacing.sm,
+                      borderRadius: 8,
+                      backgroundColor: colors.primary,
+                    }}
+                  >
+                    <Ionicons name="expand-outline" size={18} color="#fff" />
+                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12 }}>
+                      {t('full_screen', { defaultValue: 'Tam Ekran' })}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
                 
                 <SearchBar
                   value={productSearchQuery}
@@ -725,51 +524,171 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                   placeholder={t('search_product', { defaultValue: 'Ürün ara...' })}
                 />
 
-                <FlatList
-                  data={filteredProducts}
-                  keyExtractor={(item) => String(item.id)}
-                  renderItem={({ item }) => {
-                    const isSelected = selectedProductId === String(item.id);
-                    return (
-                      <TouchableOpacity
-                        onPress={() => setSelectedProductId(String(item.id))}
-                        style={{
-                          padding: spacing.md,
-                          borderRadius: 12,
-                          marginBottom: spacing.sm,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          backgroundColor: isSelected ? colors.primary + '20' : 'transparent',
-                        }}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
-                            {item.name}
-                          </Text>
-                          {item.category && (
-                            <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.xs }}>
-                              {item.category}
+                <ScrollView 
+                  style={{ maxHeight: 500 }} 
+                  contentContainerStyle={{ paddingVertical: spacing.xs }}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={true}
+                  bounces={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((item) => {
+                      const isSelected = selectedProductId === String(item.id);
+                      return (
+                        <TouchableOpacity
+                          key={String(item.id)}
+                          onPress={() => {
+                            setSelectedProductId(String(item.id));
+                            // Auto-fill price if available
+                            if (item.price) {
+                              setPrice(String(item.price));
+                            }
+                          }}
+                          style={{
+                            padding: spacing.md,
+                            borderRadius: 12,
+                            marginBottom: spacing.sm,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: isSelected ? colors.primary + '20' : colors.surface,
+                            borderWidth: 1,
+                            borderColor: isSelected ? colors.primary : colors.border,
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                              {item.name}
                             </Text>
-                          )}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 12, color: colors.muted }}>
-                              {t('stock', { defaultValue: 'Stok' })}: {item.stock || 0}
-                            </Text>
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                              {item.price ? formatCurrency(item.price, item.currency || 'TRY') : '0'}
-                            </Text>
+                            {item.category && (
+                              <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.xs }}>
+                                {item.category}
+                              </Text>
+                            )}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text style={{ fontSize: 12, color: colors.muted }}>
+                                {t('stock', { defaultValue: 'Stok' })}: {item.stock || 0}
+                              </Text>
+                              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
+                                {item.price ? formatCurrency(item.price, item.currency || 'TRY') : '0'}
+                              </Text>
+                            </View>
                           </View>
-                        </View>
-                        {isSelected && (
-                          <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  }}
-                  style={{ maxHeight: 200 }}
-                  scrollEnabled={true}
-                />
+                          {isSelected && (
+                            <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })
+                  ) : (
+                    <View style={{ padding: spacing.md, alignItems: 'center' }}>
+                      <Text style={{ color: colors.muted, fontSize: 14 }}>
+                        {t('no_products_found', { defaultValue: 'Ürün bulunamadı' })}
+                      </Text>
+                    </View>
+                  )}
+                </ScrollView>
               </Card>
+
+              {/* Full Screen Product Selection Modal */}
+              <RNModal
+                visible={productModalVisible}
+                animationType="slide"
+                onRequestClose={() => setProductModalVisible(false)}
+              >
+                <View style={{ flex: 1, backgroundColor: colors.background }}>
+                  {/* Modal Header */}
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: spacing.md,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                    backgroundColor: colors.surface,
+                  }}>
+                    <TouchableOpacity
+                      onPress={() => setProductModalVisible(false)}
+                      style={{ padding: spacing.sm, marginRight: spacing.md }}
+                    >
+                      <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, flex: 1 }}>
+                      {t('select_product', { defaultValue: 'Ürün Seç' })}
+                    </Text>
+                  </View>
+
+                  {/* Search Bar */}
+                  <View style={{ padding: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <SearchBar
+                      value={modalSearchQuery}
+                      onChangeText={setModalSearchQuery}
+                      placeholder={t('search_product', { defaultValue: 'Ürün ara...' })}
+                    />
+                  </View>
+
+                  {/* Product List */}
+                  <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md }}>
+                    {(() => {
+                      const modalFilteredProducts = modalSearchQuery.trim()
+                        ? products.filter((p: Product) =>
+                            p.name?.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                            p.category?.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                            p.sku?.toLowerCase().includes(modalSearchQuery.toLowerCase())
+                          )
+                        : products;
+
+                      return modalFilteredProducts.map((item: Product) => {
+                        const isSelected = selectedProductId === String(item.id);
+                        return (
+                          <TouchableOpacity
+                            key={String(item.id)}
+                            onPress={() => {
+                              setSelectedProductId(String(item.id));
+                              setProductModalVisible(false);
+                              // Auto-fill price if available
+                              if (item.price) {
+                                setPrice(String(item.price));
+                              }
+                            }}
+                            style={{
+                              padding: spacing.md,
+                              borderRadius: 12,
+                              marginBottom: spacing.sm,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              backgroundColor: isSelected ? colors.primary + '20' : colors.surface,
+                              borderWidth: 1,
+                              borderColor: isSelected ? colors.primary : colors.border,
+                            }}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                                {item.name}
+                              </Text>
+                              {item.category && (
+                                <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.xs }}>
+                                  {item.category}
+                                </Text>
+                              )}
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ fontSize: 12, color: colors.muted }}>
+                                  {t('stock', { defaultValue: 'Stok' })}: {item.stock || 0}
+                                </Text>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
+                                  {item.price ? formatCurrency(item.price, item.currency || 'TRY') : '0'}
+                                </Text>
+                              </View>
+                            </View>
+                            {isSelected && (
+                              <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      });
+                    })()}
+                  </ScrollView>
+                </View>
+              </RNModal>
 
               {/* Quantity, Price Input and Add Button */}
               {selectedProduct && (
@@ -815,47 +734,90 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                     {t('items', { defaultValue: 'Satış Kalemleri' })}
                   </Text>
                   
-                  {bulkSaleItems.map((item, index) => {
-                    const product = products.find((p: Product) => String(p.id) === item.productId);
-                    return (
-                      <View key={index} style={{ 
-                        flexDirection: 'row', 
-                        alignItems: 'center', 
-                        paddingVertical: spacing.md,
-                        borderBottomWidth: 1,
-                        borderBottomColor: colors.border,
-                      }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
-                            {product?.name || item.productName || t('product', { defaultValue: 'Ürün' })}
-                          </Text>
-                          <Text style={{ fontSize: 12, color: colors.muted }}>
-                            {item.quantity} x {formatCurrency(item.price, product?.currency || 'TRY')} = {formatCurrency(item.subtotal, product?.currency || 'TRY')}
-                          </Text>
+                  <ScrollView 
+                    style={{ maxHeight: 400 }} 
+                    contentContainerStyle={{ paddingVertical: spacing.xs }}
+                    nestedScrollEnabled={true}
+                    showsVerticalScrollIndicator={true}
+                    bounces={false}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {bulkSaleItems.map((item, index) => {
+                      const product = products.find((p: Product) => String(p.id) === item.productId);
+                      const isExpanded = expandedItemIndex === index;
+                      const itemCustomFields = item.customFields || [];
+                      
+                      const handleItemCustomFieldsChange = (fields: SalesCustomField[]) => {
+                        const updatedItems = [...bulkSaleItems];
+                        updatedItems[index] = {
+                          ...updatedItems[index],
+                          customFields: fields,
+                        };
+                        setBulkSaleItems(updatedItems);
+                      };
+                      
+                      return (
+                        <View key={index} style={{ 
+                          marginBottom: spacing.md,
+                          borderBottomWidth: 1,
+                          borderBottomColor: colors.border,
+                          paddingBottom: spacing.md,
+                        }}>
+                          <View style={{ 
+                            flexDirection: 'row', 
+                            alignItems: 'center', 
+                            paddingVertical: spacing.sm,
+                          }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                                {product?.name || item.productName || t('product', { defaultValue: 'Ürün' })}
+                              </Text>
+                              <Text style={{ fontSize: 12, color: colors.muted }}>
+                                {item.quantity} x {formatCurrency(item.price, product?.currency || 'TRY')} = {formatCurrency(item.subtotal, product?.currency || 'TRY')}
+                              </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+                              <Input
+                                value={String(item.quantity)}
+                                onChangeText={(val) => handleUpdateBulkQuantity(index, val)}
+                                keyboardType="numeric"
+                                style={{ width: 60, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, textAlign: 'center' }}
+                              />
+                              <Input
+                                value={String(item.price)}
+                                onChangeText={(val) => handleUpdateBulkPrice(index, val)}
+                                keyboardType="numeric"
+                                style={{ width: 80, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, textAlign: 'center' }}
+                              />
+                              <TouchableOpacity
+                                onPress={() => setExpandedItemIndex(isExpanded ? null : index)}
+                                style={{ padding: spacing.sm, borderRadius: 8, backgroundColor: colors.primary }}
+                              >
+                                <Ionicons name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"} size={20} color="#fff" />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleRemoveBulkItem(index)}
+                                style={{ padding: spacing.sm, borderRadius: 8, backgroundColor: '#EF4444' }}
+                              >
+                                <Ionicons name="trash-outline" size={20} color="#fff" />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          
+                          {/* Custom Fields Section for Item */}
+                          {isExpanded && (
+                            <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
+                              <CustomFieldsManager<SalesCustomField>
+                                customFields={itemCustomFields}
+                                onChange={handleItemCustomFieldsChange}
+                                module="sales"
+                              />
+                            </View>
+                          )}
                         </View>
-                        <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-                          <Input
-                            value={String(item.quantity)}
-                            onChangeText={(val) => handleUpdateBulkQuantity(index, val)}
-                            keyboardType="numeric"
-                            style={{ width: 60, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, textAlign: 'center' }}
-                          />
-                          <Input
-                            value={String(item.price)}
-                            onChangeText={(val) => handleUpdateBulkPrice(index, val)}
-                            keyboardType="numeric"
-                            style={{ width: 80, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, textAlign: 'center' }}
-                          />
-                          <TouchableOpacity
-                            onPress={() => handleRemoveBulkItem(index)}
-                            style={{ padding: spacing.sm, borderRadius: 8, backgroundColor: '#EF4444' }}
-                          >
-                            <Ionicons name="trash-outline" size={20} color="#fff" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
+                      );
+                    })}
+                  </ScrollView>
 
                   {/* Total */}
                   <View style={{ 
@@ -871,69 +833,38 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                       {t('total_amount', { defaultValue: 'Toplam Tutar' })}:
                     </Text>
                     <Text style={{ fontSize: 20, fontWeight: '700', color: colors.primary }}>
-                      {formatCurrency(bulkTotal, 'TRY')}
+                      {formatCurrency(bulkTotal, formData.currency || 'TRY')}
                     </Text>
                   </View>
                 </Card>
               )}
 
               {/* Date and Time Section for Bulk Sale */}
-              <FormRow columns={2}>
+              <FormRow columns={1}>
                 <FormField label={t('date')} required>
-                  <TouchableOpacity onPress={() => setDatePickerVisible(true)}>
+                  <TouchableOpacity onPress={() => setDateTimePickerVisible(true)}>
                     <Input
-                      value={dateValue}
+                      value={displayDateTime}
                       editable={false}
                       pointerEvents="none"
-                      placeholder={formMode === 'create' && !currentDate ? todayDate : "YYYY-MM-DD"}
-                      style={{ backgroundColor: colors.surface }}
-                    />
-                  </TouchableOpacity>
-                </FormField>
-                <FormField label={t('time')}>
-                  <TouchableOpacity onPress={() => setTimePickerVisible(true)}>
-                    <Input
-                      value={timeValue}
-                      editable={false}
-                      pointerEvents="none"
-                      placeholder="HH:mm (opsiyonel)"
-                      style={{ backgroundColor: colors.surface }}
+                      placeholder={formMode === 'create' ? todayDate : "YYYY-MM-DD"}
+                      style={{ backgroundColor: colors.surface, color: colors.text }}
                     />
                   </TouchableOpacity>
                 </FormField>
               </FormRow>
 
-              {/* Date Picker Modal */}
-              <DatePickerModalComponent
-                visible={datePickerVisible}
-                onClose={() => setDatePickerVisible(false)}
-                value={dateValue || (formMode === 'create' ? todayDate : '')}
-                onConfirm={(date: string) => {
-                  const timePart = timeValue || '';
-                  const newDateValue = timePart ? `${date} ${timePart}`.trim() : date;
-                  updateField('date' as keyof Sale, newDateValue);
-                  setDatePickerVisible(false);
+              {/* DateTime Picker Modal */}
+              <DateTimePicker
+                visible={dateTimePickerVisible}
+                onClose={() => setDateTimePickerVisible(false)}
+                value={displayDateTime}
+                onConfirm={(dateTime: string) => {
+                  updateField('date' as keyof Sale, dateTime);
+                  setDateTimePickerVisible(false);
                 }}
-                colors={colors}
-                t={t}
-              />
-              
-              {/* Time Picker Modal */}
-              <TimePickerModalComponent
-                visible={timePickerVisible}
-                onClose={() => setTimePickerVisible(false)}
-                value={timeValue}
-                onConfirm={(time: string) => {
-                  const datePart = dateValue || (formMode === 'create' ? todayDate : '');
-                  if (time) {
-                    updateField('date' as keyof Sale, `${datePart} ${time}`.trim());
-                  } else {
-                    updateField('date' as keyof Sale, datePart || '');
-                  }
-                  setTimePickerVisible(false);
-                }}
-                colors={colors}
-                t={t}
+                label={t('date')}
+                showTime={true}
               />
 
               {/* Debt Collection Date */}

@@ -59,7 +59,7 @@ Bu dokümantasyon, Sky.Template.Mobile projesindeki tüm API endpoint'lerinin re
 }
 ```
 
-**Mock Token Format:** `mock-access-token-{userId}` ve `mock-refresh-token-{userId}`
+**Mock Token Format:** `mock-access-token-{userId}` and `mock-refresh-token-{userId}`
 
 ---
 
@@ -105,7 +105,7 @@ Bu dokümantasyon, Sky.Template.Mobile projesindeki tüm API endpoint'lerinin re
 
 ## User APIs
 
-### GET /users/me (veya /profile)
+### GET /users/me
 
 **Headers:**
 ```
@@ -169,10 +169,10 @@ Authorization: Bearer {accessToken}
 **Query Parameters:**
 - `page`: number (1-based, default: 1)
 - `pageSize`: number (default: 20)
-- `q` veya `SearchValue`: string (search query)
-- `OrderColumn`: string (column name)
-- `OrderDirection`: "ASC" | "DESC" (default: "DESC")
-- `Filters[key]`: string (filter by field)
+- `search` or `q`: string (search query)
+- `orderColumn`: string (column name for sorting)
+- `orderDirection`: "asc" | "desc" (default: "desc")
+- `filters[key]`: string (filter by field, e.g., `filters[status]=active`)
 
 **Headers:**
 ```
@@ -461,14 +461,36 @@ Authorization: Bearer {accessToken}
         "id": "string",
         "customerId": "string",
         "customerName": "string",
-        "productId": "string",
-        "productName": "string",
-        "quantity": "number",
-        "price": "number",
+        "productId": "string (optional - single product sale)",
+        "productName": "string (optional - single product sale)",
+        "quantity": "number (optional - single product sale)",
+        "price": "number (optional - single product sale)",
         "currency": "TRY" | "USD" | "EUR",
         "total": "number",
         "date": "string (YYYY-MM-DD)",
         "status": "string (completed | pending)",
+        "debtCollectionDate": "string (YYYY-MM-DD, optional)",
+        "isPaid": "boolean (optional)",
+        "items": [
+          {
+            "productId": "string",
+            "productName": "string",
+            "quantity": "number",
+            "price": "number",
+            "subtotal": "number",
+            "currency": "TRY" | "USD" | "EUR"
+          }
+        ],
+        "customFields": [
+          {
+            "key": "string",
+            "label": "string",
+            "type": "text" | "number" | "date" | "select" | "boolean",
+            "value": "any",
+            "options": [{"label": "string", "value": "any"}],
+            "isGlobal": "boolean"
+          }
+        ],
         "ownerId": "number"
       }
     ],
@@ -482,7 +504,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Mock Data Example:**
+**Mock Data Example (Single Product Sale):**
 ```json
 {
   "id": "1",
@@ -496,6 +518,40 @@ Authorization: Bearer {accessToken}
   "total": 35000,
   "date": "2025-01-15",
   "status": "completed",
+  "ownerId": 2
+}
+```
+
+**Mock Data Example (Bulk Sale with Items Array):**
+```json
+{
+  "id": "2",
+  "customerId": "1",
+  "customerName": "Ahmet Usta",
+  "currency": "TRY",
+  "total": 85000,
+  "date": "2025-01-15",
+  "status": "completed",
+  "debtCollectionDate": null,
+  "isPaid": true,
+  "items": [
+    {
+      "productId": "1",
+      "productName": "iPhone 14 Pro",
+      "quantity": 1,
+      "price": 35000,
+      "subtotal": 35000,
+      "currency": "TRY"
+    },
+    {
+      "productId": "2",
+      "productName": "AirPods Pro",
+      "quantity": 2,
+      "price": 25000,
+      "subtotal": 50000,
+      "currency": "TRY"
+    }
+  ],
   "ownerId": 2
 }
 ```
@@ -527,15 +583,39 @@ Authorization: Bearer {accessToken}
 **Request:**
 ```json
 {
-  "customerId": "string",
-  "productId": "string",
-  "quantity": "number",
-  "price": "number",
+  "customerId": "string (optional)",
+  "productId": "string (optional - for single product sale, ignored when items array is provided)",
+  "quantity": "number (optional - for single product sale, ignored when items array is provided)",
+  "price": "number (optional - for single product sale, ignored when items array is provided)",
   "currency": "TRY" | "USD" | "EUR",
-  "date": "string",
-  "status": "string"
+  "date": "string (YYYY-MM-DD)",
+  "status": "string (completed | pending)",
+  "debtCollectionDate": "string (YYYY-MM-DD, optional)",
+  "isPaid": "boolean (optional, default: false)",
+  "items": [
+    {
+      "productId": "string",
+      "quantity": "number",
+      "price": "number"
+    }
+  ],
+  "customFields": [
+    {
+      "key": "string",
+      "label": "string",
+      "type": "text" | "number" | "date" | "select" | "boolean",
+      "value": "any",
+      "options": [{"label": "string", "value": "any"}],
+      "isGlobal": "boolean"
+    }
+  ]
 }
 ```
+
+**Note:** 
+- When `items` array is provided, multiple products can be sold in a single sale
+- When `items` is provided, `productId`, `quantity`, and `price` fields are ignored
+- `total` is automatically calculated: `sum(items[i].quantity * items[i].price)`
 
 **Response:** `201 Created`
 ```json
@@ -595,6 +675,98 @@ Authorization: Bearer {accessToken}
   "message": "OperationSuccessful"
 }
 ```
+
+---
+
+### GET /sales/debt
+
+Borçlu satışlar listesi. Sadece `debtCollectionDate` olan ve `isPaid !== true` olan satışları döner.
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "customerId": "string",
+        "customerName": "string",
+        "currency": "TRY" | "USD" | "EUR",
+        "total": "number",
+        "date": "string (YYYY-MM-DD)",
+        "debtCollectionDate": "string (YYYY-MM-DD)",
+        "isPaid": false,
+        "items": [
+          {
+            "productId": "string",
+            "productName": "string",
+            "quantity": "number",
+            "price": "number",
+            "subtotal": "number",
+            "currency": "TRY" | "USD" | "EUR"
+          }
+        ],
+        "ownerId": "number"
+      }
+    ],
+    "totalCount": "number",
+    "page": "number",
+    "pageSize": "number",
+    "totalPage": "number",
+    "hasNextPage": "boolean",
+    "hasPreviousPage": "boolean"
+  }
+}
+```
+
+**Note:** Bu endpoint sadece borçlu satışları döner (`debtCollectionDate` var ve `isPaid !== true`).
+
+---
+
+### PUT /sales/:id/mark-paid
+
+Borçlu satışın ödemesini alındı olarak işaretler.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:**
+```json
+{
+  "isPaid": true
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "customerId": "string",
+    "customerName": "string",
+    "currency": "TRY" | "USD" | "EUR",
+    "total": "number",
+    "date": "string (YYYY-MM-DD)",
+    "debtCollectionDate": "string (YYYY-MM-DD)",
+    "isPaid": true,
+    "items": [],
+    "ownerId": "number"
+  }
+}
+```
+
+**Note:** Bu endpoint, satışın `isPaid` field'ını `true` yapar ve satış artık borçlu satışlar listesinde görünmez.
 
 ---
 
@@ -2278,16 +2450,21 @@ GET /dashboard/owner/top-products?period=month&limit=10
 interface GridRequest {
   page: number;                    // 1-based page number
   pageSize: number;                // Items per page
-  searchValue?: string;            // General search query
+  search?: string;                  // General search query (alternative: q)
   filters?: Record<string, string>; // Field-specific filters
-  orderColumn?: string;            // Column name to sort by
-  orderDirection?: "ASC" | "DESC"; // Sort direction
+  orderColumn?: string;             // Column name to sort by
+  orderDirection?: "asc" | "desc"; // Sort direction (lowercase)
 }
 ```
 
 **Query String Format:**
 ```
-?page=1&pageSize=20&q=search&OrderColumn=name&OrderDirection=ASC&Filters[status]=active
+?page=1&pageSize=20&search=term&orderColumn=name&orderDirection=asc&filters[status]=active
+```
+
+**Alternative Query String Format (with q):**
+```
+?page=1&pageSize=20&q=term&orderColumn=name&orderDirection=desc&filters[status]=active
 ```
 
 ---
@@ -2447,16 +2624,16 @@ Tüm hata response'ları `BaseControllerResponse` formatında döner. HTTP statu
    - Response'ta `items` ve `total` dönülür
 
 5. **Search:**
-   - `q` veya `SearchValue` parametresi ile genel arama yapılır
+   - `search` veya `q` parametresi ile genel arama yapılır
    - Tüm primitive field'lar (string, number, boolean) üzerinde arama yapılır
 
 6. **Filtering:**
-   - `Filters[key]=value` formatında query parametreleri ile filtrelenir
+   - `filters[key]=value` formatında query parametreleri ile filtrelenir (örn: `filters[status]=active`)
    - Exact match yapılır
 
 7. **Sorting:**
-   - `OrderColumn`: Sıralanacak column adı
-   - `OrderDirection`: "ASC" veya "DESC"
+   - `orderColumn`: Sıralanacak column adı (camelCase)
+   - `orderDirection`: "asc" veya "desc" (lowercase)
 
 8. **Date Format:**
    - Tüm tarihler ISO formatında: `YYYY-MM-DD`
@@ -4294,6 +4471,211 @@ Tüm paketleri listeler.
     "price": 199.99
   }
 ]
+```
+
+---
+
+---
+
+## Verification APIs
+
+### POST /verification/tc/verify
+
+TC Kimlik doğrulama endpoint'i.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:**
+```json
+{
+  "tcNo": "string (11 digits)",
+  "birthDate": "string (YYYY-MM-DD)",
+  "fullName": "string"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "valid": "boolean",
+    "tcNo": "string",
+    "firstName": "string (optional)",
+    "lastName": "string (optional)",
+    "birthDate": "string (optional, YYYY-MM-DD)",
+    "gender": "M | F (optional)",
+    "message": "string (optional)"
+  }
+}
+```
+
+**Note:** 
+- TC Kimlik doğrulama sonuçları cache'lenir
+- Cache key: `tc_{tcNo}_{birthDate}_{fullName}` formatında
+- Cache süresi: 24 saat
+
+---
+
+### POST /verification/imei/verify
+
+IMEI doğrulama endpoint'i.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:**
+```json
+{
+  "imei": "string (15 digits)",
+  "brand": "string (optional)",
+  "model": "string (optional)",
+  "serialNumber": "string (optional)"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "valid": "boolean",
+    "imei": "string",
+    "brand": "string (optional)",
+    "model": "string (optional)",
+    "serialNumber": "string (optional)",
+    "status": "active | stolen | blocked | unknown (optional)",
+    "message": "string (optional)"
+  }
+}
+```
+
+**Note:** 
+- IMEI doğrulama sonuçları cache'lenir
+- Cache key: `imei_{imei}` formatında
+- Cache süresi: 7 gün
+
+---
+
+## Stock Alert Settings APIs
+
+### GET /stock/alert-settings
+
+Stok uyarı ayarlarını getirir.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "enabled": "boolean",
+    "threshold": "number",
+    "reminderFrequency": "daily | weekly | monthly",
+    "reminderLimit": "number"
+  }
+}
+```
+
+**Note:** Owner bazlı filtreleme yapılır (her owner'ın kendi ayarları vardır).
+
+---
+
+### PUT /stock/alert-settings
+
+Stok uyarı ayarlarını günceller.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:**
+```json
+{
+  "enabled": "boolean",
+  "threshold": "number",
+  "reminderFrequency": "daily | weekly | monthly",
+  "reminderLimit": "number"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "enabled": "boolean",
+    "threshold": "number",
+    "reminderFrequency": "daily | weekly | monthly",
+    "reminderLimit": "number"
+  }
+}
+```
+
+---
+
+## Employee Verification Settings APIs
+
+### GET /employees/verification-settings
+
+Çalışan doğrulama ayarlarını getirir (TC Kimlik ve IMEI doğrulama).
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "tcVerificationEnabled": "boolean",
+    "imeiVerificationEnabled": "boolean"
+  }
+}
+```
+
+**Note:** Owner bazlı filtreleme yapılır (her owner'ın kendi ayarları vardır).
+
+---
+
+### PUT /employees/verification-settings
+
+Çalışan doğrulama ayarlarını günceller.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:**
+```json
+{
+  "tcVerificationEnabled": "boolean",
+  "imeiVerificationEnabled": "boolean"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "tcVerificationEnabled": "boolean",
+    "imeiVerificationEnabled": "boolean"
+  }
+}
 ```
 
 ---

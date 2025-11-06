@@ -53,6 +53,7 @@
   "bulk_sale": "Bulk Sale",
   "select_product": "Select Product",
   "add": "Add",
-  "insufficient_stock": "Insufficient stock"
+  "insufficient_stock": "Insufficient stock",
+  "currency": "Currency"
 }
 

@@ -27,20 +27,60 @@ export const purchaseFormFields = basePurchaseFormFields;
 
 export const purchaseValidator = (data: Partial<Purchase>): Record<string, string> => {
   const errors: Record<string, string> = {};
-  // ProductId is only required if it's a stock purchase
-  const isStockPurchase = data.isStockPurchase !== false; // Default to true if not specified
-  if (isStockPurchase && !data.productId) {
-    errors.productId = 'Product is required for stock purchases';
+  
+  // If this is a bulk purchase (has items array), validate items instead
+  if (data.items && data.items.length > 0) {
+    // Validate items array
+    if (data.items.length === 0) {
+      errors.items = 'At least one item is required for bulk purchase';
+    }
+    
+    // Validate each item
+    data.items.forEach((item, index) => {
+      if (!item.productId) {
+        errors[`items.${index}.productId`] = 'Product is required';
+      }
+      if (!item.quantity || item.quantity <= 0) {
+        errors[`items.${index}.quantity`] = 'Quantity must be greater than 0';
+      }
+      if (!item.price || item.price <= 0) {
+        errors[`items.${index}.price`] = 'Price must be greater than 0';
+      }
+      if (!item.subtotal || item.subtotal <= 0) {
+        errors[`items.${index}.subtotal`] = 'Subtotal must be greater than 0';
+      }
+    });
+    
+    // Validate total for bulk purchase
+    if (!data.total || data.total <= 0) {
+      errors.total = 'Total amount must be greater than 0';
+    }
+  } else {
+    // Single product purchase validation
+    // ProductId is only required if it's a stock purchase
+    const isStockPurchase = data.isStockPurchase !== false; // Default to true if not specified
+    if (isStockPurchase && !data.productId) {
+      errors.productId = 'Product is required for stock purchases';
+    }
+    if (!data.price || data.price <= 0) {
+      errors.price = 'Price must be greater than 0';
+    }
+    if (!data.quantity || data.quantity <= 0) {
+      errors.quantity = 'Quantity must be greater than 0';
+    }
+    if (!data.total || data.total <= 0) {
+      errors.total = 'Total amount must be greater than 0';
+    }
   }
-  if (!data.price || data.price <= 0) {
-    errors.price = 'Price must be greater than 0';
+  
+  // Common validations
+  if (!data.supplierId) {
+    errors.supplierId = 'Supplier is required';
   }
-  if (!data.quantity || data.quantity <= 0) {
-    errors.quantity = 'Quantity must be greater than 0';
+  if (!data.date) {
+    errors.date = 'Date is required';
   }
-  if (!data.total || data.total <= 0) {
-    errors.total = 'Total amount must be greater than 0';
-  }
+  
   return errors;
 };
 

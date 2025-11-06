@@ -11,7 +11,6 @@ export const baseIncomeFormFields: DynamicField[] = [
   { name: 'amount', labelKey: 'amount', type: 'number', required: true },
   { name: 'date', labelKey: 'date', type: 'date' },
   { name: 'description', labelKey: 'description', type: 'textarea' },
-  { name: 'photo', labelKey: 'photo', type: 'image', required: false },
 ];
 
 export const incomeValidator = (data: Partial<Income>): Record<string, string> => {

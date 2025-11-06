@@ -11,7 +11,6 @@ export const baseRevenueFormFields: DynamicField[] = [
   { name: 'amount', labelKey: 'amount', type: 'number', required: true },
   { name: 'date', labelKey: 'date', type: 'date' },
   { name: 'description', labelKey: 'description', type: 'textarea' },
-  { name: 'photo', labelKey: 'photo', type: 'image', required: false },
 ];
 
 export const revenueValidator = (data: Partial<Revenue>): Record<string, string> => {

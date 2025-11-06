@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Input from './Input';
 import Select from './Select';
@@ -9,6 +9,9 @@ import spacing from '../../core/constants/spacing';
 import TCKimlikVerificationField from './TCKimlikVerificationField';
 import IMEIVerificationField from './IMEIVerificationField';
 import { useModuleVerificationSettings } from '../hooks/useModuleVerificationSettings';
+import DateTimePicker from './DateTimePicker';
+import { useTheme } from '../../core/contexts/ThemeContext';
+import { formatDate } from '../../core/utils/dateUtils';
 
 export type DynamicFieldType = 'text' | 'number' | 'textarea' | 'select' | 'date' | 'image' | 'custom' | 'tc_verification' | 'imei_verification';
 
@@ -187,10 +190,12 @@ function renderField(
       );
     case 'date':
       return (
-        <Input
+        <DateFieldWrapper
           value={value}
-          onChangeText={onChange}
+          onChange={onChange}
           placeholder={common.placeholder}
+          label={getTranslation(field.labelKey)}
+          readonly={field.readonly}
         />
       );
     case 'image':
@@ -205,6 +210,65 @@ function renderField(
     default:
       return <Input value={value} onChangeText={onChange} {...common} />;
   }
+}
+
+// DateFieldWrapper component for date fields with DateTimePicker
+function DateFieldWrapper({
+  value,
+  onChange,
+  placeholder,
+  label,
+  readonly = false,
+}: {
+  value: any;
+  onChange: (v: any) => void;
+  placeholder: string;
+  label: string;
+  readonly?: boolean;
+}) {
+  const [dateTimePickerVisible, setDateTimePickerVisible] = useState(false);
+  const { colors } = useTheme();
+  const todayDate = formatDate(new Date());
+  
+  const displayDateTime = useMemo(() => {
+    if (!value) return '';
+    return value;
+  }, [value]);
+
+  if (readonly) {
+    return (
+      <Input
+        value={displayDateTime}
+        editable={false}
+        placeholder={placeholder}
+      />
+    );
+  }
+
+  return (
+    <>
+      <TouchableOpacity onPress={() => setDateTimePickerVisible(true)}>
+        <Input
+          value={displayDateTime}
+          editable={false}
+          pointerEvents="none"
+          placeholder={placeholder || todayDate}
+          style={{ backgroundColor: colors.surface, color: colors.text }}
+        />
+      </TouchableOpacity>
+      <DateTimePicker
+        visible={dateTimePickerVisible}
+        onClose={() => setDateTimePickerVisible(false)}
+        value={displayDateTime || todayDate}
+        onConfirm={(dateTime: string) => {
+          onChange(dateTime);
+          setDateTimePickerVisible(false);
+        }}
+        label={label}
+        showTime={true}
+      />
+    </>
+  );
 }
 
 

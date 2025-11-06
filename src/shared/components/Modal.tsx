@@ -19,7 +19,10 @@ export default function Modal({ visible, onRequestClose, children, containerStyl
       <TouchableWithoutFeedback onPress={onRequestClose}>
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={[styles.card, containerStyle]}>
+            <View 
+              style={[styles.card, containerStyle]}
+              onStartShouldSetResponder={() => true}
+            >
               {children}
             </View>
           </TouchableWithoutFeedback>

@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -241,13 +241,12 @@ export default function QuickSaleScreen() {
           {isLoading ? (
             <LoadingState />
           ) : (
-            <FlatList
-              data={products}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => {
+            <View style={styles.productList}>
+              {products.map((item) => {
                 const isSelected = selectedProductId === String(item.id);
                 return (
                   <TouchableOpacity
+                    key={String(item.id)}
                     onPress={() => setSelectedProductId(String(item.id))}
                     style={[
                       styles.productItem,
@@ -277,10 +276,8 @@ export default function QuickSaleScreen() {
                     )}
                   </TouchableOpacity>
                 );
-              }}
-              style={styles.productList}
-              scrollEnabled={false}
-            />
+              })}
+            </View>
           )}
         </Card>
 

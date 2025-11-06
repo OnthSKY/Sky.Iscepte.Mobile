@@ -57,6 +57,7 @@
   "bulk_sale": "Toplu Satış",
   "select_product": "Ürün Seç",
   "add": "Ekle",
-  "insufficient_stock": "Yetersiz stok"
+  "insufficient_stock": "Yetersiz stok",
+  "currency": "Para Birimi"
 }
 
