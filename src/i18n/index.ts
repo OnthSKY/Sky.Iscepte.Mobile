@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { initializeRTL } from '../core/utils/rtlSupport';
 
 import enCommon from './locales/en/common.json';
 import trCommon from './locales/tr/common.json';
@@ -94,20 +95,51 @@ if (!i18n.isInitialized) {
   // Use default language 'tr' - saved language will be restored by useAppStore.hydrate()
   // This avoids _nativeModule undefined errors from expo-localization
   // User can change language via LanguagePicker, which is stored in AsyncStorage
-  
+
+  const defaultLanguage = 'tr';
+
   i18n
     .use(initReactI18next)
     .init({
       compatibilityJSON: 'v4',
       resources,
-      ns: ['common', 'login', 'register', 'dashboard', 'sales', 'customers', 'reports', 'expenses', 'revenue', 'settings', 'stock', 'products', 'employees', 'purchases', 'suppliers', 'dynamic-fields', 'packages', 'calendar'],
+      ns: [
+        'common',
+        'login',
+        'register',
+        'dashboard',
+        'sales',
+        'customers',
+        'reports',
+        'expenses',
+        'revenue',
+        'settings',
+        'stock',
+        'products',
+        'employees',
+        'purchases',
+        'suppliers',
+        'dynamic-fields',
+        'packages',
+        'calendar',
+      ],
       defaultNS: 'common',
-      lng: 'tr', // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
-      fallbackLng: 'tr',
+      lng: defaultLanguage, // Default language, will be updated by useAppStore.hydrate() if a saved preference exists
+      fallbackLng: defaultLanguage,
       interpolation: { escapeValue: false },
+      // Pluralization support
+      pluralSeparator: '_',
+      contextSeparator: '_',
+    })
+    .then(() => {
+      // Initialize RTL support after i18n is initialized
+      initializeRTL(defaultLanguage);
     });
+
+  // Listen for language changes to update RTL
+  i18n.on('languageChanged', (lng) => {
+    initializeRTL(lng);
+  });
 }
 
 export default i18n;
-
-
