@@ -23,6 +23,7 @@ import spacing from '../../../core/constants/spacing';
 import { useProductsQuery } from '../hooks/useProductsQuery';
 import CategorySelect from '../components/CategorySelect';
 import CurrencySelect from '../components/CurrencySelect';
+import MultipleImageInput from '../../../shared/components/MultipleImageInput';
 import { createEnhancedValidator, getInitialDataWithCustomFields } from '../../../shared/utils/customFieldsUtils';
 import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -202,6 +203,27 @@ export default function ProductFormScreen({ mode }: ProductFormScreenProps = {})
                     placeholder="Para Birimi"
                   />
                 ),
+              };
+            }
+            if (field.name === 'photo') {
+              return {
+                ...field,
+                render: (value: any, onChange: (v: any) => void) => {
+                  // Handle both single image (string) and multiple images (array)
+                  const images = Array.isArray(value) ? value : (value ? [value] : []);
+                  return (
+                    <MultipleImageInput
+                      value={images}
+                      onChange={(images) => {
+                        // For backward compatibility, if only one image, store as string
+                        // Otherwise store as array
+                        onChange(images.length === 1 ? images[0] : images);
+                      }}
+                      placeholder={t('stock:photo', { defaultValue: 'Fotoğraf' })}
+                      maxImages={10}
+                    />
+                  );
+                },
               };
             }
             return field;

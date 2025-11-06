@@ -160,6 +160,13 @@ export default function SalesDashboardScreen() {
         listRoute: 'SalesList',
         createRoute: 'SalesCreate',
         description: 'sales:module_description',
+        infoCard: {
+          title: 'sales:module_info_title',
+          message: 'sales:module_info_message',
+          type: 'warning',
+          actionRoute: 'RevenueDashboard',
+          actionLabel: 'common:go_to_revenue',
+        },
         listConfig: {
           service: salesEntityService,
           config: {

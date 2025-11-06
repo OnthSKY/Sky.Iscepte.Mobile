@@ -9,7 +9,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { TouchableOpacity, View, Text, Platform, Switch, ScrollView, Modal as RNModal } from 'react-native';
+import { TouchableOpacity, View, Text, Platform, ScrollView, Modal as RNModal } from 'react-native';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { salesEntityService } from '../services/salesServiceAdapter';
 import DynamicForm from '../../../shared/components/DynamicForm';
@@ -17,9 +17,12 @@ import { Sale, SalesCustomField, SaleItem } from '../store/salesStore';
 import { salesFormFields, salesValidator } from '../config/salesFormConfig';
 import { useProductsQuery } from '../../products/hooks/useProductsQuery';
 import { useCustomersQuery } from '../../customers/hooks/useCustomersQuery';
+import { getModuleConfig, getMissingDependencies } from '../../../core/config/moduleConfig';
+import { usePermissions } from '../../../core/hooks/usePermissions';
+import { useAppStore } from '../../../store/useAppStore';
+import { useNavigation } from '@react-navigation/native';
 import Input from '../../../shared/components/Input';
 import { Form, FormField, FormRow } from '../../../shared/components/Form';
-import { formatDate } from '../../../core/utils/dateUtils';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import Modal from '../../../shared/components/Modal';
 import spacing from '../../../core/constants/spacing';
@@ -32,6 +35,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { formatCurrency } from '../../products/utils/currency';
 import { Product } from '../../products/services/productService';
 import notificationService from '../../../shared/services/notificationService';
+import { canSellQuantity } from '../../products/utils/stockValidation';
 import CurrencySelect from '../../products/components/CurrencySelect';
 import { Currency } from '../store/salesStore';
 import DateTimePicker from '../../../shared/components/DateTimePicker';
@@ -42,14 +46,19 @@ interface SalesFormScreenProps {
 
 export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
   const route = useRoute<any>();
+  const navigation = useNavigation<any>();
   const { t } = useTranslation('sales');
   const { colors } = useTheme();
+  const role = useAppStore((s) => s.role);
+  const permissions = usePermissions(role);
   
   // State for datetime picker
   const [dateTimePickerVisible, setDateTimePickerVisible] = useState(false);
   
-  // State for bulk sale mode
-  const [isBulkSale, setIsBulkSale] = useState(false);
+  // State for debt collection date picker
+  const [debtCollectionDatePickerVisible, setDebtCollectionDatePickerVisible] = useState(false);
+  
+  // State for bulk sale mode (always enabled)
   const [bulkSaleItems, setBulkSaleItems] = useState<SaleItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('1');
@@ -64,8 +73,10 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
 
   // Default values for create mode
   const getInitialData = (): Partial<Sale> => {
+    const today = new Date();
+    const todayDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     return getInitialDataWithCustomFields<Sale>(formMode, {
-      date: formatDate(new Date()),
+      date: todayDateStr,
       currency: 'TRY',
     });
   };
@@ -80,6 +91,26 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
   // Fetch products and customers for select fields
   const { data: productsData } = useProductsQuery();
   const { data: customersData } = useCustomersQuery();
+  
+  // Get available routes from navigation state
+  const availableRoutes = useMemo(() => {
+    try {
+      const state = navigation.getState();
+      const routes = (state as any)?.routes || [];
+      return routes.map((r: any) => r.name).filter(Boolean) as string[];
+    } catch {
+      return [];
+    }
+  }, [navigation]);
+  
+  // Check for missing dependencies
+  const missingDependencies = useMemo(() => {
+    return getMissingDependencies('sales', availableRoutes, permissions);
+  }, [availableRoutes, permissions]);
+  
+  // Check if required modules have data
+  const hasCustomers = (customersData?.items || []).length > 0;
+  const hasProducts = (productsData?.items || []).length > 0;
 
   // Prepare form fields with dynamic options (excluding date and notes fields which are rendered separately)
   const fieldsWithOptions = useMemo(() => {
@@ -134,7 +165,8 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
         
         // Parse date and time from formData.date (format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DD")
         // For create mode, default to today's date for display if not set
-        const todayDate = formatDate(new Date());
+        const today = new Date();
+        const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         const currentDate = formData.date || '';
         const displayDate = currentDate || (formMode === 'create' ? todayDate : '');
         
@@ -143,6 +175,33 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
           if (!displayDate) return formMode === 'create' ? todayDate : '';
           return displayDate;
         }, [displayDate, formMode, todayDate]);
+
+        // Format display value for debt collection date picker
+        const displayDebtCollectionDate = useMemo(() => {
+          if (!formData.debtCollectionDate) return '';
+          // Ensure the date is in correct format (YYYY-MM-DD HH:mm or YYYY-MM-DD)
+          const dateStr = formData.debtCollectionDate.trim();
+          // If it's already in correct format, return as is
+          if (/^\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2})?$/.test(dateStr)) {
+            return dateStr;
+          }
+          // Try to parse and format if it's a different format
+          try {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const hours = String(date.getHours()).padStart(2, '0');
+              const minutes = String(date.getMinutes()).padStart(2, '0');
+              return `${year}-${month}-${day} ${hours}:${minutes}`;
+            }
+          } catch {
+            // If parsing fails, return empty string
+            return '';
+          }
+          return '';
+        }, [formData.debtCollectionDate]);
 
         // Filter products for search
         const filteredProducts = useMemo(() => {
@@ -162,12 +221,12 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
 
         // Auto-fill price when product is selected (bulk mode)
         useEffect(() => {
-          if (selectedProduct && selectedProduct.price !== undefined && isBulkSale) {
+          if (selectedProduct && selectedProduct.price !== undefined) {
             setPrice(String(selectedProduct.price));
-          } else if (!selectedProduct && isBulkSale) {
+          } else if (!selectedProduct) {
             setPrice('');
           }
-        }, [selectedProduct, isBulkSale]);
+        }, [selectedProduct]);
 
         // Calculate total for bulk sale
         const bulkTotal = useMemo(() => {
@@ -176,14 +235,14 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
 
         // Sync bulkSaleItems to formData.items when items change
         useEffect(() => {
-          if (isBulkSale && bulkSaleItems.length > 0) {
+          if (bulkSaleItems.length > 0) {
             updateField('items' as keyof Sale, bulkSaleItems);
             updateField('total' as keyof Sale, bulkTotal);
-          } else if (isBulkSale && bulkSaleItems.length === 0) {
+          } else {
             updateField('items' as keyof Sale, []);
             updateField('total' as keyof Sale, 0);
           }
-        }, [bulkSaleItems, bulkTotal, isBulkSale]);
+        }, [bulkSaleItems, bulkTotal]);
 
         // Handle bulk sale item add
         const handleAddBulkItem = () => {
@@ -198,8 +257,8 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
             return;
           }
 
-          const stock = selectedProduct.stock || 0;
-          if (qty > stock) {
+          // Stok kontrolü: trackStock false ise veya stock null/undefined ise kontrol yapma
+          if (!canSellQuantity(selectedProduct, qty)) {
             notificationService.error(t('insufficient_stock', { defaultValue: 'Yetersiz stok' }));
             return;
           }
@@ -257,7 +316,8 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
           const item = newItems[index];
           const product = products.find((p: Product) => String(p.id) === item.productId);
           
-          if (product && qty > (product.stock || 0)) {
+          // Stok kontrolü: trackStock false ise veya stock null/undefined ise kontrol yapma
+          if (!canSellQuantity(product, qty)) {
             notificationService.error(t('insufficient_stock', { defaultValue: 'Yetersiz stok' }));
             return;
           }
@@ -286,7 +346,7 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
 
         // Update form data when bulk sale items change
         useEffect(() => {
-          if (isBulkSale && bulkSaleItems.length > 0) {
+          if (bulkSaleItems.length > 0) {
             const total = bulkSaleItems.reduce((sum, item) => sum + item.subtotal, 0);
             updateField('amount' as keyof Sale, total);
             updateField('total' as keyof Sale, total);
@@ -295,161 +355,77 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
               updateField('currency' as keyof Sale, bulkSaleItems[0]?.currency || 'TRY');
             }
             updateField('items' as keyof Sale, bulkSaleItems);
-          } else if (isBulkSale && bulkSaleItems.length === 0) {
+          } else {
             updateField('items' as keyof Sale, []);
             updateField('amount' as keyof Sale, 0);
             updateField('total' as keyof Sale, 0);
           }
-        }, [bulkSaleItems, isBulkSale]);
+        }, [bulkSaleItems]);
+        
+        // Build dependency warning message
+        const dependencyWarning = useMemo(() => {
+          if (missingDependencies.length === 0) return null;
+          
+          const depNames = missingDependencies.map(depKey => {
+            const depConfig = getModuleConfig(depKey);
+            if (!depConfig) return depKey;
+            return t(`${depConfig.translationNamespace}:${depConfig.translationKey}`, {
+              defaultValue: depConfig.key,
+            });
+          }).join(', ');
+          
+          return {
+            title: t('missing_dependencies_title', { defaultValue: 'Eksik Bağımlılıklar' }),
+            message: t('missing_dependencies_message', { 
+              defaultValue: `Bu formu kullanmak için şu modüllere ihtiyacınız var: ${depNames}. Lütfen bu modülleri paketinize ekleyin.`,
+              dependencies: depNames
+            }),
+          };
+        }, [missingDependencies, t]);
         
         return (
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
             <View style={{ gap: spacing.md }}>
-              {/* Bulk Sale Toggle */}
-              {formMode === 'create' && (
-                <Card>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                      {t('bulk_sale', { defaultValue: 'Toplu Satış' })}
-                    </Text>
-                    <Switch
-                      value={isBulkSale}
-                      onValueChange={(value) => {
-                        setIsBulkSale(value);
-                        if (!value) {
-                          setBulkSaleItems([]);
-                          setSelectedProductId(null);
-                          setQuantity('1');
-                          setPrice('');
-                        }
-                      }}
-                      trackColor={{ false: colors.border, true: colors.primary }}
-                      thumbColor={isBulkSale ? '#fff' : colors.muted}
-                    />
+              {/* Dependency Warning */}
+              {dependencyWarning && (
+                <Card style={{ backgroundColor: colors.warningCardBackground, borderColor: colors.warningCardBorder, borderWidth: 2 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+                    <Ionicons name="alert-circle" size={24} color={colors.warningCardIcon} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.warningCardText, marginBottom: spacing.xs }}>
+                        {dependencyWarning.title}
+                      </Text>
+                      <Text style={{ fontSize: 14, color: colors.warningCardText }}>
+                        {dependencyWarning.message}
+                      </Text>
+                    </View>
                   </View>
                 </Card>
               )}
-
-              {!isBulkSale ? (
-                <>
-                  {/* Single Product Form */}
-                  <Form>
-                  <DynamicForm
-                    namespace="sales"
-                    columns={2}
-                    fields={fieldsWithOptions}
-                    values={formData}
-                    onChange={(v) => {
-                      Object.keys(v).forEach((key) => {
-                        const newValue = (v as any)[key];
-                        updateField(key as keyof Sale, newValue);
-                        
-                        // Auto-fill price when product is selected
-                        if (key === 'productId' && newValue) {
-                          const selectedProduct = products.find((p: any) => String(p.id) === String(newValue));
-                          if (selectedProduct && selectedProduct.price) {
-                            // Only auto-fill if price is not already set or is 0
-                            const currentPrice = formData.price || 0;
-                            if (currentPrice === 0) {
-                              updateField('price' as keyof Sale, selectedProduct.price);
-                              // Auto-set currency from product if not set
-                              if (!formData.currency && selectedProduct.currency) {
-                                updateField('currency' as keyof Sale, selectedProduct.currency);
-                              }
-                              // Auto-calculate amount if quantity is set
-                              const currentQuantity = formData.quantity || 1;
-                              if (currentQuantity > 0) {
-                                const total = selectedProduct.price * currentQuantity;
-                                updateField('amount' as keyof Sale, total);
-                              }
-                            }
-                          }
-                        }
-                      });
-                      
-                      // Auto-calculate amount when price or quantity changes (after all fields are updated)
-                      const updatedData = { ...formData, ...v };
-                      if (updatedData.price && updatedData.quantity) {
-                        const price = updatedData.price as number;
-                        const quantity = updatedData.quantity as number;
-                        const total = price * quantity;
-                        if (updatedData.amount !== total) {
-                          updateField('amount' as keyof Sale, total);
-                        }
-                      }
-                    }}
-                  />
-            
-            {/* Currency Selection */}
-            <FormRow columns={1}>
-              <FormField label={t('currency')}>
-                <CurrencySelect
-                  value={formData.currency || 'TRY'}
-                  onChange={(currency: Currency) => {
-                    updateField('currency' as keyof Sale, currency);
-                  }}
-                  placeholder={t('currency', { defaultValue: 'Para Birimi Seçiniz' })}
-                />
-              </FormField>
-            </FormRow>
-            
-            {/* Date and Time Section */}
-            <FormRow columns={1}>
-              <FormField label={t('date')} required>
-                <TouchableOpacity onPress={() => setDateTimePickerVisible(true)}>
-                  <Input
-                    value={displayDateTime}
-                    editable={false}
-                    pointerEvents="none"
-                    placeholder={formMode === 'create' ? todayDate : "YYYY-MM-DD"}
-                    style={{ backgroundColor: colors.surface, color: colors.text }}
-                  />
-                </TouchableOpacity>
-              </FormField>
-            </FormRow>
-            
-            {/* DateTime Picker Modal */}
-            <DateTimePicker
-              visible={dateTimePickerVisible}
-              onClose={() => setDateTimePickerVisible(false)}
-              value={displayDateTime}
-              onConfirm={(dateTime: string) => {
-                updateField('date' as keyof Sale, dateTime);
-                setDateTimePickerVisible(false);
-              }}
-              label={t('date')}
-              showTime={true}
-            />
-            
-            {/* Notes Field - Full Width and More Prominent */}
-            <FormRow columns={1}>
-              <FormField label={t('notes')}>
-                <Input
-                  value={formData.title || ''}
-                  onChangeText={(text) => updateField('title' as keyof Sale, text)}
-                  multiline
-                  numberOfLines={6}
-                  style={{ 
-                    textAlignVertical: 'top',
-                    minHeight: 120,
-                    fontSize: 16,
-                    fontWeight: '400',
-                    borderWidth: 2,
-                    borderColor: colors.primary + '40',
-                    paddingTop: 16,
-                    paddingBottom: 16,
-                    paddingHorizontal: 16,
-                    color: colors.text, // Explicit color for dark theme
-                  }}
-                  placeholder={t('notes')}
-                />
-              </FormField>
-            </FormRow>
-            
-            </Form>
-            </>
-          ) : (
-            <>
+              
+              {/* Data availability warnings */}
+              {!hasCustomers && !missingDependencies.includes('customers') && (
+                <Card style={{ backgroundColor: colors.infoCardBackground, borderColor: colors.infoCardBorder, borderWidth: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+                    <Ionicons name="information-circle" size={20} color={colors.infoCardIcon} />
+                    <Text style={{ fontSize: 14, color: colors.infoCardText, flex: 1 }}>
+                      {t('no_customers_available', { defaultValue: 'Henüz müşteri eklenmemiş. Satış yapmak için önce müşteri eklemeniz gerekiyor.' })}
+                    </Text>
+                  </View>
+                </Card>
+              )}
+              
+              {!hasProducts && !missingDependencies.includes('stock') && (
+                <Card style={{ backgroundColor: colors.infoCardBackground, borderColor: colors.infoCardBorder, borderWidth: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+                    <Ionicons name="information-circle" size={20} color={colors.infoCardIcon} />
+                    <Text style={{ fontSize: 14, color: colors.infoCardText, flex: 1 }}>
+                      {t('no_products_available', { defaultValue: 'Henüz ürün eklenmemiş. Satış yapmak için önce ürün eklemeniz gerekiyor.' })}
+                    </Text>
+                  </View>
+                </Card>
+              )}
+              
               {/* Bulk Sale Form */}
               <Card>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: spacing.md }}>
@@ -870,14 +846,30 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
               {/* Debt Collection Date */}
               <FormRow columns={1}>
                 <FormField label={t('debt_collection_date', { defaultValue: 'Borç Alınacak Tarih' })}>
-                  <Input
-                    value={formData.debtCollectionDate || ''}
-                    onChangeText={(text) => updateField('debtCollectionDate' as keyof Sale, text)}
-                    placeholder="YYYY-MM-DD"
-                    keyboardType="default"
-                  />
+                  <TouchableOpacity onPress={() => setDebtCollectionDatePickerVisible(true)}>
+                    <Input
+                      value={displayDebtCollectionDate}
+                      editable={false}
+                      pointerEvents="none"
+                      placeholder="YYYY-MM-DD HH:mm"
+                      style={{ backgroundColor: colors.surface, color: colors.text }}
+                    />
+                  </TouchableOpacity>
                 </FormField>
               </FormRow>
+
+              {/* Debt Collection Date Picker Modal */}
+              <DateTimePicker
+                visible={debtCollectionDatePickerVisible}
+                onClose={() => setDebtCollectionDatePickerVisible(false)}
+                value={displayDebtCollectionDate || todayDate}
+                onConfirm={(dateTime: string) => {
+                  updateField('debtCollectionDate' as keyof Sale, dateTime);
+                  setDebtCollectionDatePickerVisible(false);
+                }}
+                label={t('debt_collection_date', { defaultValue: 'Borç Alınacak Tarih' })}
+                showTime={true}
+              />
 
               {/* Notes Field */}
               <FormRow columns={1}>
@@ -903,8 +895,6 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
                   />
                 </FormField>
               </FormRow>
-            </>
-          )}
             
             {/* Custom Fields Section */}
             <Card>

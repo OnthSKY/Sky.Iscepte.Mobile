@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { usePurchaseStatsQuery } from '../hooks/usePurchasesQuery';
@@ -12,6 +12,7 @@ import { ModuleStatsHeader, ModuleStat } from '../../../shared/components/dashbo
 import LoadingState from '../../../shared/components/LoadingState';
 import ScreenLayout from '../../../shared/layouts/ScreenLayout';
 import spacing from '../../../core/constants/spacing';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 /**
  * PurchaseListScreen - SOLID Principles Applied
@@ -90,6 +91,113 @@ export default function PurchaseListScreen() {
     );
   }, [statsLoading, moduleStats]);
 
+  // Info card about quick purchase vs normal purchase
+  const infoCard = React.useMemo(() => (
+    <View style={{ paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+      <View style={{ 
+        backgroundColor: colors.infoCardBackground || colors.surface, 
+        borderColor: colors.infoCardBorder || colors.border,
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: spacing.md,
+        gap: spacing.sm,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.infoCardIcon || colors.primary} />
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.infoCardText || colors.text }}>
+            {t('purchases:purchase_operations_info', { defaultValue: 'Alış İşlemleri Hakkında' })}
+          </Text>
+        </View>
+        <Text style={{ fontSize: 12, color: colors.infoCardText || colors.muted, lineHeight: 18 }}>
+          {t('purchases:purchase_operations_description', { 
+            defaultValue: '• Hızlı Alış: Ürün seçip hızlıca alış yapabilirsiniz\n• Normal Alış: Detaylı alış formu ile işlem yapabilirsiniz\n• Her iki yöntem de stok otomatik güncellenir' 
+          })}
+        </Text>
+      </View>
+    </View>
+  ), [colors, t]);
+
+  // Quick actions card
+  const quickActionsCard = React.useMemo(() => (
+    <View style={{ paddingBottom: spacing.sm }}>
+      <View style={{ 
+        backgroundColor: colors.surface, 
+        borderColor: colors.border,
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: spacing.md,
+        gap: spacing.sm,
+      }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.xs }}>
+          {t('purchases:quick_actions', { defaultValue: 'Hızlı İşlemler' })}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('QuickPurchase')}
+            style={{ 
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: 8,
+              backgroundColor: colors.primary,
+            }}
+          >
+            <Ionicons name="flash-outline" size={18} color="#fff" />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>
+              {t('purchases:quick_purchase', { defaultValue: 'Hızlı Alış' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('PurchaseCreate')}
+            style={{ 
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: 8,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={colors.text} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>
+              {t('purchases:new_purchase', { defaultValue: 'Yeni Alış' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('StockList')}
+            style={{ 
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: 8,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Ionicons name="cube-outline" size={18} color={colors.text} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>
+              {t('stock:stock', { defaultValue: 'Stok' })}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  ), [colors, t, navigation]);
+
   return (
     <ScreenLayout 
       noPadding
@@ -138,7 +246,13 @@ export default function PurchaseListScreen() {
             ],
           }}
           title={t('purchases:purchases', { defaultValue: 'Alışlar' })}
-          ListHeaderComponent={statsHeader}
+          ListHeaderComponent={
+            <View>
+              {statsHeader}
+              {infoCard}
+              {quickActionsCard}
+            </View>
+          }
           renderItem={(item: Purchase) => (
             <Card
               style={{ marginBottom: 12 }}

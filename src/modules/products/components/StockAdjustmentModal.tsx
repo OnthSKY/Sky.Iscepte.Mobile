@@ -105,8 +105,12 @@ export default function StockAdjustmentModal({ visible, product, mode, onClose, 
     : Math.max(0, currentStock - qty);
 
   return (
-    <Modal visible={visible} onRequestClose={onClose} containerStyle={{ width: '90%', maxWidth: 400 }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <Modal visible={visible} onRequestClose={onClose} containerStyle={{ width: '90%', maxWidth: 400, maxHeight: '90%' }}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: spacing.lg }}
+        style={{ maxHeight: '100%' }}
+      >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>
             {mode === 'increase' 
@@ -118,58 +122,23 @@ export default function StockAdjustmentModal({ visible, product, mode, onClose, 
           </TouchableOpacity>
         </View>
 
-        {/* ERP Recommendation Banner */}
-        <View style={[styles.erpBanner, { backgroundColor: colors.primary + '15', borderLeftColor: colors.primary }]}>
-          <Ionicons 
-            name="bulb-outline" 
-            size={20} 
-            color={colors.primary} 
-            style={{ marginRight: spacing.sm }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.erpTitle, { color: colors.text }]}>
-              {t('stock:erp_recommendation_title', { defaultValue: 'ERP Önerisi' })}
+        {/* Product Info - En Üstte */}
+        <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
+          {product.category && (
+            <Text style={[styles.productCategory, { color: colors.muted }]}>
+              {product.category}
             </Text>
-            <Text style={[styles.erpText, { color: colors.muted }]}>
-              {mode === 'decrease' 
-                ? t('stock:erp_recommendation_decrease', { 
-                    defaultValue: 'Stok düşürmek için Hızlı Satış ekranını kullanmanızı öneririz. Bu şekilde satış kaydı otomatik oluşturulur ve muhasebe kayıtları düzenli tutulur.' 
-                  })
-                : t('stock:erp_recommendation_increase', { 
-                    defaultValue: 'Stok artırmak için Hızlı Alış ekranını kullanmanızı öneririz. Bu şekilde alış kaydı otomatik oluşturulur ve muhasebe kayıtları düzenli tutulur.' 
-                  })
-              }
+          )}
+          <View style={[styles.stockInfo, { borderTopColor: colors.border || colors.muted + '40' }]}>
+            <Text style={[styles.stockLabel, { color: colors.muted }]}>
+              {t('stock:current_stock', { defaultValue: 'Mevcut Stok' })}:
             </Text>
-            <TouchableOpacity 
-              onPress={handleUseERPMethod}
-              style={[styles.erpButton, { backgroundColor: colors.primary }]}
-            >
-              <Text style={[styles.erpButtonText, { color: '#fff' }]}>
-                {mode === 'decrease' 
-                  ? t('stock:use_quick_sale', { defaultValue: 'Hızlı Satış Kullan' })
-                  : t('stock:use_quick_purchase', { defaultValue: 'Hızlı Alış Kullan' })
-                }
-              </Text>
-            </TouchableOpacity>
+            <Text style={[styles.stockValue, { color: colors.text }]}>{currentStock}</Text>
           </View>
         </View>
 
         <View style={styles.content}>
-          {/* Product Info */}
-          <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
-            {product.category && (
-              <Text style={[styles.productCategory, { color: colors.muted }]}>
-                {product.category}
-              </Text>
-            )}
-            <View style={styles.stockInfo}>
-              <Text style={[styles.stockLabel, { color: colors.muted }]}>
-                {t('stock:current_stock', { defaultValue: 'Mevcut Stok' })}:
-              </Text>
-              <Text style={[styles.stockValue, { color: colors.text }]}>{currentStock}</Text>
-            </View>
-          </View>
 
           {/* Quantity Input */}
           <View style={styles.inputGroup}>
@@ -257,29 +226,77 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
-  erpBanner: {
-    flexDirection: 'row',
+  infoBanner: {
     padding: spacing.md,
     borderRadius: 12,
-    marginBottom: spacing.lg,
-    borderLeftWidth: 4,
-    alignItems: 'flex-start',
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    gap: spacing.sm,
   },
-  erpTitle: {
-    fontSize: 14,
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  infoDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: spacing.xs,
+  },
+  useCaseSection: {
+    paddingTop: spacing.sm,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+  },
+  useCaseTitle: {
+    fontSize: 13,
     fontWeight: '600',
     marginBottom: spacing.xs,
   },
-  erpText: {
+  useCaseText: {
     fontSize: 12,
     lineHeight: 18,
-    marginBottom: spacing.sm,
+  },
+  warningSection: {
+    padding: spacing.sm,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+  },
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  warningTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  warningText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  featuresList: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  featureText: {
+    fontSize: 12,
+    lineHeight: 18,
   },
   erpButton: {
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
   },
   erpButtonText: {
     fontSize: 13,
@@ -307,7 +324,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingTop: spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   stockLabel: {
     fontSize: 14,
@@ -362,6 +378,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   cancelButton: {
     flex: 1,

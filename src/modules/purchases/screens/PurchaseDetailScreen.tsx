@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { DetailScreenContainer } from '../../../shared/components/screens/DetailScreenContainer';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { purchaseEntityService } from '../services/purchaseServiceAdapter';
 import Card from '../../../shared/components/Card';
 import { useTheme } from '../../../core/contexts/ThemeContext';
@@ -8,6 +8,11 @@ import spacing from '../../../core/constants/spacing';
 import { Purchase } from '../store/purchaseStore';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../products/utils/currency';
+import ScreenLayout from '../../../shared/layouts/ScreenLayout';
+import LoadingState from '../../../shared/components/LoadingState';
+import ErrorState from '../../../shared/components/ErrorState';
+import { usePurchaseQuery } from '../hooks/usePurchasesQuery';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 /**
  * PurchaseDetailScreen - SOLID Principles Applied
@@ -17,16 +22,133 @@ import { formatCurrency } from '../../products/utils/currency';
  */
 export default function PurchaseDetailScreen() {
   const { colors } = useTheme();
-  const { t } = useTranslation('purchases');
+  const { t } = useTranslation(['purchases', 'stock', 'common']);
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+  const purchaseId = route.params?.id;
+
+  const { data, isLoading, error } = usePurchaseQuery(purchaseId);
+
+  const handleQuickPurchase = () => {
+    if (data?.items?.[0]?.productId) {
+      navigation.navigate('QuickPurchase', { productId: data.items[0].productId });
+    } else {
+      navigation.navigate('QuickPurchase');
+    }
+  };
+
+  const handleQuickSale = () => {
+    if (data?.items?.[0]?.productId) {
+      navigation.navigate('QuickSale', { productId: data.items[0].productId });
+    } else {
+      navigation.navigate('QuickSale');
+    }
+  };
+
+  const handleStockList = () => {
+    navigation.navigate('StockList');
+  };
+
+  const renderFooter = () => {
+    return (
+      <View style={{ 
+        gap: spacing.md, 
+        padding: spacing.md, 
+        borderTopWidth: 1, 
+        borderTopColor: colors.border, 
+        backgroundColor: colors.surface 
+      }}>
+        {/* Quick Actions */}
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TouchableOpacity
+            onPress={handleQuickPurchase}
+            style={{ 
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.md,
+              borderRadius: 12,
+              backgroundColor: colors.primary,
+            }}
+          >
+            <Ionicons name="flash-outline" size={18} color="#fff" />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+              {t('purchases:quick_purchase', { defaultValue: 'Hızlı Alış' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleQuickSale}
+            style={{ 
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.md,
+              borderRadius: 12,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Ionicons name="receipt-outline" size={18} color={colors.text} />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+              {t('stock:quick_sale', { defaultValue: 'Hızlı Satış' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleStockList}
+            style={{ 
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.md,
+              borderRadius: 12,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Ionicons name="cube-outline" size={18} color={colors.text} />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+              {t('stock:stock', { defaultValue: 'Stok' })}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <ScreenLayout title={t('purchases:purchase_details', { defaultValue: 'Alış Detayları' })} showBackButton>
+        <LoadingState />
+      </ScreenLayout>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <ScreenLayout title={t('purchases:purchase_details', { defaultValue: 'Alış Detayları' })} showBackButton>
+        <ErrorState error={error || new Error('Alış bulunamadı')} showRetry={false} />
+      </ScreenLayout>
+    );
+  }
 
   return (
-    <DetailScreenContainer
-      service={purchaseEntityService}
-      config={{
-        entityName: 'purchase',
-        translationNamespace: 'purchases',
-      }}
-      renderContent={(data: Purchase) => (
+    <ScreenLayout 
+      title={t('purchases:purchase_details', { defaultValue: 'Alış Detayları' })} 
+      showBackButton
+      footer={renderFooter()}
+    >
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
         <View style={{ gap: spacing.md }}>
           <Card>
             <View style={{ gap: spacing.sm }}>
@@ -96,8 +218,8 @@ export default function PurchaseDetailScreen() {
             </Card>
           )}
         </View>
-      )}
-    />
+      </ScrollView>
+    </ScreenLayout>
   );
 }
 

@@ -6,6 +6,11 @@ Bu dokümantasyon, Sky.Template.Mobile projesindeki tüm API endpoint'lerinin re
 
 **Not:** Tüm API response'ları `BaseControllerResponse<T>` formatında döner. HTTP status code başarı kontrolü için kullanılır (200-299 başarılı, 400-499 client errors, 500+ server errors).
 
+**Database Field Mapping:**
+- API'de `camelCase` kullanılır (örn: `trackStock`, `productId`, `ownerId`)
+- Database'de `snake_case` kullanılır (örn: `track_stock`, `product_id`, `owner_id`)
+- Backend implementasyonunda bu mapping yapılmalıdır
+
 ---
 
 ## İçindekiler
@@ -440,7 +445,38 @@ Authorization: Bearer {accessToken}
 
 ---
 
+### GET /customers/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Customers report endpoint'i henüz tam implement edilmemiş.
+
+---
+
 ## Sales APIs
+
+**Important Notes:**
+- **Stock Control**: Satış işlemlerinde stok kontrolü, ürünün `trackStock` alanına göre yapılır:
+  - `trackStock: false` olan ürünler için stok kontrolü yapılmaz ve herhangi bir miktarda satış yapılabilir
+  - `trackStock: true` (veya belirtilmemiş) olan ürünler için normal stok kontrolü yapılır
+  - Yetersiz stok durumunda `400 Bad Request` hatası döner
+- **Stockless Sales**: Stok takibi yapılmayan ürünler (hizmetler, dijital ürünler vb.) için `trackStock: false` ayarlanabilir
 
 ### GET /sales
 
@@ -612,7 +648,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** 
+**Not:** 
 - When `items` array is provided, multiple products can be sold in a single sale
 - When `items` is provided, `productId`, `quantity`, and `price` fields are ignored
 - `total` is automatically calculated: `sum(items[i].quantity * items[i].price)`
@@ -669,12 +705,41 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /sales/:id
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `204 No Content`
 ```json
 {
   "message": "OperationSuccessful"
 }
 ```
+
+---
+
+### GET /sales/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Sales report endpoint'i henüz tam implement edilmemiş.
 
 ---
 
@@ -727,7 +792,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** Bu endpoint sadece borçlu satışları döner (`debtCollectionDate` var ve `isPaid !== true`).
+**Not:** Bu endpoint sadece borçlu satışları döner (`debtCollectionDate` var ve `isPaid !== true`).
 
 ---
 
@@ -766,7 +831,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** Bu endpoint, satışın `isPaid` field'ını `true` yapar ve satış artık borçlu satışlar listesinde görünmez.
+**Not:** Bu endpoint, satışın `isPaid` field'ını `true` yapar ve satış artık borçlu satışlar listesinde görünmez.
 
 ---
 
@@ -790,6 +855,7 @@ Authorization: Bearer {accessToken}
         "price": "number",
         "currency": "TRY" | "USD" | "EUR",
         "stock": "number",
+        "trackStock": "boolean (optional, default: true) - Stok takibi yapılsın mı? false ise stoksuz satış yapılabilir",
         "moq": "number (Minimum Order Quantity)",
         "isActive": "boolean",
         "hasSales": "boolean",
@@ -831,6 +897,7 @@ Authorization: Bearer {accessToken}
   "price": 35000,
   "currency": "TRY",
   "stock": 15,
+  "trackStock": true,
   "moq": 1,
   "isActive": true,
   "hasSales": true,
@@ -838,7 +905,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** `/products` endpoint'i `/stock` ile aynı (backward compatibility için)
+**Not:** `/products` endpoint'i `/stock` ile aynı (backward compatibility için)
 
 ---
 
@@ -873,6 +940,7 @@ Authorization: Bearer {accessToken}
   "price": "number",
   "currency": "TRY" | "USD" | "EUR",
   "stock": "number",
+  "trackStock": "boolean (optional, default: true) - Stok takibi yapılsın mı? false ise stoksuz satış yapılabilir",
   "moq": "number",
   "isActive": "boolean",
   "customFields": []
@@ -891,6 +959,7 @@ Authorization: Bearer {accessToken}
     "price": "number",
     "currency": "TRY" | "USD" | "EUR",
     "stock": "number",
+    "trackStock": "boolean (optional, default: true) - Stok takibi yapılsın mı? false ise stoksuz satış yapılabilir",
     "moq": "number",
     "isActive": "boolean",
     "hasSales": "boolean",
@@ -900,11 +969,30 @@ Authorization: Bearer {accessToken}
 }
 ```
 
+**Not:** 
+- `trackStock: false` olan ürünler için stok kontrolü yapılmaz ve herhangi bir miktarda satış yapılabilir
+- `trackStock: true` (veya belirtilmemiş) olan ürünler için normal stok kontrolü yapılır
+- `stock: null` veya `stock: undefined` olan ürünler için de stok kontrolü yapılmaz (backward compatibility)
+
 ---
 
 ### PUT /stock/:id
 
 **Request:** (Partial Product object)
+```json
+{
+  "name": "string",
+  "sku": "string",
+  "category": "string",
+  "price": "number",
+  "currency": "TRY" | "USD" | "EUR",
+  "stock": "number",
+  "trackStock": "boolean (optional, default: true) - Stok takibi yapılsın mı? false ise stoksuz satış yapılabilir",
+  "moq": "number",
+  "isActive": "boolean",
+  "customFields": []
+}
+```
 
 **Response:** `200 OK`
 ```json
@@ -918,6 +1006,7 @@ Authorization: Bearer {accessToken}
     "price": "number",
     "currency": "TRY" | "USD" | "EUR",
     "stock": "number",
+    "trackStock": "boolean (optional, default: true) - Stok takibi yapılsın mı? false ise stoksuz satış yapılabilir",
     "moq": "number",
     "isActive": "boolean",
     "hasSales": "boolean",
@@ -931,6 +1020,11 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /stock/:id
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `204 No Content`
 ```json
 {
@@ -938,7 +1032,31 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** `hasSales: true` olan ürünler silinemez.
+**Not:** `hasSales: true` olan ürünler silinemez.
+
+---
+
+### GET /stock/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Stock report endpoint'i henüz tam implement edilmemiş.
 
 ---
 
@@ -959,6 +1077,99 @@ Authorization: Bearer {accessToken}
         "fieldName": {
           "old": "any",
           "new": "any"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Not:** Bu endpoint sadece stok işlemlerini (artırma/azaltma) döndürür.
+
+---
+
+### GET /stock/:id/movements
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": [
+    {
+      "id": "string | number",
+      "type": "stock" | "purchase" | "sale",
+      "action": "string",
+      "description": "string (optional)",
+      "user": "string (optional)",
+      "timestamp": "string (ISO)",
+      "changes": {
+        "fieldName": {
+          "old": "any",
+          "new": "any"
+        }
+      },
+      "quantity": "number (optional - purchase/sale için)",
+      "price": "number (optional - purchase/sale için)",
+      "currency": "string (optional - purchase/sale için)",
+      "total": "number (optional - purchase/sale için)",
+      "supplierName": "string (optional - purchase için)",
+      "customerName": "string (optional - sale için)",
+      "purchaseId": "string | number (optional - purchase için)",
+      "saleId": "string | number (optional - sale için)"
+    }
+  ]
+}
+```
+
+**Not:** Bu endpoint tüm hareketleri birleştirilmiş şekilde döndürür:
+- Stok işlemleri (artırma/azaltma) - `type: "stock"`
+- Alış işlemleri (tekli ve toplu) - `type: "purchase"`
+- Satış işlemleri (tekli ve toplu) - `type: "sale"`
+
+Tüm kayıtlar `timestamp` alanına göre azalan sırada (en yeni önce) döner.
+
+**Example Response:**
+```json
+{
+  "message": "OperationSuccessful",
+  "data": [
+    {
+      "id": "sale-123",
+      "type": "sale",
+      "action": "sale",
+      "description": "Satış",
+      "timestamp": "2025-01-20T10:30:00Z",
+      "quantity": 2,
+      "price": 35000,
+      "currency": "TRY",
+      "total": 70000,
+      "customerName": "Ahmet Usta",
+      "saleId": "123"
+    },
+    {
+      "id": "purchase-456",
+      "type": "purchase",
+      "action": "purchase",
+      "description": "Alış",
+      "timestamp": "2025-01-19T14:20:00Z",
+      "quantity": 5,
+      "price": 30000,
+      "currency": "TRY",
+      "total": 150000,
+      "supplierName": "ABC Tedarik",
+      "purchaseId": "456"
+    },
+    {
+      "id": "stock-789",
+      "type": "stock",
+      "action": "stock_increase",
+      "description": "Stok Artırma",
+      "user": "John Doe",
+      "timestamp": "2025-01-18T09:15:00Z",
+      "changes": {
+        "stock": {
+          "old": 10,
+          "new": 15
         }
       }
     }
@@ -1093,12 +1304,41 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /employees/:id
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `204 No Content`
 ```json
 {
   "message": "OperationSuccessful"
 }
 ```
+
+---
+
+### GET /employees/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Employees report endpoint'i henüz tam implement edilmemiş.
 
 ---
 
@@ -1189,6 +1429,11 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /suppliers/:id
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `204 No Content`
 ```json
 {
@@ -1198,36 +1443,98 @@ Authorization: Bearer {accessToken}
 
 ---
 
+### GET /suppliers/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Suppliers report endpoint'i henüz tam implement edilmemiş.
+
+---
+
 ## Purchases APIs
+
+**Important Notes:**
+- **Stock Control**: Alış işlemlerinde stok otomatik olarak artırılır
+- **Bulk Purchases**: `items` array ile birden fazla ürün tek seferde alınabilir
+- **Stock Tracking**: `trackStock: false` olan ürünler için de stok artırılır (backward compatibility)
 
 ### GET /purchases
 
 **Query Parameters:** (Same as Customers)
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `200 OK`
 ```json
 {
-  "items": [
-    {
-      "id": "string",
-      "supplierId": "string",
-      "supplierName": "string",
-      "productId": "string",
-      "productName": "string",
-      "quantity": "number",
-      "price": "number",
-      "currency": "TRY" | "USD" | "EUR",
-      "total": "number",
-      "date": "string (YYYY-MM-DD)",
-      "status": "string (completed | pending)",
-      "ownerId": "number"
-    }
-  ],
-  "total": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "supplierId": "string",
+        "supplierName": "string",
+        "productId": "string (optional - single product purchase)",
+        "productName": "string (optional - single product purchase)",
+        "quantity": "number (optional - single product purchase)",
+        "price": "number (optional - single product purchase)",
+        "currency": "TRY" | "USD" | "EUR",
+        "total": "number",
+        "date": "string (YYYY-MM-DD)",
+        "status": "string (completed | pending)",
+        "items": [
+          {
+            "productId": "string",
+            "productName": "string",
+            "quantity": "number",
+            "price": "number",
+            "subtotal": "number",
+            "currency": "TRY" | "USD" | "EUR"
+          }
+        ],
+        "customFields": [
+          {
+            "key": "string",
+            "label": "string",
+            "type": "text" | "number" | "date" | "select" | "boolean",
+            "value": "any",
+            "options": [{"label": "string", "value": "any"}],
+            "isGlobal": "boolean"
+          }
+        ],
+        "ownerId": "number"
+      }
+    ],
+    "totalCount": "number",
+    "page": "number",
+    "pageSize": "number",
+    "totalPage": "number",
+    "hasNextPage": "boolean",
+    "hasPreviousPage": "boolean"
+  }
 }
 ```
 
-**Mock Data Example:**
+**Mock Data Example (Single Product Purchase):**
 ```json
 {
   "id": "1",
@@ -1241,6 +1548,38 @@ Authorization: Bearer {accessToken}
   "total": 245000,
   "date": "2025-01-10",
   "status": "completed",
+  "ownerId": 2
+}
+```
+
+**Mock Data Example (Bulk Purchase with Items Array):**
+```json
+{
+  "id": "2",
+  "supplierId": "1",
+  "supplierName": "Apple Distribütör",
+  "currency": "TRY",
+  "total": 345000,
+  "date": "2025-01-10",
+  "status": "completed",
+  "items": [
+    {
+      "productId": "1",
+      "productName": "iPhone 14 Pro",
+      "quantity": 10,
+      "price": 24500,
+      "subtotal": 245000,
+      "currency": "TRY"
+    },
+    {
+      "productId": "2",
+      "productName": "AirPods Pro",
+      "quantity": 5,
+      "price": 20000,
+      "subtotal": 100000,
+      "currency": "TRY"
+    }
+  ],
   "ownerId": 2
 }
 ```
@@ -1269,7 +1608,79 @@ Authorization: Bearer {accessToken}
 
 ### POST /purchases
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Request:**
+```json
+{
+  "supplierId": "string",
+  "productId": "string (optional - for single product purchase, ignored when items array is provided)",
+  "quantity": "number (optional - for single product purchase, ignored when items array is provided)",
+  "price": "number (optional - for single product purchase, ignored when items array is provided)",
+  "currency": "TRY" | "USD" | "EUR",
+  "date": "string (YYYY-MM-DD)",
+  "status": "string (completed | pending)",
+  "items": [
+    {
+      "productId": "string",
+      "quantity": "number",
+      "price": "number"
+    }
+  ],
+  "customFields": [
+    {
+      "key": "string",
+      "label": "string",
+      "type": "text" | "number" | "date" | "select" | "boolean",
+      "value": "any",
+      "options": [{"label": "string", "value": "any"}],
+      "isGlobal": "boolean"
+    }
+  ]
+}
+```
+
+**Not:** 
+- When `items` array is provided, multiple products can be purchased in a single purchase
+- When `items` is provided, `productId`, `quantity`, and `price` fields are ignored
+- `total` is automatically calculated: `sum(items[i].quantity * items[i].price)`
+- Stock is automatically increased for each product in the purchase
+
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "supplierId": "string",
+    "supplierName": "string",
+    "productId": "string",
+    "productName": "string",
+    "quantity": "number",
+    "price": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "total": "number",
+    "date": "string (YYYY-MM-DD)",
+    "status": "string (completed | pending)",
+    "items": [],
+    "ownerId": "number"
+  }
+}
+```
+
+---
+
+### PUT /purchases/:id
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:** (Partial Purchase object)
 ```json
 {
   "supplierId": "string",
@@ -1277,24 +1688,49 @@ Authorization: Bearer {accessToken}
   "quantity": "number",
   "price": "number",
   "currency": "TRY" | "USD" | "EUR",
-  "date": "string",
-  "status": "string"
+  "date": "string (YYYY-MM-DD)",
+  "status": "string (completed | pending)",
+  "items": [
+    {
+      "productId": "string",
+      "quantity": "number",
+      "price": "number"
+    }
+  ],
+  "customFields": []
 }
 ```
 
-**Response:** `200 OK` (Purchase object with generated `id`)
-
----
-
-### PUT /purchases/:id
-
-**Request:** (Partial Purchase object)
-
-**Response:** `200 OK` (Updated Purchase object)
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "supplierId": "string",
+    "supplierName": "string",
+    "productId": "string",
+    "productName": "string",
+    "quantity": "number",
+    "price": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "total": "number",
+    "date": "string (YYYY-MM-DD)",
+    "status": "string (completed | pending)",
+    "items": [],
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
 ### DELETE /purchases/:id
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
 
 **Response:** `204 No Content`
 ```json
@@ -1302,6 +1738,32 @@ Authorization: Bearer {accessToken}
   "message": "OperationSuccessful"
 }
 ```
+
+**Not:** Purchase silindiğinde, stok otomatik olarak azaltılır.
+
+---
+
+### GET /purchases/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Purchases report endpoint'i henüz tam implement edilmemiş.
 
 ---
 
@@ -1391,7 +1853,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** Expenses endpoint'i sistem tarafından oluşturulan giderleri de içerir:
+**Not:** Expenses endpoint'i sistem tarafından oluşturulan giderleri de içerir:
 - Ürün alımlarından otomatik oluşturulan giderler (ürün fiyatının %70'i)
 - Çalışan maaşlarından otomatik oluşturulan giderler
 - Manuel olarak eklenen giderler
@@ -1450,12 +1912,41 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /expenses/:id
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `204 No Content`
 ```json
 {
   "message": "OperationSuccessful"
 }
 ```
+
+---
+
+### GET /expenses/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Expenses report endpoint'i henüz tam implement edilmemiş.
 
 ---
 
@@ -1521,7 +2012,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** Revenue endpoint'i sistem tarafından oluşturulan gelirleri de içerir:
+**Not:** Revenue endpoint'i sistem tarafından oluşturulan gelirleri de içerir:
 - Satışlardan otomatik oluşturulan gelirler (status: "completed" olan satışlar)
 - Manuel olarak eklenen gelirler
 
@@ -1599,12 +2090,41 @@ Authorization: Bearer {accessToken}
 
 ### DELETE /revenue/:id
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `204 No Content`
 ```json
 {
   "message": "OperationSuccessful"
 }
 ```
+
+---
+
+### GET /revenue/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Revenue report endpoint'i henüz tam implement edilmemiş.
 
 ---
 
@@ -1616,33 +2136,51 @@ Authorization: Bearer {accessToken}
 
 **Query Parameters:** (Same as Customers)
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `200 OK`
 ```json
 {
-  "items": [
-    {
-      "id": "string",
-      "title": "string",
-      "amount": "number",
-      "currency": "TRY" | "USD" | "EUR",
-      "source": "sales" | "manual",
-      "incomeTypeId": "string",
-      "incomeTypeName": "string",
-      "date": "string (YYYY-MM-DD)",
-      "description": "string",
-      "saleId": "string (optional)",
-      "employeeId": "string (optional)",
-      "isSystemGenerated": "boolean",
-      "ownerId": "number"
-    }
-  ],
-  "total": "number"
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "title": "string",
+        "amount": "number",
+        "currency": "TRY" | "USD" | "EUR",
+        "source": "sales" | "manual",
+        "incomeTypeId": "string",
+        "incomeTypeName": "string",
+        "date": "string (YYYY-MM-DD)",
+        "description": "string",
+        "saleId": "string (optional)",
+        "employeeId": "string (optional)",
+        "isSystemGenerated": "boolean",
+        "ownerId": "number"
+      }
+    ],
+    "totalCount": "number",
+    "page": "number",
+    "pageSize": "number",
+    "totalPage": "number",
+    "hasNextPage": "boolean",
+    "hasPreviousPage": "boolean"
+  }
 }
 ```
 
 ---
 
 ### GET /income/:id
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
 
 **Response:** `200 OK`
 ```json
@@ -1670,6 +2208,11 @@ Authorization: Bearer {accessToken}
 
 ### GET /income/stats
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Response:** `200 OK`
 ```json
 {
@@ -1689,6 +2232,11 @@ Authorization: Bearer {accessToken}
 
 ### POST /income
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Request:**
 ```json
 {
@@ -1696,25 +2244,85 @@ Authorization: Bearer {accessToken}
   "amount": "number",
   "currency": "TRY" | "USD" | "EUR",
   "incomeTypeId": "string",
-  "date": "string",
+  "date": "string (YYYY-MM-DD)",
   "description": "string",
   "employeeId": "string (optional)"
 }
 ```
 
-**Response:** `200 OK` (Income object with generated `id`)
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "title": "string",
+    "amount": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "source": "manual",
+    "incomeTypeId": "string",
+    "incomeTypeName": "string",
+    "date": "string (YYYY-MM-DD)",
+    "description": "string",
+    "employeeId": "string (optional)",
+    "isSystemGenerated": false,
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
 ### PUT /income/:id
 
-**Request:** (Partial Income object)
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
 
-**Response:** `200 OK` (Updated Income object)
+**Request:** (Partial Income object)
+```json
+{
+  "title": "string",
+  "amount": "number",
+  "currency": "TRY" | "USD" | "EUR",
+  "incomeTypeId": "string",
+  "date": "string (YYYY-MM-DD)",
+  "description": "string",
+  "employeeId": "string (optional)"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "title": "string",
+    "amount": "number",
+    "currency": "TRY" | "USD" | "EUR",
+    "source": "sales" | "manual",
+    "incomeTypeId": "string",
+    "incomeTypeName": "string",
+    "date": "string (YYYY-MM-DD)",
+    "description": "string",
+    "saleId": "string (optional)",
+    "employeeId": "string (optional)",
+    "isSystemGenerated": "boolean",
+    "ownerId": "number"
+  }
+}
+```
 
 ---
 
 ### DELETE /income/:id
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
 
 **Response:** `204 No Content`
 ```json
@@ -1722,6 +2330,30 @@ Authorization: Bearer {accessToken}
   "message": "OperationSuccessful"
 }
 ```
+
+---
+
+### GET /income/report
+
+**Query Parameters:** (Same as Customers)
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "items": [],
+    "total": 0
+  }
+}
+```
+
+**Not:** Income report endpoint'i henüz tam implement edilmemiş.
 
 ---
 
@@ -1739,7 +2371,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** Reports module henüz tam implement edilmemiş.
+**Not:** Reports module henüz tam implement edilmemiş.
 
 ---
 
@@ -2647,39 +3279,165 @@ Tüm hata response'ları `BaseControllerResponse` formatında döner. HTTP statu
 
 ---
 
-## Expense Types
+## Expense Types APIs
 
-**GET /expense-types**
+### GET /expense-types
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
 
 **Response:** `200 OK`
 ```json
-[
-  {
-    "id": "string",
-    "name": "string"
-  }
-]
+{
+  "message": "OperationSuccessful",
+  "data": [
+    {
+      "id": "string",
+      "name": "string",
+      "ownerId": "number"
+    }
+  ]
+}
 ```
 
 **Mock Data:**
 ```json
 [
-  { "id": "1", "name": "Kira" },
-  { "id": "2", "name": "Elektrik" },
-  { "id": "3", "name": "Su" },
-  { "id": "4", "name": "İnternet" },
-  { "id": "5", "name": "Telefon" },
-  { "id": "6", "name": "Temizlik" },
-  { "id": "7", "name": "Ekipman" },
-  { "id": "8", "name": "Kırtasiye" },
-  { "id": "9", "name": "Nakliye" },
-  { "id": "10", "name": "Pazarlama" },
-  { "id": "11", "name": "Personel" },
-  { "id": "12", "name": "Vergi" },
-  { "id": "13", "name": "Sigorta" },
-  { "id": "14", "name": "Bakım" },
-  { "id": "15", "name": "Danışmanlık" }
+  { "id": "1", "name": "Kira", "ownerId": 2 },
+  { "id": "2", "name": "Elektrik", "ownerId": 2 },
+  { "id": "3", "name": "Su", "ownerId": 2 },
+  { "id": "4", "name": "İnternet", "ownerId": 2 },
+  { "id": "5", "name": "Telefon", "ownerId": 2 },
+  { "id": "6", "name": "Temizlik", "ownerId": 2 },
+  { "id": "7", "name": "Ekipman", "ownerId": 2 },
+  { "id": "8", "name": "Kırtasiye", "ownerId": 2 },
+  { "id": "9", "name": "Nakliye", "ownerId": 2 },
+  { "id": "10", "name": "Pazarlama", "ownerId": 2 },
+  { "id": "11", "name": "Personel", "ownerId": 2 },
+  { "id": "12", "name": "Vergi", "ownerId": 2 },
+  { "id": "13", "name": "Sigorta", "ownerId": 2 },
+  { "id": "14", "name": "Bakım", "ownerId": 2 },
+  { "id": "15", "name": "Danışmanlık", "ownerId": 2 }
 ]
+```
+
+**Not:** Response'ta owner'a ait tüm expense type'lar döner (sistem default + user created).
+
+---
+
+### GET /expense-types/:id
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "ownerId": "number"
+  }
+}
+```
+
+---
+
+### POST /expense-types
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:**
+```json
+{
+  "name": "string"
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "ownerId": "number"
+  }
+}
+```
+
+---
+
+### PUT /expense-types/:id
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request:**
+```json
+{
+  "name": "string"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "id": "string",
+    "name": "string",
+    "ownerId": "number"
+  }
+}
+```
+
+---
+
+### DELETE /expense-types/:id
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful"
+}
+```
+
+**Not:** Eğer expense type kullanılmışsa (expenses tablosunda referans varsa), silinememeli veya soft delete yapılmalı.
+
+---
+
+### GET /expense-types/stats
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "OperationSuccessful",
+  "data": {
+    "totalTypes": "number",
+    "totalExpenseAmount": "number"
+  }
+}
 ```
 
 ---
@@ -4365,23 +5123,35 @@ Permission group'u siler.
 
 Employee'ye permission group'u uygular (hızlıca permission atar).
 
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
 **Request:**
 ```json
 {
-  "permissionGroupId": "1"
+  "permissionGroupId": "string | number"
 }
 ```
 
 **Response:** `200 OK`
 ```json
 {
-  "employeeId": "3",
-  "appliedGroup": {
-    "id": "1",
-    "name": "Arabalı Satıcı"
-  },
-  "customPermissions": {
-    // ... applied permissions from group
+  "message": "OperationSuccessful",
+  "data": {
+    "employeeId": "string | number",
+    "appliedGroup": {
+      "id": "string | number",
+      "name": "string"
+    },
+    "customPermissions": {
+      "moduleName": {
+        "actions": ["string"],
+        "fields": ["string"],
+        "notifications": ["string"]
+      }
+    }
   }
 }
 ```
@@ -4473,10 +5243,6 @@ Tüm paketleri listeler.
 ]
 ```
 
----
-
----
-
 ## Verification APIs
 
 ### POST /verification/tc/verify
@@ -4513,7 +5279,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** 
+**Not:** 
 - TC Kimlik doğrulama sonuçları cache'lenir
 - Cache key: `tc_{tcNo}_{birthDate}_{fullName}` formatında
 - Cache süresi: 24 saat
@@ -4555,7 +5321,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** 
+**Not:** 
 - IMEI doğrulama sonuçları cache'lenir
 - Cache key: `imei_{imei}` formatında
 - Cache süresi: 7 gün
@@ -4586,7 +5352,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** Owner bazlı filtreleme yapılır (her owner'ın kendi ayarları vardır).
+**Not:** Owner bazlı filtreleme yapılır (her owner'ın kendi ayarları vardır).
 
 ---
 
@@ -4646,7 +5412,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-**Note:** Owner bazlı filtreleme yapılır (her owner'ın kendi ayarları vardır).
+**Not:** Owner bazlı filtreleme yapılır (her owner'ın kendi ayarları vardır).
 
 ---
 
@@ -4678,7 +5444,4 @@ Authorization: Bearer {accessToken}
 }
 ```
 
----
-
 **Son Not:** Bu dokümantasyon, mock servis yapısına göre hazırlanmıştır. Backend implementasyonunda bazı field'lar opsiyonel olabilir veya ek validasyonlar gerekebilir. Mock service kodunu (`src/shared/services/mockService.ts`) referans olarak kullanabilirsiniz.
-

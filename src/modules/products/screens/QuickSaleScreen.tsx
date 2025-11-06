@@ -23,6 +23,7 @@ import SearchBar from '../../../shared/components/SearchBar';
 import LoadingState from '../../../shared/components/LoadingState';
 import { formatCurrency } from '../utils/currency';
 import { Currency } from '../services/productService';
+import { shouldTrackStock, canSellQuantity } from '../utils/stockValidation';
 
 interface SaleItem {
   productId: string;
@@ -94,8 +95,8 @@ export default function QuickSaleScreen() {
       return;
     }
 
-    const stock = selectedProduct.stock || 0;
-    if (qty > stock) {
+    // Stok kontrolü: trackStock false ise veya stock null/undefined ise kontrol yapma
+    if (!canSellQuantity(selectedProduct, qty)) {
       notificationService.error(t('stock:insufficient_stock', { defaultValue: 'Yetersiz stok' }));
       return;
     }
@@ -167,7 +168,8 @@ export default function QuickSaleScreen() {
     const item = newItems[index];
     const product = productsData?.items?.find((p: Product) => String(p.id) === item.productId);
     
-    if (product && qty > (product.stock || 0)) {
+    // Stok kontrolü: trackStock false ise veya stock null/undefined ise kontrol yapma
+    if (!canSellQuantity(product, qty)) {
       notificationService.error(t('stock:insufficient_stock', { defaultValue: 'Yetersiz stok' }));
       return;
     }
@@ -263,12 +265,20 @@ export default function QuickSaleScreen() {
                         </Text>
                       )}
                       <View style={styles.productMeta}>
-                        <Text style={[styles.productMetaText, { color: colors.muted }]}>
-                          {t('stock:stock_quantity', { defaultValue: 'Stok' })}: {item.stock || 0}
-                        </Text>
-                        <Text style={[styles.productPrice, { color: colors.primary }]}>
-                          {item.price ? formatCurrency(item.price, item.currency || 'TRY') : '0'}
-                        </Text>
+                        <View style={[styles.stockBadge, { backgroundColor: isSelected ? colors.primary + '30' : colors.surface, borderColor: isSelected ? colors.primary : colors.border }]}>
+                          <Ionicons name="cube-outline" size={14} color={isSelected ? colors.primary : colors.text} />
+                          <Text style={[styles.productMetaText, { color: isSelected ? colors.primary : colors.text, fontWeight: '600' }]}>
+                            {item.stock || 0}
+                          </Text>
+                        </View>
+                        {item.price && (
+                          <View style={[styles.priceBadge, { backgroundColor: isSelected ? colors.primary + '30' : colors.surface, borderColor: isSelected ? colors.primary : colors.border }]}>
+                            <Ionicons name="pricetag-outline" size={14} color={isSelected ? colors.primary : colors.text} />
+                            <Text style={[styles.productPrice, { color: isSelected ? colors.primary : colors.text, fontWeight: '600' }]}>
+                              {formatCurrency(item.price, item.currency || 'TRY')}
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     </View>
                     {isSelected && (
@@ -430,15 +440,33 @@ const styles = StyleSheet.create({
   },
   productMeta: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
     alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  stockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  priceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   productMetaText: {
-    fontSize: 12,
+    fontSize: 13,
   },
   productPrice: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
   },
   addItemSection: {
     flexDirection: 'row',

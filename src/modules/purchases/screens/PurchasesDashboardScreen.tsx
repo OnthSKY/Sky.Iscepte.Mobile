@@ -147,6 +147,13 @@ export default function PurchasesDashboardScreen() {
         listRoute: 'PurchaseList',
         createRoute: 'PurchaseCreate',
         description: 'purchases:module_description',
+        infoCard: {
+          title: 'purchases:module_info_title',
+          message: 'purchases:module_info_message',
+          type: 'warning',
+          actionRoute: 'ExpensesDashboard',
+          actionLabel: 'purchases:go_to_expenses',
+        },
         listConfig: {
           service: purchaseEntityService,
           config: {

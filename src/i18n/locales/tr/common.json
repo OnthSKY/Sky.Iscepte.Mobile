@@ -288,6 +288,12 @@
   "tc_verification_info": "Bu alan TC kimlik doğrulama özelliği ile çalışır. TC kimlik no, doğum tarihi ve tam isim ile doğrulama yapılır. Modül ayarlarından TC kimlik doğrulamasını etkinleştirmeniz gerekir. Bu alan sadece doğrulama ile doldurulabilir, elle yazılamaz.",
   "imei_verification_info": "Bu alan IMEI doğrulama özelliği ile çalışır. IMEI numarası ve opsiyonel cihaz bilgileri ile doğrulama yapılır. Modül ayarlarından IMEI doğrulamasını etkinleştirmeniz gerekir. Bu alan sadece doğrulama ile doldurulabilir, elle yazılamaz.",
   "verification_field_name_locked": "Doğrulama alanları için alan adı otomatik olarak atanır ve değiştirilemez",
-  "field_name_auto_generated": "Alan adı sistem tarafından otomatik oluşturulur"
+  "field_name_auto_generated": "Alan adı sistem tarafından otomatik oluşturulur",
+  "go_to_revenue": "Gelirler Modülüne Git",
+  "max_images_reached": "Maksimum Resim Sayısı",
+  "max_images_reached_message": "Maksimum {{max}} resim ekleyebilirsiniz.",
+  "images_count": "{{count}} / {{max}} fotoğraf eklendi",
+  "add_photo": "Fotoğraf Ekle",
+  "image": "Fotoğraf"
 }
 

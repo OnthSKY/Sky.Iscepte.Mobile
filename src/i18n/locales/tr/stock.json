@@ -161,6 +161,17 @@
   "delete_template_confirm": "Bu form şablonunu silmek istediğinizden emin misiniz?",
   "delete_failed": "Silme başarısız oldu",
   "set_default_failed": "Varsayılan şablon ayarlama başarısız oldu",
-  "save_failed": "Kaydetme başarısız oldu"
+  "save_failed": "Kaydetme başarısız oldu",
+  "stock_adjustment_info_title": "Stok Düzeltme Nedir?",
+  "stock_adjustment_info_description": "Bu işlem sadece stok miktarını değiştirir. Herhangi bir alış/satış kaydı veya muhasebe kaydı oluşturmaz.",
+  "stock_adjustment_when_to_use": "Ne Zaman Kullanılır?",
+  "stock_adjustment_use_cases": "• Sayım hatası düzeltmesi\n• Fire, çalıntı, hasarlı ürün\n• Ürün iadesi\n• Stok düzeltmeleri",
+  "stock_adjustment_warning": "Dikkat",
+  "stock_adjustment_warning_text": "Bu işlem raporlarda görünmez. Gerçek alış/satış işlemleri için Hızlı Alış veya Hızlı Satış ekranlarını kullanın.",
+  "purchase_sale_info_title": "Alış/Satış Nedir?",
+  "purchase_sale_info_description": "Alış ve Satış işlemleri gerçek ticari işlemlerdir. Bu işlemler:",
+  "purchase_sale_features": "• İşlem kaydı oluşturur\n• Muhasebe kaydı oluşturur\n• Raporlarda görünür\n• Stok otomatik güncellenir",
+  "purchase_sale_when_to_use": "Ne Zaman Kullanılır?",
+  "purchase_sale_use_cases": "• Gerçek alış işlemleri\n• Gerçek satış işlemleri\n• Müşteri/Tedarikçi işlemleri\n• Finansal raporlama"
 }
 

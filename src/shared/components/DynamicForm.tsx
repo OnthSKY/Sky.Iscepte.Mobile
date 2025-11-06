@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Input from './Input';
 import Select from './Select';
 import ImageInput from './ImageInput';
+import SignatureInput from './SignatureInput';
 import { Form, FormField, FormRow } from './Form';
 import spacing from '../../core/constants/spacing';
 import TCKimlikVerificationField from './TCKimlikVerificationField';
@@ -13,7 +14,7 @@ import DateTimePicker from './DateTimePicker';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import { formatDate } from '../../core/utils/dateUtils';
 
-export type DynamicFieldType = 'text' | 'number' | 'textarea' | 'select' | 'date' | 'image' | 'custom' | 'tc_verification' | 'imei_verification';
+export type DynamicFieldType = 'text' | 'number' | 'textarea' | 'select' | 'date' | 'image' | 'signature' | 'custom' | 'tc_verification' | 'imei_verification';
 
 export type DynamicFieldOption = { label: string; value: string };
 
@@ -201,6 +202,14 @@ function renderField(
     case 'image':
       return (
         <ImageInput
+          value={value}
+          onChange={onChange}
+          placeholder={common.placeholder}
+        />
+      );
+    case 'signature':
+      return (
+        <SignatureInput
           value={value}
           onChange={onChange}
           placeholder={common.placeholder}

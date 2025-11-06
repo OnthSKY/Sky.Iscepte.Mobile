@@ -11,12 +11,12 @@ import { Purchase } from '../store/purchaseStore';
 // Base fields - Her zaman gösterilir
 export const basePurchaseFormFields: DynamicField[] = [
   { name: 'isStockPurchase', labelKey: 'is_stock_purchase', type: 'boolean', defaultValue: true },
-  { name: 'supplierId', labelKey: 'supplier', type: 'select' },
+  { name: 'supplierId', labelKey: 'supplier', type: 'select', required: true, isLocked: true }, // Always required, cannot be removed
   { name: 'productId', labelKey: 'product', type: 'select', required: false },
   { name: 'price', labelKey: 'price', type: 'number', required: true },
   { name: 'quantity', labelKey: 'quantity', type: 'number', required: true },
-  { name: 'total', labelKey: 'total_amount', type: 'number', required: true },
-  { name: 'date', labelKey: 'date', type: 'date', required: true },
+  { name: 'total', labelKey: 'total_amount', type: 'number', required: true, isLocked: true }, // Always required for bulk purchases
+  { name: 'date', labelKey: 'date', type: 'date', required: true, isLocked: true }, // Always required, cannot be removed
   { name: 'title', labelKey: 'notes', type: 'textarea' },
   { name: 'signature', labelKey: 'signature', type: 'custom', required: false },
   { name: 'photo', labelKey: 'photo', type: 'image', required: false },

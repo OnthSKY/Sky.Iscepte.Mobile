@@ -10,7 +10,7 @@ import { useApiMutation } from '../../../core/hooks/useApiMutation';
 import { useApiInfiniteQuery } from '../../../core/hooks/useApiInfiniteQuery';
 import { queryKeys } from '../../../core/services/queryClient';
 import { apiEndpoints } from '../../../core/config/apiEndpoints';
-import { Product, ProductStats, ProductHistoryItem } from '../services/productService';
+import { Product, ProductStats, ProductHistoryItem, ProductMovement } from '../services/productService';
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
 import { PaginatedData } from '../../../shared/types/apiResponse';
@@ -208,6 +208,21 @@ export function useProductHistoryQuery(
   return useApiQuery<ProductHistoryItem[]>({
     url: id ? apiEndpoints.stock.history(id) : '',
     queryKey: queryKeys.stock.history(id!),
+    enabled: !!id && (options.enabled !== false),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * Hook for fetching product movements (unified: purchases, sales, stock operations)
+ */
+export function useProductMovementsQuery(
+  id: string | number | undefined,
+  options: { enabled?: boolean } = {}
+) {
+  return useApiQuery<ProductMovement[]>({
+    url: id ? apiEndpoints.stock.movements(id) : '',
+    queryKey: [...queryKeys.stock.detail(id!), 'movements'],
     enabled: !!id && (options.enabled !== false),
     staleTime: 2 * 60 * 1000, // 2 minutes
   });

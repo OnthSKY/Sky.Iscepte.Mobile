@@ -245,13 +245,19 @@ export default function QuickPurchaseScreen() {
                         </Text>
                       )}
                       <View style={styles.productMeta}>
-                        <Text style={[styles.productMetaText, { color: colors.muted }]}>
-                          {t('stock:stock_quantity', { defaultValue: 'Stok' })}: {item.stock || 0}
-                        </Text>
-                        {item.price && (
-                          <Text style={[styles.productPrice, { color: colors.muted }]}>
-                            {t('purchases:current_price', { defaultValue: 'Mevcut Fiyat' })}: {formatCurrency(item.price, item.currency || 'TRY')}
+                        <View style={[styles.stockBadge, { backgroundColor: isSelected ? colors.primary + '30' : colors.surface, borderColor: isSelected ? colors.primary : colors.border }]}>
+                          <Ionicons name="cube-outline" size={14} color={isSelected ? colors.primary : colors.text} />
+                          <Text style={[styles.productMetaText, { color: isSelected ? colors.primary : colors.text, fontWeight: '600' }]}>
+                            {item.stock || 0}
                           </Text>
+                        </View>
+                        {item.price && (
+                          <View style={[styles.priceBadge, { backgroundColor: isSelected ? colors.primary + '30' : colors.surface, borderColor: isSelected ? colors.primary : colors.border }]}>
+                            <Ionicons name="pricetag-outline" size={14} color={isSelected ? colors.primary : colors.text} />
+                            <Text style={[styles.productPrice, { color: isSelected ? colors.primary : colors.text, fontWeight: '600' }]}>
+                              {formatCurrency(item.price, item.currency || 'TRY')}
+                            </Text>
+                          </View>
                         )}
                       </View>
                     </View>
@@ -409,14 +415,33 @@ const styles = StyleSheet.create({
   },
   productMeta: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
     alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  stockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  priceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   productMetaText: {
-    fontSize: 12,
+    fontSize: 13,
   },
   productPrice: {
-    fontSize: 12,
+    fontSize: 13,
   },
   addItemSection: {
     flexDirection: 'row',

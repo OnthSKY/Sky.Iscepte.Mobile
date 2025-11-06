@@ -32,6 +32,8 @@
   "module_name": "Purchase Management",
   "module_overview": "Module Overview",
   "module_description": "Manage product purchases from suppliers with the Purchases module. Purchases are automatically added to your stock inventory and recorded in your expense tracking.",
+  "module_info_title": "Important Information",
+  "module_info_message": "This module is only used for product purchases that will be added to your stock inventory. For non-stock expense transactions (service purchases, general expenses, etc.), use the Expenses module.",
   "custom_fields": "Custom Fields",
   "add_custom_field": "Add Custom Field",
   "remove_custom_field": "Remove Custom Field",
@@ -81,6 +83,18 @@
   "go_to_quick_purchase": "Go to Quick Purchase",
   "continue_normal_purchase": "Continue Normal Purchase",
   "is_stock_purchase": "Stock Purchase",
-  "is_stock_purchase_description": "If checked, purchase will be for stock. If unchecked, it will be recorded as an expense."
+  "is_stock_purchase_description": "If checked, purchase will be for stock. If unchecked, it will be recorded as an expense.",
+  "stock_purchase": "Stock Increase",
+  "stock_purchase_info": "This product will be added to your stock inventory and you can sell it.",
+  "expense_purchase": "Record as Expense",
+  "expense_purchase_info": "This product will not be sold, it will only be recorded as an expense. You can view it in the Expenses module.",
+  "expense_purchase_warning": "This purchase will be recorded as an expense and will not be added to your stock inventory.",
+  "expense_purchase_warning_description": "Record products you won't sell as expenses. These products are not added to your stock inventory but can be viewed in the Expenses module.",
+  "view_expenses": "View Expenses",
+  "go_to_expenses": "Go to Expenses Module",
+  "purchase_type_info": "Purchase Type Selection",
+  "purchase_type_info_description": "Stock purchase: Product is added to your stock inventory and you can sell it. Expense purchase: Product is recorded as an expense and is not added to your stock inventory.",
+  "non_stock_items_count": "{{count}} products will be recorded as expenses",
+  "stock_items_count": "{{count}} products will be added to your stock inventory"
 }
 

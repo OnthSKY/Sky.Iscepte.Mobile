@@ -32,6 +32,8 @@
   "module_name": "Alış Yönetimi",
   "module_overview": "Modül Özeti",
   "module_description": "Alış modülü ile tedarikçilerden ürün satın alma işlemlerini yönetebilirsiniz. Yapılan alışlar otomatik olarak stok envanterinize eklenir ve gider takibinize kaydedilir.",
+  "module_info_title": "Önemli Bilgi",
+  "module_info_message": "Bu modül sadece stok envanterinize eklenecek ürün alışları için kullanılır. Stok dışındaki gider işlemleri (hizmet alımları, genel giderler vb.) için Giderler modülünü kullanın.",
   "quick_purchase": "Hızlı Alış",
   "quick_purchase_description": "Ürün seçip alış yapabilirsiniz",
   "supplier_name": "Tedarikçi Adı",
@@ -91,6 +93,18 @@
   "go_to_quick_purchase": "Hızlı Alış'a Git",
   "continue_normal_purchase": "Normal Alış'a Devam Et",
   "is_stock_purchase": "Stok Alışı",
-  "is_stock_purchase_description": "İşaretlenirse stok için alış yapılır. İşaretlenmezse gider olarak kaydedilir."
+  "is_stock_purchase_description": "İşaretlenirse stok için alış yapılır. İşaretlenmezse gider olarak kaydedilir.",
+  "stock_purchase": "Stok Artışı",
+  "stock_purchase_info": "Bu ürün stok envanterinize eklenecek ve satış yapabileceksiniz.",
+  "expense_purchase": "Gider Olarak Kaydet",
+  "expense_purchase_info": "Bu ürün satılmayacak, sadece gider olarak kaydedilecek. Giderler modülünde görüntüleyebilirsiniz.",
+  "expense_purchase_warning": "Bu alış gider olarak kaydedilecek ve stok envanterinize eklenmeyecek.",
+  "expense_purchase_warning_description": "Satmayacağınız ürünler için gider olarak kaydedin. Bu ürünler stok envanterinize eklenmez ancak giderler modülünde görüntülenebilir.",
+  "view_expenses": "Giderleri Görüntüle",
+  "go_to_expenses": "Giderler Modülüne Git",
+  "purchase_type_info": "Alış Tipi Seçimi",
+  "purchase_type_info_description": "Stok alışı: Ürün stok envanterinize eklenir ve satış yapabilirsiniz. Gider alışı: Ürün gider olarak kaydedilir ve stok envanterinize eklenmez.",
+  "non_stock_items_count": "{{count}} ürün gider olarak kaydedilecek",
+  "stock_items_count": "{{count}} ürün stok envanterinize eklenecek"
 }
 

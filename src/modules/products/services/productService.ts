@@ -22,6 +22,7 @@ export interface Product {
   price?: number;
   currency?: Currency;
   stock?: number;
+  trackStock?: boolean; // Stok takibi yapılsın mı? (default: true)
   moq?: number; // Minimum Order Quantity
   isActive?: boolean;
   hasSales?: boolean; // if true, cannot be deleted
@@ -61,6 +62,28 @@ export interface ProductHistoryItem {
   user?: string;
   timestamp: string;
   changes?: Record<string, { old: any; new: any }>;
+}
+
+/**
+ * Product Movement - Birleşik hareket kaydı (alış, satış, stok işlemleri)
+ */
+export interface ProductMovement {
+  id: string | number;
+  type: 'stock' | 'purchase' | 'sale';
+  action: string;
+  description?: string;
+  user?: string;
+  timestamp: string;
+  changes?: Record<string, { old: any; new: any }>;
+  // Purchase/Sale specific fields
+  quantity?: number;
+  price?: number;
+  currency?: string;
+  total?: number;
+  supplierName?: string;
+  customerName?: string;
+  purchaseId?: string | number;
+  saleId?: string | number;
 }
 
 export const productService = {
@@ -131,6 +154,8 @@ export const productService = {
   remove: (id: string) => request<void>('DELETE', apiEndpoints.stock.remove(id)),
 
   history: (id: string | number) => request<ProductHistoryItem[]>('GET', apiEndpoints.stock.history(id)),
+
+  movements: (id: string | number) => request<ProductMovement[]>('GET', apiEndpoints.stock.movements(id)),
 };
 
 export default productService;

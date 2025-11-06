@@ -67,6 +67,7 @@ export const stockEndpoints = {
   update: (id: string | number) => `/stock/${id}`,
   remove: (id: string | number) => `/stock/${id}`,
   history: (id: string | number) => `/stock/${id}/history`,
+  movements: (id: string | number) => `/stock/${id}/movements`, // Birleşik hareketler (alış, satış, stok işlemleri)
   alertSettings: '/stock/alert-settings',
   report: '/stock/report',
 } as const;

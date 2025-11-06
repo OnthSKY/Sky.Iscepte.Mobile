@@ -180,9 +180,41 @@ export default function ProductDetailScreen() {
     );
   };
 
+  const handleQuickSale = () => {
+    if (!productId) return;
+    navigation.navigate('QuickSale' as never, { productId });
+  };
+
+  const handleQuickPurchase = () => {
+    if (!productId) return;
+    navigation.navigate('QuickPurchase' as never, { productId });
+  };
+
   const renderFooter = () => {
     return (
       <View style={styles.footer}>
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            onPress={handleQuickSale}
+            style={[styles.quickActionButton, { backgroundColor: colors.primary }]}
+          >
+            <Ionicons name="receipt-outline" size={20} color="#fff" />
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>
+              {t('stock:quick_sale', { defaultValue: 'Hızlı Satış' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleQuickPurchase}
+            style={[styles.quickActionButton, { backgroundColor: colors.statSuccess || '#10B981' }]}
+          >
+            <Ionicons name="cart-outline" size={20} color="#fff" />
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>
+              {t('stock:quick_purchase', { defaultValue: 'Hızlı Alış' })}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity
           onPress={() => setHistoryModalVisible(true)}
           style={[styles.historyButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -264,6 +296,24 @@ const getStyles = (colors: any, isSmall: boolean) => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  quickActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+  },
+  quickActionText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   historyButton: {
     flexDirection: 'row',

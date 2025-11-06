@@ -5,6 +5,7 @@
 -- tablolarını ve ilişkilerini içerir.
 -- 
 -- PostgreSQL 12+ için optimize edilmiştir.
+-- API_DOCUMENTATION.md'ye göre tamamlanmıştır.
 -- =====================================================
 
 -- =====================================================
@@ -38,6 +39,8 @@ CREATE TABLE users (
 CREATE INDEX idx_users_owner_id ON users(owner_id);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_package_id ON users(package_id);
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
 
 -- Refresh tokens table (for JWT refresh token management)
 CREATE TABLE refresh_tokens (
@@ -189,6 +192,7 @@ CREATE TABLE products (
     price DECIMAL(15,2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'TRY', -- 'TRY', 'USD', 'EUR'
     stock INTEGER DEFAULT 0,
+    track_stock BOOLEAN DEFAULT TRUE, -- Stok takibi yapılsın mı? false ise stoksuz satış yapılabilir
     moq INTEGER DEFAULT 1, -- Minimum Order Quantity
     is_active BOOLEAN DEFAULT TRUE,
     has_sales BOOLEAN DEFAULT FALSE, -- Has any sales records
@@ -203,6 +207,7 @@ CREATE INDEX idx_products_owner_id ON products(owner_id);
 CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_is_active ON products(is_active);
 CREATE INDEX idx_products_has_sales ON products(has_sales);
+CREATE INDEX idx_products_sku ON products(sku);
 
 -- Product global fields table (admin-defined global custom fields)
 CREATE TABLE product_global_fields (
@@ -237,6 +242,78 @@ CREATE TABLE product_custom_fields (
 
 CREATE INDEX idx_product_custom_fields_product_id ON product_custom_fields(product_id);
 CREATE INDEX idx_product_custom_fields_field_key ON product_custom_fields(field_key);
+
+-- Product images table (for multiple images per product)
+CREATE TABLE product_images (
+    id SERIAL PRIMARY KEY,
+    product_id VARCHAR(50) NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    image_path VARCHAR(500), -- Server path
+    display_order INTEGER DEFAULT 0,
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_product_images_product_id ON product_images(product_id);
+CREATE INDEX idx_product_images_display_order ON product_images(product_id, display_order);
+
+-- Stock history table (stock adjustments only)
+CREATE TABLE stock_history (
+    id SERIAL PRIMARY KEY,
+    product_id VARCHAR(50) NOT NULL,
+    action VARCHAR(50) NOT NULL, -- 'stock_increase', 'stock_decrease', 'stock_adjustment'
+    description TEXT,
+    user_id INTEGER, -- User who made the change
+    user_name VARCHAR(200), -- User name (cached for history)
+    old_stock INTEGER,
+    new_stock INTEGER,
+    quantity_change INTEGER, -- Positive for increase, negative for decrease
+    changes JSONB, -- {fieldName: {old: value, new: value}}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_stock_history_product_id ON stock_history(product_id);
+CREATE INDEX idx_stock_history_created_at ON stock_history(created_at DESC);
+CREATE INDEX idx_stock_history_user_id ON stock_history(user_id);
+
+-- Stock movements table (unified movements: stock, purchase, sale)
+-- This table combines stock adjustments, purchases, and sales for a unified view
+CREATE TABLE stock_movements (
+    id SERIAL PRIMARY KEY,
+    product_id VARCHAR(50) NOT NULL,
+    movement_type VARCHAR(20) NOT NULL, -- 'stock', 'purchase', 'sale'
+    action VARCHAR(50) NOT NULL, -- 'stock_increase', 'purchase', 'sale', etc.
+    description TEXT,
+    user_id INTEGER,
+    user_name VARCHAR(200),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    changes JSONB, -- {fieldName: {old: value, new: value}}
+    -- Purchase/Sale specific fields
+    quantity INTEGER,
+    price DECIMAL(15,2),
+    currency VARCHAR(3),
+    total DECIMAL(15,2),
+    supplier_id VARCHAR(50),
+    supplier_name VARCHAR(200),
+    customer_id VARCHAR(50),
+    customer_name VARCHAR(200),
+    purchase_id VARCHAR(50),
+    sale_id VARCHAR(50),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+    CONSTRAINT chk_movement_type CHECK (movement_type IN ('stock', 'purchase', 'sale'))
+);
+
+CREATE INDEX idx_stock_movements_product_id ON stock_movements(product_id);
+CREATE INDEX idx_stock_movements_timestamp ON stock_movements(timestamp DESC);
+CREATE INDEX idx_stock_movements_type ON stock_movements(movement_type);
+CREATE INDEX idx_stock_movements_purchase_id ON stock_movements(purchase_id);
+CREATE INDEX idx_stock_movements_sale_id ON stock_movements(sale_id);
 
 -- Stock alert settings table
 CREATE TABLE stock_alert_settings (
@@ -279,6 +356,8 @@ CREATE TABLE customers (
 CREATE INDEX idx_customers_owner_id ON customers(owner_id);
 CREATE INDEX idx_customers_is_active ON customers(is_active);
 CREATE INDEX idx_customers_group ON customers(group);
+CREATE INDEX idx_customers_email ON customers(email);
+CREATE INDEX idx_customers_phone ON customers(phone);
 
 -- Customer custom fields table
 CREATE TABLE customer_custom_fields (
@@ -320,6 +399,8 @@ CREATE TABLE suppliers (
 
 CREATE INDEX idx_suppliers_owner_id ON suppliers(owner_id);
 CREATE INDEX idx_suppliers_is_active ON suppliers(is_active);
+CREATE INDEX idx_suppliers_email ON suppliers(email);
+CREATE INDEX idx_suppliers_phone ON suppliers(phone);
 
 -- =====================================================
 -- 7. SALES
@@ -421,8 +502,6 @@ CREATE TABLE purchases (
     total DECIMAL(15,2) NOT NULL,
     date DATE NOT NULL,
     status VARCHAR(20) DEFAULT 'pending', -- 'completed', 'pending'
-    purchase_type_id VARCHAR(50),
-    is_stock_purchase BOOLEAN DEFAULT TRUE, -- true = stok için alış, false = gider olarak kaydedilecek (for single item purchases)
     owner_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -448,7 +527,6 @@ CREATE TABLE purchase_items (
     price DECIMAL(15,2) NOT NULL,
     subtotal DECIMAL(15,2) NOT NULL, -- quantity * price
     currency VARCHAR(3) DEFAULT 'TRY',
-    is_stock_purchase BOOLEAN DEFAULT TRUE, -- true = stok için alış, false = gider olarak kaydedilecek
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
@@ -530,6 +608,8 @@ CREATE TABLE employees (
 CREATE INDEX idx_employees_owner_id ON employees(owner_id);
 CREATE INDEX idx_employees_status ON employees(status);
 CREATE INDEX idx_employees_role ON employees(role);
+CREATE INDEX idx_employees_email ON employees(email);
+CREATE INDEX idx_employees_username ON employees(username);
 
 -- Employee verification settings table
 CREATE TABLE employee_verification_settings (
@@ -573,7 +653,7 @@ CREATE TABLE expenses (
     currency VARCHAR(3) DEFAULT 'TRY',
     type VARCHAR(20) DEFAULT 'expense', -- Always 'expense'
     source VARCHAR(50), -- 'product_purchase', 'employee_salary', 'manual'
-    expense_type_id VARCHAR(50),
+    expense_type_id INTEGER, -- References expense_types(id)
     date DATE NOT NULL,
     description TEXT,
     sale_id VARCHAR(50),
@@ -584,6 +664,7 @@ CREATE TABLE expenses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (expense_type_id) REFERENCES expense_types(id) ON DELETE SET NULL,
     FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE SET NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL,
@@ -623,7 +704,7 @@ CREATE TABLE revenue (
     amount DECIMAL(15,2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'TRY',
     source VARCHAR(50), -- 'sales', 'manual'
-    revenue_type_id VARCHAR(50),
+    revenue_type_id INTEGER, -- References revenue_types(id)
     date DATE NOT NULL,
     description TEXT,
     sale_id VARCHAR(50),
@@ -633,6 +714,7 @@ CREATE TABLE revenue (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (revenue_type_id) REFERENCES revenue_types(id) ON DELETE SET NULL,
     FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE SET NULL,
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL,
     CONSTRAINT chk_revenue_currency CHECK (currency IN ('TRY', 'USD', 'EUR')),
@@ -671,7 +753,7 @@ CREATE TABLE income (
     amount DECIMAL(15,2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'TRY',
     source VARCHAR(50), -- 'sales', 'manual'
-    income_type_id VARCHAR(50),
+    income_type_id INTEGER, -- References income_types(id)
     date DATE NOT NULL,
     description TEXT,
     sale_id VARCHAR(50),
@@ -681,6 +763,7 @@ CREATE TABLE income (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (income_type_id) REFERENCES income_types(id) ON DELETE SET NULL,
     FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE SET NULL,
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL,
     CONSTRAINT chk_income_currency CHECK (currency IN ('TRY', 'USD', 'EUR')),
@@ -897,13 +980,15 @@ CREATE TRIGGER update_reports_updated_at BEFORE UPDATE ON reports
 INSERT INTO roles (id, name, description) VALUES
 ('admin', 'Administrator', 'Full system access'),
 ('owner', 'Business Owner', 'Business owner with full access to own data'),
-('staff', 'Staff Member', 'Staff member with limited access');
+('staff', 'Staff Member', 'Staff member with limited access')
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert default packages
 INSERT INTO packages (id, name, description, price) VALUES
 ('free', 'Free Plan', 'Basic features', 0.00),
 ('premium', 'Premium Plan', 'Advanced features', 99.99),
-('gold', 'Gold Plan', 'All features', 199.99);
+('gold', 'Gold Plan', 'All features', 199.99)
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert default modules
 INSERT INTO modules (id, name, description, icon, route) VALUES
@@ -912,12 +997,26 @@ INSERT INTO modules (id, name, description, icon, route) VALUES
 ('suppliers', 'Tedarikçi Yönetimi', 'Tedarikçi bilgilerini yönetmek için', 'business-outline', 'Suppliers'),
 ('expenses', 'Gider Takibi', 'Gider işlemlerini takip etmek için', 'wallet-outline', 'Expenses'),
 ('revenue', 'Gelir Takibi', 'Gelir işlemlerini takip etmek için', 'trending-up-outline', 'Revenue'),
+('income', 'Gelir Yönetimi', 'Gelir işlemlerini yönetmek için', 'trending-up-outline', 'Income'),
 ('employees', 'Çalışan Yönetimi', 'Çalışan bilgilerini yönetmek için', 'person-outline', 'Employees'),
 ('stock', 'Stok Yönetimi', 'Ürün ve stok yönetimi için', 'cube-outline', 'Stock'),
 ('purchases', 'Alış Yönetimi', 'Alış işlemlerini yönetmek için', 'cart-outline', 'Purchases'),
-('reports', 'Raporlama', 'Raporlar ve analitik için', 'stats-chart-outline', 'Reports');
+('reports', 'Raporlama', 'Raporlar ve analitik için', 'stats-chart-outline', 'Reports')
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- 18. COMMENTS FOR DOCUMENTATION
+-- =====================================================
+
+COMMENT ON TABLE products IS 'Products/Stock table - supports track_stock flag for stockless products';
+COMMENT ON TABLE stock_history IS 'Stock adjustment history - only manual stock changes';
+COMMENT ON TABLE stock_movements IS 'Unified stock movements - combines stock, purchase, and sale movements';
+COMMENT ON TABLE sales IS 'Sales table - supports single product (productId) and bulk (items array) sales';
+COMMENT ON TABLE purchases IS 'Purchases table - supports single product (productId) and bulk (items array) purchases';
+COMMENT ON TABLE expense_types IS 'Expense types - owner-specific or system default';
+COMMENT ON TABLE revenue_types IS 'Revenue types - owner-specific or system default';
+COMMENT ON TABLE income_types IS 'Income types - owner-specific or system default (separate from revenue)';
 
 -- =====================================================
 -- END OF SCHEMA
 -- =====================================================
-

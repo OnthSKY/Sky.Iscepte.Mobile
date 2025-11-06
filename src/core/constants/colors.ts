@@ -32,6 +32,20 @@ export const lightColors = {
   // Overlay colors
   overlayLight: '#FFFFFF10',
   overlayDark: '#00000010',
+  
+  // Info card colors (for module overview info cards)
+  infoCardBackground: '#EFF6FF', // Light blue background
+  infoCardBorder: '#BFDBFE', // Light blue border
+  infoCardText: '#1E40AF', // Dark blue text
+  infoCardIcon: '#3B82F6', // Blue icon
+  warningCardBackground: '#FEF3C7', // Light yellow background
+  warningCardBorder: '#FDE68A', // Light yellow border
+  warningCardText: '#92400E', // Dark yellow text
+  warningCardIcon: '#F59E0B', // Yellow icon
+  successCardBackground: '#D1FAE5', // Light green background
+  successCardBorder: '#A7F3D0', // Light green border
+  successCardText: '#065F46', // Dark green text
+  successCardIcon: '#10B981', // Green icon
 };
 
 export const darkColors = {
@@ -68,6 +82,20 @@ export const darkColors = {
   // Overlay colors
   overlayLight: '#FFFFFF10',
   overlayDark: '#00000010',
+  
+  // Info card colors (for module overview info cards)
+  infoCardBackground: '#1E3A8A20', // Dark blue background (20% opacity)
+  infoCardBorder: '#3B82F650', // Blue border (50% opacity)
+  infoCardText: '#93C5FD', // Light blue text
+  infoCardIcon: '#60A5FA', // Light blue icon
+  warningCardBackground: '#78350F30', // Dark yellow background (30% opacity)
+  warningCardBorder: '#F59E0B50', // Yellow border (50% opacity)
+  warningCardText: '#FCD34D', // Light yellow text
+  warningCardIcon: '#FBBF24', // Light yellow icon
+  successCardBackground: '#064E3B30', // Dark green background (30% opacity)
+  successCardBorder: '#10B98150', // Green border (50% opacity)
+  successCardText: '#6EE7B7', // Light green text
+  successCardIcon: '#34D399', // Light green icon
 };
 
 const colors = lightColors;

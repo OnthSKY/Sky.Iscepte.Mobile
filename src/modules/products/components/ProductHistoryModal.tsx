@@ -5,17 +5,18 @@
  * Responsive: Adapts to screen size
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Modal, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import spacing from '../../../core/constants/spacing';
 import { useTranslation } from 'react-i18next';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Card from '../../../shared/components/Card';
-import { useProductHistoryQuery } from '../hooks/useProductsQuery';
-import { ProductHistoryItem } from '../services/productService';
+import { useProductMovementsQuery } from '../hooks/useProductsQuery';
+import { ProductMovement } from '../services/productService';
 import LoadingState from '../../../shared/components/LoadingState';
 import ErrorState from '../../../shared/components/ErrorState';
+import { formatCurrency } from '../utils/currency';
 
 interface ProductHistoryModalProps {
   visible: boolean;
@@ -23,16 +24,20 @@ interface ProductHistoryModalProps {
   productId: string | number | undefined;
 }
 
+// UnifiedHistoryItem is now ProductMovement from API
+type UnifiedHistoryItem = ProductMovement;
+
 export default function ProductHistoryModal({ 
   visible, 
   onClose, 
   productId 
 }: ProductHistoryModalProps) {
   const { colors } = useTheme();
-  const { t } = useTranslation(['stock', 'common']);
+  const { t } = useTranslation(['stock', 'common', 'purchases', 'sales']);
   const styles = getStyles(colors);
 
-  const { data: history, isLoading, error, refetch } = useProductHistoryQuery(
+  // Fetch unified movements (purchases, sales, stock operations)
+  const { data: history, isLoading, error, refetch } = useProductMovementsQuery(
     productId,
     { enabled: visible && !!productId }
   );
@@ -52,7 +57,13 @@ export default function ProductHistoryModal({
     }
   };
 
-  const getActionIcon = (action: string) => {
+  const getActionIcon = (action: string, type?: 'stock' | 'purchase' | 'sale') => {
+    if (type === 'purchase') {
+      return 'cart';
+    }
+    if (type === 'sale') {
+      return 'receipt';
+    }
     switch (action?.toLowerCase()) {
       case 'create':
       case 'created':
@@ -67,12 +78,22 @@ export default function ProductHistoryModal({
         return 'arrow-up-circle';
       case 'stock_decrease':
         return 'arrow-down-circle';
+      case 'purchase':
+        return 'cart';
+      case 'sale':
+        return 'receipt';
       default:
         return 'time';
     }
   };
 
-  const getActionColor = (action: string) => {
+  const getActionColor = (action: string, type?: 'stock' | 'purchase' | 'sale') => {
+    if (type === 'purchase') {
+      return colors.statSuccess || '#10B981';
+    }
+    if (type === 'sale') {
+      return colors.primary;
+    }
     switch (action?.toLowerCase()) {
       case 'create':
       case 'created':
@@ -87,9 +108,25 @@ export default function ProductHistoryModal({
         return colors.success;
       case 'stock_decrease':
         return colors.warning;
+      case 'purchase':
+        return colors.statSuccess || '#10B981';
+      case 'sale':
+        return colors.primary;
       default:
         return colors.muted;
     }
+  };
+
+  const getActionLabel = (item: UnifiedHistoryItem) => {
+    if (item.type === 'purchase') {
+      return t('purchases:purchase', { defaultValue: 'Alış' });
+    }
+    if (item.type === 'sale') {
+      return t('sales:sale', { defaultValue: 'Satış' });
+    }
+    return t(`stock:action_${item.action}`, { 
+      defaultValue: item.action 
+    });
   };
 
   return (
@@ -134,7 +171,7 @@ export default function ProductHistoryModal({
               </View>
             ) : (
               <View style={styles.timeline}>
-                {history.map((item: ProductHistoryItem, index: number) => (
+                {history.map((item: UnifiedHistoryItem, index: number) => (
                   <View key={item.id || index} style={styles.timelineItem}>
                     <View style={styles.timelineContent}>
                       {/* Timeline dot and line */}
@@ -142,11 +179,11 @@ export default function ProductHistoryModal({
                         <View 
                           style={[
                             styles.timelineDot, 
-                            { backgroundColor: getActionColor(item.action) }
+                            { backgroundColor: getActionColor(item.action, item.type) }
                           ]}
                         >
                           <Ionicons 
-                            name={getActionIcon(item.action)} 
+                            name={getActionIcon(item.action, item.type)} 
                             size={16} 
                             color="#fff" 
                           />
@@ -162,13 +199,19 @@ export default function ProductHistoryModal({
                           <View style={styles.timelineHeader}>
                             <View style={styles.timelineHeaderLeft}>
                               <Text style={[styles.actionText, { color: colors.text }]}>
-                                {t(`stock:action_${item.action}`, { 
-                                  defaultValue: item.action 
-                                })}
+                                {getActionLabel(item)}
                               </Text>
                               {item.user && (
                                 <Text style={[styles.userText, { color: colors.muted }]}>
                                   {t('common:by', { defaultValue: 'Tarafından' })}: {item.user}
+                                </Text>
+                              )}
+                              {(item.supplierName || item.customerName) && (
+                                <Text style={[styles.userText, { color: colors.muted }]}>
+                                  {item.supplierName 
+                                    ? `${t('purchases:supplier', { defaultValue: 'Tedarikçi' })}: ${item.supplierName}`
+                                    : `${t('sales:customer', { defaultValue: 'Müşteri' })}: ${item.customerName}`
+                                  }
                                 </Text>
                               )}
                             </View>
@@ -181,6 +224,42 @@ export default function ProductHistoryModal({
                             <Text style={[styles.descriptionText, { color: colors.text }]}>
                               {item.description}
                             </Text>
+                          )}
+
+                          {/* Purchase/Sale details */}
+                          {(item.type === 'purchase' || item.type === 'sale') && (
+                            <View style={styles.transactionDetails}>
+                              {item.quantity !== undefined && (
+                                <View style={styles.detailRow}>
+                                  <Text style={[styles.detailLabel, { color: colors.muted }]}>
+                                    {t('common:quantity', { defaultValue: 'Miktar' })}:
+                                  </Text>
+                                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                                    {item.quantity}
+                                  </Text>
+                                </View>
+                              )}
+                              {item.price !== undefined && (
+                                <View style={styles.detailRow}>
+                                  <Text style={[styles.detailLabel, { color: colors.muted }]}>
+                                    {t('common:price', { defaultValue: 'Fiyat' })}:
+                                  </Text>
+                                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                                    {formatCurrency(item.price, item.currency || 'TRY')}
+                                  </Text>
+                                </View>
+                              )}
+                              {item.total !== undefined && (
+                                <View style={styles.detailRow}>
+                                  <Text style={[styles.detailLabel, { color: colors.muted, fontWeight: '600' }]}>
+                                    {t('common:total', { defaultValue: 'Toplam' })}:
+                                  </Text>
+                                  <Text style={[styles.detailValue, { color: colors.primary, fontWeight: '600' }]}>
+                                    {formatCurrency(item.total, item.currency || 'TRY')}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
                           )}
 
                           {item.changes && Object.keys(item.changes).length > 0 && (
@@ -347,6 +426,24 @@ const getStyles = (colors: any) => StyleSheet.create({
   changeNew: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  transactionDetails: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.xs,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 13,
+  },
+  detailValue: {
+    fontSize: 13,
   },
 });
 

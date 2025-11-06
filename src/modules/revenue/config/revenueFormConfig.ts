@@ -7,8 +7,8 @@ import { DynamicField } from '../../../shared/components/DynamicForm';
 import { Revenue } from '../store/revenueStore';
 
 export const baseRevenueFormFields: DynamicField[] = [
-  { name: 'title', labelKey: 'title', type: 'text', required: true },
-  { name: 'amount', labelKey: 'amount', type: 'number', required: true },
+  { name: 'title', labelKey: 'title', type: 'text', required: true, isLocked: true }, // Always required, cannot be removed
+  { name: 'amount', labelKey: 'amount', type: 'number', required: true, isLocked: true }, // Always required, cannot be removed
   { name: 'date', labelKey: 'date', type: 'date' },
   { name: 'description', labelKey: 'description', type: 'textarea' },
 ];

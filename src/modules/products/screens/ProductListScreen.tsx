@@ -191,11 +191,42 @@ export default function ProductListScreen() {
     );
   }, [statsLoading, moduleStats, colors]);
 
+  // Info card about stock adjustment vs quick sale/purchase
+  const infoCard = React.useMemo(() => (
+    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+      <View style={{ 
+        backgroundColor: colors.infoCardBackground || colors.surface, 
+        borderColor: colors.infoCardBorder || colors.border,
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: spacing.md,
+        gap: spacing.sm,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.infoCardIcon || colors.primary} />
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.infoCardText || colors.text }}>
+            {t('stock:stock_operations_info', { defaultValue: 'Stok İşlemleri Hakkında' })}
+          </Text>
+        </View>
+        <Text style={{ fontSize: 12, color: colors.infoCardText || colors.muted, lineHeight: 18 }}>
+          {t('stock:stock_operations_description', { 
+            defaultValue: '• Stok Artır/Azalt: Sadece stok miktarını değiştirir, raporlarda görünmez\n• Hızlı Alış/Satış: Gerçek işlem kaydı oluşturur, raporlarda görünür ve muhasebe kaydı yapar' 
+          })}
+        </Text>
+      </View>
+    </View>
+  ), [colors, t]);
+
   return (
     <ScreenLayout noPadding>
       <View style={{ flex: 1, backgroundColor: colors.page }}>
         <ListScreenContainer
-            ListHeaderComponent={statsHeader}
+            ListHeaderComponent={
+              <View>
+                {statsHeader}
+                {infoCard}
+              </View>
+            }
             service={productEntityService}
             config={{
               entityName: 'product',

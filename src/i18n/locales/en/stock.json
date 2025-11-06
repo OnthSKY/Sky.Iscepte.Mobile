@@ -160,6 +160,17 @@
   "delete_template_confirm": "Are you sure you want to delete this form template?",
   "delete_failed": "Delete failed",
   "set_default_failed": "Set default template failed",
-  "save_failed": "Save failed"
+  "save_failed": "Save failed",
+  "stock_adjustment_info_title": "What is Stock Adjustment?",
+  "stock_adjustment_info_description": "This operation only changes the stock quantity. It does not create any purchase/sale records or accounting records.",
+  "stock_adjustment_when_to_use": "When to Use?",
+  "stock_adjustment_use_cases": "• Inventory count correction\n• Fire, theft, damaged products\n• Product returns\n• Stock corrections",
+  "stock_adjustment_warning": "Warning",
+  "stock_adjustment_warning_text": "This operation will not appear in reports. Use Quick Purchase or Quick Sale screens for actual purchase/sale transactions.",
+  "purchase_sale_info_title": "What is Purchase/Sale?",
+  "purchase_sale_info_description": "Purchase and Sale transactions are actual commercial transactions. These operations:",
+  "purchase_sale_features": "• Create transaction records\n• Create accounting records\n• Appear in reports\n• Automatically update stock",
+  "purchase_sale_when_to_use": "When to Use?",
+  "purchase_sale_use_cases": "• Actual purchase transactions\n• Actual sale transactions\n• Customer/Supplier transactions\n• Financial reporting"
 }
 

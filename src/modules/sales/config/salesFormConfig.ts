@@ -11,9 +11,9 @@ export const salesFormFields: DynamicField[] = [
   { name: 'productId', labelKey: 'product', type: 'select', required: true },
   { name: 'price', labelKey: 'price', type: 'number', required: true },
   { name: 'quantity', labelKey: 'quantity', type: 'number', required: true },
-  { name: 'amount', labelKey: 'total_amount', type: 'number', required: true },
+  { name: 'amount', labelKey: 'total_amount', type: 'number', required: true, isLocked: true }, // Always required for bulk sales
   { name: 'customerId', labelKey: 'customer', type: 'select' },
-  { name: 'date', labelKey: 'date', type: 'date', required: true, defaultValue: formatDate(new Date()) },
+  { name: 'date', labelKey: 'date', type: 'date', required: true, isLocked: true, defaultValue: formatDate(new Date()) }, // Always required, cannot be removed
   { name: 'debtCollectionDate', labelKey: 'debt_collection_date', type: 'date', required: false },
   // Note: 'title' (notes) field is rendered separately in SalesFormScreen for better visibility
   { name: 'photo', labelKey: 'photo', type: 'image', required: false },

@@ -1361,6 +1361,8 @@ export default function FormTemplateManagementScreen() {
                           { label: t('common:date', { defaultValue: 'Tarih' }), value: 'date' },
                           { label: t('common:select', { defaultValue: 'Seçim' }), value: 'select' },
                           { label: t('common:textarea', { defaultValue: 'Metin Alanı' }), value: 'textarea' },
+                          { label: t('common:signature', { defaultValue: 'İmza' }), value: 'signature' },
+                          { label: t('common:image', { defaultValue: 'Fotoğraf' }), value: 'image' },
                           { label: t('common:tc_verification', { defaultValue: 'TC Kimlik Doğrulama' }), value: 'tc_verification' },
                           { label: t('common:imei_verification', { defaultValue: 'IMEI Doğrulama' }), value: 'imei_verification' },
                         ]}

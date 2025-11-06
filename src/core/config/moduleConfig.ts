@@ -12,6 +12,7 @@ export interface ModuleConfig {
   translationNamespace: string;
   translationKey: string; // Key for module name translation (e.g., 'module_name' or 'module')
   quickActions?: QuickActionConfig[];
+  dependencies?: string[]; // Array of module keys that this module depends on (e.g., ['customers', 'suppliers'])
 }
 
 export interface QuickActionConfig {
@@ -36,6 +37,7 @@ export const MODULE_CONFIGS: ModuleConfig[] = [
     requiredPermission: 'stock:view',
     translationNamespace: 'stock',
     translationKey: 'module_name',
+    dependencies: ['purchases', 'sales'], // Stock production depends on purchases and sales
     quickActions: [
       {
         key: 'qa-stock',
@@ -56,6 +58,7 @@ export const MODULE_CONFIGS: ModuleConfig[] = [
     requiredPermission: 'purchases:view',
     translationNamespace: 'purchases',
     translationKey: 'module_name',
+    dependencies: ['suppliers', 'stock'], // Purchases depends on suppliers and stock
     quickActions: [
       {
         key: 'qa-purchase',
@@ -76,6 +79,7 @@ export const MODULE_CONFIGS: ModuleConfig[] = [
     requiredPermission: 'sales:view',
     translationNamespace: 'sales',
     translationKey: 'module_name',
+    dependencies: ['customers', 'stock'], // Sales depends on customers and stock
     quickActions: [
       {
         key: 'qa-sale',
@@ -245,5 +249,41 @@ export const getQuickActionConfig = (routeName: string): QuickActionConfig | und
 export const getQuickActionFallback = (routeName: string): string | undefined => {
   const qa = getQuickActionConfig(routeName);
   return qa?.fallbackRoute || getModuleConfigByRoute(routeName)?.routeName;
+};
+
+/**
+ * Get missing dependencies for a module
+ * Returns array of module keys that are required but not available
+ */
+export const getMissingDependencies = (
+  moduleKey: string,
+  availableModules: string[],
+  permissions: { can: (permission: string) => boolean }
+): string[] => {
+  const moduleConfig = getModuleConfig(moduleKey);
+  if (!moduleConfig || !moduleConfig.dependencies || moduleConfig.dependencies.length === 0) {
+    return [];
+  }
+
+  const missing: string[] = [];
+  
+  for (const depKey of moduleConfig.dependencies) {
+    const depConfig = getModuleConfig(depKey);
+    if (!depConfig) continue; // Skip if dependency module doesn't exist in config
+    
+    // Check if module is available in routes
+    const isAvailable = availableModules.includes(depConfig.routeName) || 
+                       availableModules.includes(depConfig.dashboardRoute || '');
+    
+    // Check if user has permission
+    const hasPermission = permissions.can(depConfig.requiredPermission);
+    
+    // If module is not available or user doesn't have permission, it's missing
+    if (!isAvailable || !hasPermission) {
+      missing.push(depKey);
+    }
+  }
+  
+  return missing;
 };
 

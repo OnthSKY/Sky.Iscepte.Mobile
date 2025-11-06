@@ -22,9 +22,11 @@ import SearchBar from './SearchBar';
 import PaginatedList from './PaginatedList';
 import EmptyState from './EmptyState';
 import ConfirmDialog from './ConfirmDialog';
-import { MODULE_CONFIGS, getModuleConfig } from '../../core/config/moduleConfig';
+import { MODULE_CONFIGS, getModuleConfig, getMissingDependencies } from '../../core/config/moduleConfig';
 import { useAppStore } from '../../store/useAppStore';
 import { showPermissionAlert } from '../utils/permissionUtils';
+import { usePermissions } from '../../core/hooks/usePermissions';
+import { useNavigationHandler } from '../../core/hooks/useNavigationHandler';
 
 export interface ModuleStat {
   key: string;
@@ -54,6 +56,13 @@ export interface ModuleDashboardConfig<T extends BaseEntity = BaseEntity> {
   createRoute?: string; // Route to create new item
   description?: string; // Module description/summary (optional, will be translated)
   compactStats?: boolean; // If true, show all stats in a single row (compact mode)
+  infoCard?: {
+    title?: string; // Info card title (optional, will be translated)
+    message?: string; // Info card message (optional, will be translated)
+    type?: 'info' | 'warning' | 'success'; // Card type for color scheme
+    actionRoute?: string; // Optional route to navigate when card is clicked
+    actionLabel?: string; // Optional action button label (will be translated)
+  };
   // List configuration for integrated list tab
   listConfig?: {
     service: BaseEntityService<T>;
@@ -203,6 +212,47 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
   const [deleteDialog, setDeleteDialog] = useState<{ visible: boolean; item: T | null }>({ visible: false, item: null });
   const [listRefreshKey, setListRefreshKey] = useState(0);
   const role = useAppStore((s) => s.role);
+  const permissions = usePermissions(role);
+  const navigationHandler = useNavigationHandler();
+  
+  // Get available routes from navigation state
+  const availableRoutes = useMemo(() => {
+    try {
+      const state = navigation.getState();
+      const routes = (state as any)?.routes || [];
+      return routes.map((r: any) => r.name).filter(Boolean) as string[];
+    } catch {
+      return [];
+    }
+  }, [navigation]);
+  
+  // Check for missing dependencies
+  const missingDependencies = useMemo(() => {
+    if (!moduleConfig) return [];
+    return getMissingDependencies(config.module, availableRoutes, permissions);
+  }, [config.module, moduleConfig, availableRoutes, permissions]);
+  
+  // Build dependency warning info card
+  const dependencyInfoCard = useMemo(() => {
+    if (missingDependencies.length === 0) return undefined;
+    
+    const depNames = missingDependencies.map(depKey => {
+      const depConfig = getModuleConfig(depKey);
+      if (!depConfig) return depKey;
+      return t(`${depConfig.translationNamespace}:${depConfig.translationKey}`, {
+        defaultValue: depConfig.key,
+      });
+    }).join(', ');
+    
+    return {
+      title: `${config.module}:missing_dependencies_title`,
+      message: `${config.module}:missing_dependencies_message`,
+      messageParams: { dependencies: depNames },
+      type: 'warning' as const,
+      actionRoute: undefined,
+      actionLabel: undefined,
+    };
+  }, [missingDependencies, config.module, t]);
 
   if (finalLoading) {
     return (
@@ -287,6 +337,154 @@ export const ModuleDashboardScreen = <T extends BaseEntity = BaseEntity>({ confi
             </View>
           </View>
         )}
+      
+      {/* Dependency Warning Card */}
+      {dependencyInfoCard && (
+        <View style={[styles.descriptionSection, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[
+              styles.infoCard,
+              {
+                backgroundColor: colors.warningCardBackground,
+                borderColor: colors.warningCardBorder,
+                borderWidth: 2,
+              }
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+              <Ionicons 
+                name="alert-circle" 
+                size={24} 
+                color={colors.warningCardIcon}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[
+                  styles.infoCardTitle,
+                  {
+                    color: colors.warningCardText,
+                    fontWeight: '600',
+                  }
+                ]}>
+                  {t(dependencyInfoCard.title, { 
+                    defaultValue: 'Eksik Bağımlılıklar' 
+                  })}
+                </Text>
+                <Text style={[
+                  styles.infoCardText,
+                  {
+                    color: colors.warningCardText,
+                  }
+                ]}>
+                  {t(dependencyInfoCard.message, { 
+                    defaultValue: `Bu modülü kullanmak için şu modüllere ihtiyacınız var: ${dependencyInfoCard.messageParams?.dependencies || ''}. Lütfen bu modülleri paketinize ekleyin.`,
+                    ...dependencyInfoCard.messageParams
+                  })}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Module Info Card (for important information) */}
+      {config.infoCard && (
+        <View style={[styles.descriptionSection, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
+          <TouchableOpacity
+            onPress={() => {
+              if (config.infoCard?.actionRoute) {
+                navigation.navigate(config.infoCard.actionRoute as never);
+              }
+            }}
+            activeOpacity={config.infoCard.actionRoute ? 0.7 : 1}
+            style={[
+              styles.infoCard,
+              {
+                backgroundColor: config.infoCard.type === 'warning' 
+                  ? colors.warningCardBackground 
+                  : config.infoCard.type === 'success'
+                  ? colors.successCardBackground
+                  : colors.infoCardBackground,
+                borderColor: config.infoCard.type === 'warning'
+                  ? colors.warningCardBorder
+                  : config.infoCard.type === 'success'
+                  ? colors.successCardBorder
+                  : colors.infoCardBorder,
+                borderWidth: 2,
+              }
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+              <Ionicons 
+                name={config.infoCard.type === 'warning' ? "alert-circle" : config.infoCard.type === 'success' ? "checkmark-circle" : "information-circle"} 
+                size={24} 
+                color={config.infoCard.type === 'warning'
+                  ? colors.warningCardIcon
+                  : config.infoCard.type === 'success'
+                  ? colors.successCardIcon
+                  : colors.infoCardIcon} 
+              />
+              <View style={{ flex: 1 }}>
+                {config.infoCard.title && (
+                  <Text style={[
+                    styles.infoCardTitle,
+                    {
+                      color: config.infoCard.type === 'warning'
+                        ? colors.warningCardText
+                        : config.infoCard.type === 'success'
+                        ? colors.successCardText
+                        : colors.infoCardText,
+                      fontWeight: '600',
+                    }
+                  ]}>
+                    {t(config.infoCard.title, { defaultValue: config.infoCard.title })}
+                  </Text>
+                )}
+                {config.infoCard.message && (
+                  <Text style={[
+                    styles.infoCardText,
+                    {
+                      color: config.infoCard.type === 'warning'
+                        ? colors.warningCardText
+                        : config.infoCard.type === 'success'
+                        ? colors.successCardText
+                        : colors.infoCardText,
+                    }
+                  ]}>
+                    {t(config.infoCard.message, { defaultValue: config.infoCard.message })}
+                  </Text>
+                )}
+                {config.infoCard.actionRoute && config.infoCard.actionLabel && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm }}>
+                    <Ionicons 
+                      name="arrow-forward-circle" 
+                      size={18} 
+                      color={config.infoCard.type === 'warning'
+                        ? colors.warningCardIcon
+                        : config.infoCard.type === 'success'
+                        ? colors.successCardIcon
+                        : colors.infoCardIcon} 
+                    />
+                    <Text style={[
+                      styles.infoCardAction,
+                      {
+                        color: config.infoCard.type === 'warning'
+                          ? colors.warningCardText
+                          : config.infoCard.type === 'success'
+                          ? colors.successCardText
+                          : colors.infoCardText,
+                        fontWeight: '600',
+                      }
+                    ]}>
+                      {t(config.infoCard.actionLabel, { defaultValue: config.infoCard.actionLabel })}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
 
 
         {/* Summary Stats Cards - Top Section */}
@@ -1019,6 +1217,24 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  infoCard: {
+    borderRadius: 12,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  infoCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  infoCardText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  infoCardAction: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 
