@@ -1,0 +1,7 @@
+# NEDEN: Commit-msg hook - Commit mesajı formatını kontrol eder
+# - Conventional commits standardına uygunluk
+# - Tutarlı commit mesajları
+# - Otomatik changelog oluşturma için gerekli
+
+npx --no -- commitlint --edit ${1}
+

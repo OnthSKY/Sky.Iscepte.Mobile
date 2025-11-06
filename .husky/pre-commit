@@ -1,0 +1,6 @@
+# NEDEN: Pre-commit hook - Commit öncesi otomatik kontrol
+# - Sadece değişen dosyaları lint/format'lar
+# - Hata varsa commit engellenir
+# - Kod kalitesini garanti eder
+
+npx lint-staged
