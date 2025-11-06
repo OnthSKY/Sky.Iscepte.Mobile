@@ -16,6 +16,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "type-coverage": "type-coverage --detail",
+    "type-coverage:check": "type-coverage --threshold 80",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -89,6 +91,7 @@
     "lint-staged": "^16.2.6",
     "prettier": "^3.2.5",
     "react-test-renderer": "19.1.0",
+    "type-coverage": "^2.29.7",
     "typescript": "~5.9.2"
   },
   "private": true

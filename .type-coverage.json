@@ -1,0 +1,9 @@
+{
+  "target": ".",
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "**/__tests__/**"],
+  "threshold": 80,
+  "atLeast": true,
+  "detail": true,
+  "strict": false
+}
