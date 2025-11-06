@@ -1,14 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ActivityIndicator, FlatList, ListRenderItem, RefreshControl, View } from 'react-native';
+import { ActivityIndicator, ListRenderItem, RefreshControl, View } from 'react-native';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
+import { OptimizedFlatList } from './OptimizedFlatList';
 
 export interface PaginationResult<T> {
   items: T[];
   total: number;
 }
 
-type FetchPage<T, Q = void> = (args: { page: number; pageSize: number; query?: Q }) => Promise<PaginationResult<T>>;
+type FetchPage<T, Q = void> = (args: {
+  page: number;
+  pageSize: number;
+  query?: Q;
+}) => Promise<PaginationResult<T>>;
 
 type Props<T, Q = void> = {
   pageSize?: number;
@@ -22,7 +27,17 @@ type Props<T, Q = void> = {
   filterItems?: (items: T[]) => T[];
 };
 
-export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetchPage, renderItem, keyExtractor, ListHeaderComponent, ListEmptyComponent, initialSkeletonCount = 6, filterItems }: Props<T, Q>) {
+export default function PaginatedList<T, Q = void>({
+  pageSize = 20,
+  query,
+  fetchPage,
+  renderItem,
+  keyExtractor,
+  ListHeaderComponent,
+  ListEmptyComponent,
+  initialSkeletonCount = 6,
+  filterItems,
+}: Props<T, Q>) {
   const { colors } = useTheme();
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(1);
@@ -45,23 +60,28 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
     return itemsArray.length < total;
   }, [items, total]);
 
-  const load = useCallback(async (nextPage: number, reset = false) => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
-    setLoading(true);
-    try {
-      const res = await fetchPage({ page: nextPage, pageSize, query });
-      setTotal(res.total || 0);
-      // Ensure items is always an array
-      const newItems = Array.isArray(res.items) ? res.items : [];
-      setItems((prev) => (reset ? newItems : [...prev, ...newItems]));
-      setPage(nextPage);
-      isFirstLoad.current = false;
-    } finally {
-      loadingRef.current = false;
-      setLoading(false);
-    }
-  }, [fetchPage, pageSize, query]);
+  const load = useCallback(
+    async (nextPage: number, reset = false) => {
+      if (loadingRef.current) {
+        return;
+      }
+      loadingRef.current = true;
+      setLoading(true);
+      try {
+        const res = await fetchPage({ page: nextPage, pageSize, query });
+        setTotal(res.total || 0);
+        // Ensure items is always an array
+        const newItems = Array.isArray(res.items) ? res.items : [];
+        setItems((prev) => (reset ? newItems : [...prev, ...newItems]));
+        setPage(nextPage);
+        isFirstLoad.current = false;
+      } finally {
+        loadingRef.current = false;
+        setLoading(false);
+      }
+    },
+    [fetchPage, pageSize, query]
+  );
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -73,9 +93,9 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
   }, [load]);
 
   // Load initial data when query changes
-  useEffect(() => { 
+  useEffect(() => {
     isFirstLoad.current = true;
-    load(1, true); 
+    load(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]); // Query changes should trigger reload
 
@@ -84,33 +104,46 @@ export default function PaginatedList<T, Q = void>({ pageSize = 20, query, fetch
   const isInitialLoading = (loading && isFirstLoad.current) || (loading && itemsArray.length === 0);
 
   return (
-    <FlatList
+    <OptimizedFlatList
       data={filteredItems}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       contentContainerStyle={{ paddingBottom: spacing.xxl }}
       ListHeaderComponent={ListHeaderComponent || null}
       ListEmptyComponent={
-        isInitialLoading
-          ? (
-            <View style={{ padding: spacing.lg, gap: spacing.md }}>
-              {Array.from({ length: initialSkeletonCount }).map((_, i) => (
-                <View key={i} style={{ height: 60, borderRadius: 12, backgroundColor: colors.page }} />
-              ))}
-            </View>
-          )
-          : (ListEmptyComponent || <View style={{ padding: spacing.lg }} />)
+        isInitialLoading ? (
+          <View style={{ padding: spacing.lg, gap: spacing.md }}>
+            {Array.from({ length: initialSkeletonCount }).map((_, i) => (
+              <View
+                key={i}
+                style={{ height: 60, borderRadius: 12, backgroundColor: colors.page }}
+              />
+            ))}
+          </View>
+        ) : (
+          ListEmptyComponent || <View style={{ padding: spacing.lg }} />
+        )
       }
-      onEndReached={() => { if (canLoadMore) load(page + 1); }}
+      onEndReached={() => {
+        if (canLoadMore) {
+          load(page + 1);
+        }
+      }}
       onEndReachedThreshold={0.5}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-      ListFooterComponent={loading && filteredItems.length > 0 ? (
-        <View style={{ padding: spacing.md, alignItems: 'center' }}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
-      ) : null}
+      ListFooterComponent={
+        loading && filteredItems.length > 0 ? (
+          <View style={{ padding: spacing.md, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : null
+      }
+      // Performance optimizations
+      estimatedItemHeight={60} // Estimated item height for optimization
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+      initialNumToRender={10}
     />
   );
 }
-
-
