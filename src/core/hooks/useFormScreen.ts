@@ -11,16 +11,26 @@ import { getNavigationFallback } from '../config/navigationConfig';
 import { usePermissions } from './usePermissions';
 import { useAppStore } from '../../store/useAppStore';
 import { showPermissionAlert } from '../../shared/utils/permissionUtils';
+import { z } from 'zod';
+import { validateSchema } from '../utils/validationSchema';
 
 /**
  * Single Responsibility: Handles form screen logic (form state, validation, submission)
  * Dependency Inversion: Depends on service interface, not concrete implementation
  */
+/**
+ * Validator function type (sync or async)
+ */
+export type FormValidator<T> =
+  | ((data: Partial<T>) => Record<string, string>)
+  | ((data: Partial<T>) => Promise<Record<string, string>>)
+  | z.ZodSchema<T>;
+
 export function useFormScreen<T extends BaseEntity>(
   service: BaseEntityService<T>,
   config: FormScreenConfig,
   initialData?: Partial<T>,
-  validator?: (data: Partial<T>) => Record<string, string>
+  validator?: FormValidator<T>
 ) {
   const { t } = useTranslation([config.translationNamespace, 'common', 'packages']);
   const route = useRoute<any>();
@@ -35,15 +45,15 @@ export function useFormScreen<T extends BaseEntity>(
   // Permission checks
   // Map entityName to module name for permissions (e.g., stock_item -> stock)
   const getPermissionModule = (entityName: string): string => {
-    if (entityName === 'stock_item') return 'stock';
+    if (entityName === 'stock_item') {
+      return 'stock';
+    }
     return entityName;
   };
 
   const requiredPermission = useMemo(() => {
     const moduleName = getPermissionModule(config.entityName);
-    return config.mode === 'create' 
-      ? `${moduleName}:create`
-      : `${moduleName}:edit`;
+    return config.mode === 'create' ? `${moduleName}:create` : `${moduleName}:edit`;
   }, [config.mode, config.entityName]);
 
   const hasPermission = useMemo(() => {
@@ -57,12 +67,14 @@ export function useFormScreen<T extends BaseEntity>(
     if (!permissions.arePermissionsLoaded) {
       return;
     }
-    
+
     if (!hasPermission) {
       showPermissionAlert(role, requiredPermission, navigation, t);
       // Navigate back if user doesn't have permission
-      const entityRouteName = config.entityName === 'stock_item' ? 'Stock' : 
-                              config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
+      const entityRouteName =
+        config.entityName === 'stock_item'
+          ? 'Stock'
+          : config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
       const fallbackRoute = getNavigationFallback(`${entityRouteName}Create`) || entityRouteName;
       if (navHandler.canNavigate(fallbackRoute)) {
         navHandler.navigate(fallbackRoute);
@@ -70,7 +82,16 @@ export function useFormScreen<T extends BaseEntity>(
         navigation.goBack();
       }
     }
-  }, [hasPermission, requiredPermission, role, navigation, t, navHandler, config.entityName, permissions.arePermissionsLoaded]);
+  }, [
+    hasPermission,
+    requiredPermission,
+    role,
+    navigation,
+    t,
+    navHandler,
+    config.entityName,
+    permissions.arePermissionsLoaded,
+  ]);
 
   // Form state
   const [formData, setFormData] = useState<Partial<T>>(initialData || {});
@@ -78,7 +99,7 @@ export function useFormScreen<T extends BaseEntity>(
   const [submitting, setSubmitting] = useState(false);
 
   // Load existing data for edit mode using useAsyncData
-  const { data: loadedData, loading } = useAsyncData<T>(
+  const { loading } = useAsyncData<T>(
     async () => {
       if (!entityId) {
         throw createError(errorMessages.required('ID parameter'), 'MISSING_ID');
@@ -102,12 +123,37 @@ export function useFormScreen<T extends BaseEntity>(
   );
 
   // Validation
-  const validate = useCallback((): boolean => {
-    if (!validator) return true;
+  const validate = useCallback(async (): Promise<boolean> => {
+    if (!validator) {
+      return true;
+    }
 
-    const validationErrors = validator(formData);
-    setErrors(validationErrors);
-    return Object.keys(validationErrors).length === 0;
+    try {
+      let validationErrors: Record<string, string> = {};
+
+      // Check if validator is a Zod schema
+      if (validator instanceof z.ZodSchema) {
+        const result = validateSchema(validator, formData);
+        if (!result.isValid) {
+          validationErrors = result.errors;
+        }
+      } else {
+        // Check if validator is async
+        const result = validator(formData);
+        if (result instanceof Promise) {
+          validationErrors = await result;
+        } else {
+          validationErrors = result;
+        }
+      }
+
+      setErrors(validationErrors);
+      return Object.keys(validationErrors).length === 0;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Validation failed';
+      setErrors({ _general: errorMessage });
+      return false;
+    }
   }, [formData, validator]);
 
   // Form handlers
@@ -123,7 +169,7 @@ export function useFormScreen<T extends BaseEntity>(
       }
       // If updating customFields, clear all customField errors (will be re-validated on submit)
       if (fieldKey === 'customFields' && Array.isArray(value)) {
-        Object.keys(next).forEach(key => {
+        Object.keys(next).forEach((key) => {
           if (key.startsWith('customField_')) {
             // Check if this customField still exists and might still be invalid
             // We'll let validation handle this on next submit
@@ -134,7 +180,7 @@ export function useFormScreen<T extends BaseEntity>(
       }
       return next;
     });
-  }, [errors]);
+  }, []);
 
   const updateFormData = useCallback((data: Partial<T>) => {
     setFormData((prev) => ({ ...prev, ...data }));
@@ -147,7 +193,8 @@ export function useFormScreen<T extends BaseEntity>(
       return;
     }
 
-    if (!validate()) {
+    const isValid = await validate();
+    if (!isValid) {
       return;
     }
 
@@ -159,26 +206,46 @@ export function useFormScreen<T extends BaseEntity>(
         await service.update(entityId, formData);
       }
       // Navigate back after successful submit
-      const entityRouteName = config.entityName === 'stock_item' ? 'Stock' : 
-                              config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
+      const entityRouteName =
+        config.entityName === 'stock_item'
+          ? 'Stock'
+          : config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
       const fallbackRoute = getNavigationFallback(`${entityRouteName}Create`) || entityRouteName;
       if (navHandler.canNavigate(fallbackRoute)) {
         navHandler.navigate(fallbackRoute);
       }
     } catch (err) {
-      const error = err instanceof Error ? err : createError(errorMessages.failedToSave(config.entityName), 'SAVE_ERROR');
+      const error =
+        err instanceof Error
+          ? err
+          : createError(errorMessages.failedToSave(config.entityName), 'SAVE_ERROR');
       setErrors({ _general: error.message });
     } finally {
       setSubmitting(false);
     }
-  }, [formData, config.mode, entityId, validate, service, navigation, navHandler, config.entityName, hasPermission, requiredPermission, role, t]);
+  }, [
+    formData,
+    config.mode,
+    entityId,
+    validate,
+    service,
+    navigation,
+    navHandler,
+    config.entityName,
+    hasPermission,
+    requiredPermission,
+    role,
+    t,
+  ]);
 
   const handleCancel = useCallback(() => {
     // Always navigate to fallback route directly to avoid tab history issues
-    const entityRouteName = config.entityName === 'stock_item' ? 'Stock' : 
-                            config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
+    const entityRouteName =
+      config.entityName === 'stock_item'
+        ? 'Stock'
+        : config.entityName.charAt(0).toUpperCase() + config.entityName.slice(1);
     const fallbackRoute = getNavigationFallback(`${entityRouteName}Create`) || entityRouteName;
-    
+
     if (navHandler.canNavigate(fallbackRoute)) {
       navHandler.navigate(fallbackRoute);
     }
@@ -207,4 +274,3 @@ export function useFormScreen<T extends BaseEntity>(
     t,
   };
 }
-
