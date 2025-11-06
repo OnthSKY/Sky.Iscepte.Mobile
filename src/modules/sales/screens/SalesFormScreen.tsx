@@ -39,6 +39,10 @@ import { canSellQuantity } from '../../products/utils/stockValidation';
 import CurrencySelect from '../../products/components/CurrencySelect';
 import { Currency } from '../store/salesStore';
 import DateTimePicker from '../../../shared/components/DateTimePicker';
+import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
+import { useQuery } from '@tanstack/react-query';
+import { FormTemplate } from '../../../shared/types/formTemplate';
+import Select from '../../../shared/components/Select';
 
 interface SalesFormScreenProps {
   mode?: 'create' | 'edit';
@@ -71,6 +75,32 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
 
+  // Form template state - default to 'default' to use salesFormFields
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | number | null>('default');
+  
+  // Load form templates for sales module
+  const formTemplateService = useMemo(() => createFormTemplateService('sales'), []);
+  const { data: templates = [] } = useQuery({
+    queryKey: ['sales', 'form-templates', 'list'],
+    queryFn: () => formTemplateService.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Set default to 'default' (use salesFormFields) on mount
+  useEffect(() => {
+    if (!selectedTemplateId) {
+      setSelectedTemplateId('default');
+    }
+  }, [selectedTemplateId]);
+
+  // Get selected template
+  const selectedTemplate = useMemo(() => {
+    if (!selectedTemplateId || selectedTemplateId === 'default') {
+      return null; // Use default salesFormFields when no template selected
+    }
+    return templates.find((t: FormTemplate) => String(t.id) === String(selectedTemplateId)) || null;
+  }, [templates, selectedTemplateId]);
+
   // Default values for create mode
   const getInitialData = (): Partial<Sale> => {
     const today = new Date();
@@ -80,13 +110,6 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
       currency: 'TRY',
     });
   };
-
-  // Enhanced validator for template fields
-  const enhancedValidator = createEnhancedValidator<Sale>(
-    salesValidator,
-    [],
-    'sales'
-  );
 
   // Fetch products and customers for select fields
   const { data: productsData } = useProductsQuery();
@@ -112,12 +135,25 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
   const hasCustomers = (customersData?.items || []).length > 0;
   const hasProducts = (productsData?.items || []).length > 0;
 
+  // Get fields from template or default fields
+  const templateFields = useMemo(() => {
+    // Always show base fields - if template has baseFields use those, otherwise use default salesFormFields
+    // Add template customFields on top of base fields
+    const baseFields = selectedTemplate?.baseFields?.length 
+      ? selectedTemplate.baseFields 
+      : salesFormFields;
+    return [
+      ...baseFields,
+      ...(selectedTemplate?.customFields || [])
+    ];
+  }, [selectedTemplate, salesFormFields]);
+
   // Prepare form fields with dynamic options (excluding date and notes fields which are rendered separately)
   const fieldsWithOptions = useMemo(() => {
     const products = productsData?.items || [];
     const customers = customersData?.items || [];
 
-    return salesFormFields
+    return templateFields
       .filter(field => field.name !== 'date') // Exclude date - rendered separately with time
       .map(field => {
         if (field.name === 'productId') {
@@ -140,7 +176,7 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
         }
         return field;
       });
-  }, [productsData, customersData]);
+  }, [templateFields, productsData, customersData]);
 
   return (
     <FormScreenContainer
@@ -151,7 +187,17 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
         mode: formMode,
       }}
       initialData={getInitialData()}
-      validator={enhancedValidator}
+      validator={(data) => {
+        // Enhanced validator for template fields
+        const validatorWithTemplate = createEnhancedValidator<Sale>(
+          salesValidator,
+          [],
+          'sales',
+          templateFields
+        );
+        
+        return validatorWithTemplate(data);
+      }}
       renderForm={(formData, updateField, errors) => {
         // Get products for price lookup (closure over component scope)
         const products = productsData?.items || [];
@@ -383,9 +429,102 @@ export default function SalesFormScreen({ mode }: SalesFormScreenProps = {}) {
           };
         }, [missingDependencies, t]);
         
+        // Template options for dropdown
+        const templateOptions = useMemo(() => {
+          const allTemplates = templates
+            .filter((template: FormTemplate) => template.isActive)
+            .map((template: FormTemplate) => ({
+              label: template.isDefault ? `${template.name} (${t('default', { defaultValue: 'Varsayılan' })})` : template.name,
+              value: String(template.id),
+            }));
+          
+          // Add default option at the beginning (always available)
+          return [
+            { 
+              label: t('default_template', { defaultValue: 'Varsayılan Form' }), 
+              value: 'default' 
+            },
+            ...allTemplates,
+          ];
+        }, [templates, t]);
+
         return (
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
             <View style={{ gap: spacing.md }}>
+              {/* Template Selector - Configuration Section */}
+              <View style={{ 
+                backgroundColor: colors.background, 
+                borderWidth: 1, 
+                borderColor: colors.border,
+                borderRadius: 8,
+                padding: spacing.md,
+                borderStyle: 'solid',
+                borderLeftWidth: 3,
+                borderLeftColor: colors.primary,
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+                  <View style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    backgroundColor: colors.primary + '10',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                    <Ionicons name="construct-outline" size={16} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>
+                      {t('form_configuration', { defaultValue: 'Form Yapılandırması' })}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>
+                      {t('form_configuration_info', { defaultValue: 'Form şablonunu seçin veya varsayılanı kullanın' })}
+                    </Text>
+                  </View>
+                </View>
+                <Select
+                  value={selectedTemplateId ? String(selectedTemplateId) : 'default'}
+                  options={templateOptions}
+                  onChange={(value) => {
+                    if (value === 'default') {
+                      setSelectedTemplateId('default');
+                    } else {
+                      setSelectedTemplateId(value ? Number(value) : null);
+                    }
+                  }}
+                  placeholder={t('select_template', { defaultValue: 'Şablon seçin' })}
+                />
+                {selectedTemplate?.description && (
+                  <View style={{ marginTop: spacing.xs }}>
+                    <Text style={{ fontSize: 11, color: colors.muted, fontStyle: 'italic' }}>
+                      {selectedTemplate.description}
+                    </Text>
+                  </View>
+                )}
+                
+                {/* Link to Settings for template management */}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('FormTemplateManagement', { module: 'sales' })}
+                  style={{ 
+                    marginTop: spacing.sm, 
+                    padding: spacing.sm, 
+                    borderRadius: 6,
+                    backgroundColor: colors.primary + '08',
+                    borderWidth: 1,
+                    borderColor: colors.primary + '20',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.xs,
+                  }}
+                >
+                  <Ionicons name="settings-outline" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
+                    {t('manage_templates', { defaultValue: 'Form şablonlarını yönetmek için ayarlara gidin' })}
+                  </Text>
+                  <Ionicons name="chevron-forward-outline" size={14} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+
               {/* Dependency Warning */}
               {dependencyWarning && (
                 <Card style={{ backgroundColor: colors.warningCardBackground, borderColor: colors.warningCardBorder, borderWidth: 2 }}>
