@@ -1,15 +1,16 @@
 /**
  * PurchaseFormScreen - Unified Create/Edit Screen
- * 
+ *
  * Single Responsibility: Only composes form screen UI
  * Dependency Inversion: Depends on service adapter interface
  * Open/Closed: Can handle both create and edit modes via props
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { View, Alert, ScrollView, Text, TouchableOpacity, Platform, Modal as RNModal, Switch } from 'react-native';
+import { View, ScrollView, Text, TouchableOpacity, Modal as RNModal, Switch } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { FormScreenContainer } from '../../../shared/components/screens/FormScreenContainer';
 import { purchaseEntityService } from '../services/purchaseServiceAdapter';
 import DynamicForm, { DynamicField } from '../../../shared/components/DynamicForm';
@@ -36,8 +37,12 @@ import { Product } from '../../products/services/productService';
 import notificationService from '../../../shared/services/notificationService';
 import { useTheme } from '../../../core/contexts/ThemeContext';
 import { formatDate } from '../../../core/utils/dateUtils';
-import { Form, FormField, FormRow } from '../../../shared/components/Form';
+import { FormField, FormRow } from '../../../shared/components/Form';
 import DateTimePicker from '../../../shared/components/DateTimePicker';
+import { createFormTemplateService } from '../../../shared/utils/createFormTemplateService';
+import { FormTemplate } from '../../../shared/types/formTemplate';
+import { createEnhancedValidator } from '../../../shared/utils/formTemplateUtils';
+import Select from '../../../shared/components/Select';
 
 interface PurchaseFormScreenProps {
   mode?: 'create' | 'edit';
@@ -50,9 +55,35 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
   const { colors } = useTheme();
   const role = useAppStore((s) => s.role);
   const permissions = usePermissions(role);
-  
+
   // Determine mode from route if not provided as prop
   const formMode = mode || (route.params?.id ? 'edit' : 'create');
+
+  // Form template state - default to 'default' to use basePurchaseFormFields
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | number | null>('default');
+
+  // Load form templates for purchases module
+  const formTemplateService = useMemo(() => createFormTemplateService('purchases'), []);
+  const { data: templates = [] } = useQuery({
+    queryKey: ['purchases', 'form-templates', 'list'],
+    queryFn: () => formTemplateService.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Set default to 'default' (use basePurchaseFormFields) on mount
+  useEffect(() => {
+    if (!selectedTemplateId) {
+      setSelectedTemplateId('default');
+    }
+  }, [selectedTemplateId]);
+
+  // Get selected template
+  const selectedTemplate = useMemo(() => {
+    if (!selectedTemplateId || selectedTemplateId === 'default') {
+      return null; // Use default basePurchaseFormFields when no template selected
+    }
+    return templates.find((t: FormTemplate) => String(t.id) === String(selectedTemplateId)) || null;
+  }, [templates, selectedTemplateId]);
 
   // State for datetime picker
   const [dateTimePickerVisible, setDateTimePickerVisible] = useState(false);
@@ -70,7 +101,7 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
   // Fetch products and suppliers for select fields
   const { data: productsData } = useProductsQuery();
   const { data: suppliersData } = useSuppliersQuery();
-  
+
   // Get available routes from navigation state
   const availableRoutes = useMemo(() => {
     try {
@@ -81,12 +112,12 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
       return [];
     }
   }, [navigation]);
-  
+
   // Check for missing dependencies
   const missingDependencies = useMemo(() => {
     return getMissingDependencies('purchases', availableRoutes, permissions);
   }, [availableRoutes, permissions]);
-  
+
   // Check if required modules have data
   const hasSuppliers = (suppliersData?.items || []).length > 0;
   const hasProducts = (productsData?.items || []).length > 0;
@@ -123,25 +154,32 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
     }
   };
 
-
   // Handle purchase type added
   const handleTypeAdded = useCallback(() => {
     loadPurchaseTypes();
   }, []);
 
   // Handle purchase type selection
-  const handlePurchaseTypeChange = useCallback((typeId: string) => {
-    const type = purchaseTypes.find((t) => String(t.id) === typeId);
-    setSelectedPurchaseType(type || null);
-  }, [purchaseTypes]);
+  const handlePurchaseTypeChange = useCallback(
+    (typeId: string) => {
+      const type = purchaseTypes.find((t) => String(t.id) === typeId);
+      setSelectedPurchaseType(type || null);
+    },
+    [purchaseTypes]
+  );
 
   // Prepare purchase type options
   const typeOptions = useMemo(
-    () => (Array.isArray(purchaseTypes) ? purchaseTypes : []).map((t) => ({ label: t.name, value: String(t.id) })),
+    () =>
+      (Array.isArray(purchaseTypes) ? purchaseTypes : []).map((t) => ({
+        label: t.name,
+        value: String(t.id),
+      })),
     [purchaseTypes]
   );
 
   // Build dynamic fields with purchase type selection and type-specific fields
+  // Template fields are integrated here
   const purchaseFields: DynamicField[] = useMemo(() => {
     const fields: DynamicField[] = [
       {
@@ -156,7 +194,11 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
               onChange?.(val);
               handlePurchaseTypeChange(val);
             }}
-            placeholder={loadingTypes ? t('loading', { defaultValue: 'Yükleniyor...' }) : t('purchase_type', { defaultValue: 'Alış Tipi' })}
+            placeholder={
+              loadingTypes
+                ? t('loading', { defaultValue: 'Yükleniyor...' })
+                : t('purchase_type', { defaultValue: 'Alış Tipi' })
+            }
             onTypeAdded={handleTypeAdded}
           />
         ),
@@ -178,18 +220,57 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
       });
     }
 
+    // Get base fields from template or use default
+    const baseFields = selectedTemplate?.baseFields?.length
+      ? selectedTemplate.baseFields
+      : basePurchaseFormFields;
+
     // Add base fields
-    fields.push(...basePurchaseFormFields);
+    fields.push(...baseFields);
+
+    // Add template custom fields
+    if (selectedTemplate?.customFields && selectedTemplate.customFields.length > 0) {
+      fields.push(...selectedTemplate.customFields);
+    }
 
     return fields;
-  }, [typeOptions, loadingTypes, selectedPurchaseType, t, handleTypeAdded, handlePurchaseTypeChange]);
+  }, [
+    typeOptions,
+    loadingTypes,
+    selectedPurchaseType,
+    selectedTemplate,
+    t,
+    handleTypeAdded,
+    handlePurchaseTypeChange,
+  ]);
+
+  // Template options for dropdown
+  const templateOptions = useMemo(() => {
+    const allTemplates = templates
+      .filter((template: FormTemplate) => template.isActive)
+      .map((template: FormTemplate) => ({
+        label: template.isDefault
+          ? `${template.name} (${t('purchases:default', { defaultValue: 'Varsayılan' })})`
+          : template.name,
+        value: String(template.id),
+      }));
+
+    // Add default option at the beginning (always available)
+    return [
+      {
+        label: t('purchases:default_template', { defaultValue: 'Varsayılan Form' }),
+        value: 'default',
+      },
+      ...allTemplates,
+    ];
+  }, [templates, t]);
 
   // Prepare form fields with dynamic options
   const fieldsWithOptions = useMemo(() => {
     const products = productsData?.items || [];
     const suppliers = suppliersData?.items || [];
 
-    return purchaseFields.map(field => {
+    return purchaseFields.map((field) => {
       if (field.name === 'productId') {
         return {
           ...field,
@@ -218,7 +299,9 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
             <SignatureInput
               value={value}
               onChange={onChange}
-              placeholder={t('signature', { defaultValue: 'İmza alanına dokunarak imzanızı çizin' })}
+              placeholder={t('signature', {
+                defaultValue: 'İmza alanına dokunarak imzanızı çizin',
+              })}
             />
           ),
         };
@@ -235,29 +318,44 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
         translationNamespace: 'purchases',
         mode: formMode,
       }}
-      validator={purchaseValidator}
+      validator={(data) => {
+        // Get current template fields for validation
+        const baseFields = selectedTemplate?.baseFields?.length
+          ? selectedTemplate.baseFields
+          : basePurchaseFormFields;
+        const templateFields = [...baseFields, ...(selectedTemplate?.customFields || [])];
+
+        // Create enhanced validator with template fields
+        const validatorWithTemplate = createEnhancedValidator<Purchase>(
+          purchaseValidator,
+          [],
+          'purchases',
+          templateFields
+        );
+
+        return validatorWithTemplate(data);
+      }}
       initialData={formMode === 'create' ? { customFields: [], isStockPurchase: true } : undefined}
-      renderForm={(formData, updateField, errors) => {
+      renderForm={(formData, updateField, _errors) => {
         // Get products and suppliers for lookup (closure over component scope)
         const products = productsData?.items || [];
-        const suppliers = suppliersData?.items || [];
-        
+
         // Use formData's customFields directly or empty array (same as ProductFormScreen)
         const customFields = (formData.customFields as PurchaseCustomField[]) || [];
 
         // Load purchase type when purchaseTypeId is available (for edit mode)
-        React.useEffect(() => {
-          if (formData.purchaseTypeId && purchaseTypes.length > 0 && !selectedPurchaseType) {
-            const type = purchaseTypes.find((t) => String(t.id) === String(formData.purchaseTypeId));
-            if (type) {
-              setSelectedPurchaseType(type);
-            }
+        // Note: This is a side effect but necessary for edit mode
+        if (formData.purchaseTypeId && purchaseTypes.length > 0 && !selectedPurchaseType) {
+          const type = purchaseTypes.find((t) => String(t.id) === String(formData.purchaseTypeId));
+          if (type) {
+            // Use setTimeout to avoid state update during render
+            setTimeout(() => setSelectedPurchaseType(type), 0);
           }
-        }, [formData.purchaseTypeId, purchaseTypes, selectedPurchaseType]);
+        }
 
         const handleCustomFieldsChange = (fields: PurchaseCustomField[]) => {
           // Filter out any signature fields to prevent duplicates (signature is already in base fields)
-          const filteredFields = fields.filter(f => f.key !== 'signature');
+          const filteredFields = fields.filter((f) => f.key !== 'signature');
           updateField('customFields' as keyof Purchase, filteredFields);
         };
 
@@ -274,63 +372,60 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
           });
         }
 
-        // Filter products for search
-        const filteredProducts = useMemo(() => {
-          if (!productSearchQuery.trim()) return products;
-          const query = productSearchQuery.toLowerCase();
-          return products.filter((p: Product) => 
-            p.name?.toLowerCase().includes(query) ||
-            p.category?.toLowerCase().includes(query) ||
-            p.sku?.toLowerCase().includes(query)
-          );
-        }, [products, productSearchQuery]);
-
-        const selectedProduct = useMemo(() => {
-          if (!selectedProductId) return null;
-          return products.find((p: Product) => String(p.id) === String(selectedProductId));
-        }, [selectedProductId, products]);
-
-        // Auto-fill price when product is selected (bulk mode)
-        useEffect(() => {
-          if (selectedProduct && selectedProduct.price !== undefined) {
-            setPrice(String(selectedProduct.price));
-          } else if (!selectedProduct) {
-            setPrice('');
+        // Filter products for search (not using useMemo in callback)
+        const filteredProducts = (() => {
+          if (!productSearchQuery.trim()) {
+            return products;
           }
-        }, [selectedProduct]);
+          const query = productSearchQuery.toLowerCase();
+          return products.filter(
+            (p: Product) =>
+              p.name?.toLowerCase().includes(query) ||
+              p.category?.toLowerCase().includes(query) ||
+              p.sku?.toLowerCase().includes(query)
+          );
+        })();
 
-        // Calculate total for bulk purchase
-        const bulkTotal = useMemo(() => {
-          return bulkPurchaseItems.reduce((sum, item) => sum + item.subtotal, 0);
-        }, [bulkPurchaseItems]);
+        const selectedProduct = (() => {
+          if (!selectedProductId) {
+            return null;
+          }
+          return products.find((p: Product) => String(p.id) === String(selectedProductId));
+        })();
+
+        // Calculate total for bulk purchase (not using useMemo in callback)
+        const bulkTotal = bulkPurchaseItems.reduce((sum, item) => sum + item.subtotal, 0);
 
         // Parse date and time from formData.date (format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DD")
         const todayDate = formatDate(new Date());
         const currentDate = formData.date || '';
         const displayDate = currentDate || (formMode === 'create' ? todayDate : '');
-        
-        // Format display value for datetime picker
-        const displayDateTime = useMemo(() => {
-          if (!displayDate) return formMode === 'create' ? todayDate : '';
-          return displayDate;
-        }, [displayDate, formMode, todayDate]);
+
+        // Format display value for datetime picker (not using useMemo in callback)
+        const displayDateTime = displayDate || (formMode === 'create' ? todayDate : '');
 
         // Handle bulk purchase item add
         const handleAddBulkItem = () => {
           if (!selectedProduct) {
-            notificationService.error(t('purchases:select_product', { defaultValue: 'Lütfen ürün seçin' }));
+            notificationService.error(
+              t('purchases:select_product', { defaultValue: 'Lütfen ürün seçin' })
+            );
             return;
           }
 
           const qty = parseFloat(quantity);
           if (isNaN(qty) || qty <= 0) {
-            notificationService.error(t('purchases:invalid_quantity', { defaultValue: 'Geçersiz miktar' }));
+            notificationService.error(
+              t('purchases:invalid_quantity', { defaultValue: 'Geçersiz miktar' })
+            );
             return;
           }
 
           const itemPrice = parseFloat(price);
           if (isNaN(itemPrice) || itemPrice <= 0) {
-            notificationService.error(t('purchases:invalid_price', { defaultValue: 'Geçersiz fiyat' }));
+            notificationService.error(
+              t('purchases:invalid_price', { defaultValue: 'Geçersiz fiyat' })
+            );
             return;
           }
 
@@ -338,12 +433,14 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
 
           // Get selected currency from form or use product currency or default to TRY
           const selectedCurrency = formData.currency || selectedProduct.currency || 'TRY';
-          
+
           // Default isStockPurchase to true for bulk items
           const itemIsStockPurchase = true; // Default to stock purchase
-          
+
           // Check if item already exists
-          const existingIndex = bulkPurchaseItems.findIndex(item => item.productId === selectedProductId);
+          const existingIndex = bulkPurchaseItems.findIndex(
+            (item) => item.productId === selectedProductId
+          );
           if (existingIndex >= 0) {
             const newItems = [...bulkPurchaseItems];
             newItems[existingIndex] = {
@@ -379,7 +476,9 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
 
         const handleUpdateBulkQuantity = (index: number, newQuantity: string) => {
           const qty = parseFloat(newQuantity);
-          if (isNaN(qty) || qty <= 0) return;
+          if (isNaN(qty) || qty <= 0) {
+            return;
+          }
 
           const newItems = [...bulkPurchaseItems];
           const item = newItems[index];
@@ -393,7 +492,9 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
 
         const handleUpdateBulkPrice = (index: number, newPrice: string) => {
           const itemPrice = parseFloat(newPrice);
-          if (isNaN(itemPrice) || itemPrice <= 0) return;
+          if (isNaN(itemPrice) || itemPrice <= 0) {
+            return;
+          }
 
           const newItems = [...bulkPurchaseItems];
           const item = newItems[index];
@@ -414,64 +515,65 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
           setBulkPurchaseItems(newItems);
         };
 
-        // Update form data when bulk purchase items change
-        useEffect(() => {
-          if (bulkPurchaseItems.length > 0) {
-            const total = bulkPurchaseItems.reduce((sum, item) => sum + item.subtotal, 0);
-            updateField('amount' as keyof Purchase, total);
-            updateField('total' as keyof Purchase, total);
-            // Only update currency if not already set
-            if (!formData.currency) {
-              updateField('currency' as keyof Purchase, bulkPurchaseItems[0]?.currency || 'TRY');
-            }
-            updateField('items' as keyof Purchase, bulkPurchaseItems);
-          } else {
-            updateField('items' as keyof Purchase, []);
-            updateField('amount' as keyof Purchase, 0);
-            updateField('total' as keyof Purchase, 0);
+        // Calculate stock and expense items count (not using useMemo in callback)
+        const stockItemsCount = bulkPurchaseItems.filter(
+          (item) => item.isStockPurchase !== false
+        ).length;
+
+        const expenseItemsCount = bulkPurchaseItems.filter(
+          (item) => item.isStockPurchase === false
+        ).length;
+
+        // Build dependency warning message (not using useMemo in callback)
+        const dependencyWarning = (() => {
+          if (missingDependencies.length === 0) {
+            return null;
           }
-        }, [bulkPurchaseItems]);
-        
-        // Calculate stock and expense items count
-        const stockItemsCount = useMemo(() => {
-          return bulkPurchaseItems.filter(item => item.isStockPurchase !== false).length;
-        }, [bulkPurchaseItems]);
-        
-        const expenseItemsCount = useMemo(() => {
-          return bulkPurchaseItems.filter(item => item.isStockPurchase === false).length;
-        }, [bulkPurchaseItems]);
-        
-        // Build dependency warning message
-        const dependencyWarning = useMemo(() => {
-          if (missingDependencies.length === 0) return null;
-          
-          const depNames = missingDependencies.map(depKey => {
-            const depConfig = getModuleConfig(depKey);
-            if (!depConfig) return depKey;
-            return t(`${depConfig.translationNamespace}:${depConfig.translationKey}`, {
-              defaultValue: depConfig.key,
-            });
-          }).join(', ');
-          
+
+          const depNames = missingDependencies
+            .map((depKey) => {
+              const depConfig = getModuleConfig(depKey);
+              if (!depConfig) {
+                return depKey;
+              }
+              return t(`${depConfig.translationNamespace}:${depConfig.translationKey}`, {
+                defaultValue: depConfig.key,
+              });
+            })
+            .join(', ');
+
           return {
             title: t('missing_dependencies_title', { defaultValue: 'Eksik Bağımlılıklar' }),
-            message: t('missing_dependencies_message', { 
+            message: t('missing_dependencies_message', {
               defaultValue: `Bu formu kullanmak için şu modüllere ihtiyacınız var: ${depNames}. Lütfen bu modülleri paketinize ekleyin.`,
-              dependencies: depNames
+              dependencies: depNames,
             }),
           };
-        }, [missingDependencies, t]);
-        
+        })();
+
         return (
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
             <View style={{ gap: spacing.md }}>
               {/* Dependency Warning */}
               {dependencyWarning && (
-                <Card style={{ backgroundColor: colors.warningCardBackground, borderColor: colors.warningCardBorder, borderWidth: 2 }}>
+                <Card
+                  style={{
+                    backgroundColor: colors.warningCardBackground,
+                    borderColor: colors.warningCardBorder,
+                    borderWidth: 2,
+                  }}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                     <Ionicons name="alert-circle" size={24} color={colors.warningCardIcon} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.warningCardText, marginBottom: spacing.xs }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: colors.warningCardText,
+                          marginBottom: spacing.xs,
+                        }}
+                      >
                         {dependencyWarning.title}
                       </Text>
                       <Text style={{ fontSize: 14, color: colors.warningCardText }}>
@@ -481,84 +583,199 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                   </View>
                 </Card>
               )}
-              
+
               {/* Data availability warnings */}
               {!hasSuppliers && !missingDependencies.includes('suppliers') && (
-                <Card style={{ backgroundColor: colors.infoCardBackground, borderColor: colors.infoCardBorder, borderWidth: 1 }}>
+                <Card
+                  style={{
+                    backgroundColor: colors.infoCardBackground,
+                    borderColor: colors.infoCardBorder,
+                    borderWidth: 1,
+                  }}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                     <Ionicons name="information-circle" size={20} color={colors.infoCardIcon} />
                     <Text style={{ fontSize: 14, color: colors.infoCardText, flex: 1 }}>
-                      {t('no_suppliers_available', { defaultValue: 'Henüz tedarikçi eklenmemiş. Alış yapmak için önce tedarikçi eklemeniz gerekiyor.' })}
+                      {t('no_suppliers_available', {
+                        defaultValue:
+                          'Henüz tedarikçi eklenmemiş. Alış yapmak için önce tedarikçi eklemeniz gerekiyor.',
+                      })}
                     </Text>
                   </View>
                 </Card>
               )}
-              
+
               {!hasProducts && !missingDependencies.includes('stock') && (
-                <Card style={{ backgroundColor: colors.infoCardBackground, borderColor: colors.infoCardBorder, borderWidth: 1 }}>
+                <Card
+                  style={{
+                    backgroundColor: colors.infoCardBackground,
+                    borderColor: colors.infoCardBorder,
+                    borderWidth: 1,
+                  }}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                     <Ionicons name="information-circle" size={20} color={colors.infoCardIcon} />
                     <Text style={{ fontSize: 14, color: colors.infoCardText, flex: 1 }}>
-                      {t('no_products_available', { defaultValue: 'Henüz ürün eklenmemiş. Alış yapmak için önce ürün eklemeniz gerekiyor.' })}
+                      {t('no_products_available', {
+                        defaultValue:
+                          'Henüz ürün eklenmemiş. Alış yapmak için önce ürün eklemeniz gerekiyor.',
+                      })}
                     </Text>
                   </View>
                 </Card>
               )}
-              
+
+              {/* Template Selector - Configuration Section */}
+              <Card
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: spacing.md,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: spacing.sm,
+                  }}
+                >
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                    {t('purchases:form_template', { defaultValue: 'Form Şablonu' })}
+                  </Text>
+                </View>
+
+                <Select
+                  label={t('purchases:select_template', { defaultValue: 'Şablon Seçin' })}
+                  value={selectedTemplateId ? String(selectedTemplateId) : 'default'}
+                  options={templateOptions}
+                  onChange={(value) => {
+                    if (value === 'default') {
+                      setSelectedTemplateId('default');
+                    } else {
+                      setSelectedTemplateId(value ? Number(value) : null);
+                    }
+                  }}
+                  placeholder={t('purchases:select_template', { defaultValue: 'Şablon seçin' })}
+                />
+                {selectedTemplate?.description && (
+                  <View style={{ marginTop: spacing.sm }}>
+                    <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 18 }}>
+                      {selectedTemplate.description}
+                    </Text>
+                  </View>
+                )}
+                {/* Link to Settings for template management */}
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('FormTemplateManagement', { module: 'purchases' })
+                  }
+                  style={{
+                    marginTop: spacing.sm,
+                    paddingVertical: spacing.xs,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.xs,
+                  }}
+                >
+                  <Ionicons name="settings-outline" size={16} color={colors.primary} />
+                  <Text style={{ fontSize: 13, color: colors.primary }}>
+                    {t('purchases:manage_templates', {
+                      defaultValue: 'Form şablonlarını yönetmek için ayarlara gidin',
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              </Card>
+
               {/* Purchase Type Info Card */}
-              <Card style={{ 
-                backgroundColor: colors.primary + '08', 
-                borderWidth: 2, 
-                borderColor: colors.primary + '30',
-                padding: spacing.md,
-              }}>
+              <Card
+                style={{
+                  backgroundColor: `${colors.primary}08`,
+                  borderWidth: 2,
+                  borderColor: `${colors.primary}30`,
+                  padding: spacing.md,
+                }}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                   <Ionicons name="information-circle" size={24} color={colors.primary} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: spacing.xs }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: '600',
+                        color: colors.text,
+                        marginBottom: spacing.xs,
+                      }}
+                    >
                       {t('purchases:purchase_type_info', { defaultValue: 'Alış Tipi Seçimi' })}
                     </Text>
-                    <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 20, marginBottom: spacing.sm }}>
-                      {t('purchases:purchase_type_info_description', { 
-                        defaultValue: 'Stok alışı: Ürün stok envanterinize eklenir ve satış yapabilirsiniz. Gider alışı: Ürün gider olarak kaydedilir ve stok envanterinize eklenmez.' 
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: colors.muted,
+                        lineHeight: 20,
+                        marginBottom: spacing.sm,
+                      }}
+                    >
+                      {t('purchases:purchase_type_info_description', {
+                        defaultValue:
+                          'Stok alışı: Ürün stok envanterinize eklenir ve satış yapabilirsiniz. Gider alışı: Ürün gider olarak kaydedilir ve stok envanterinize eklenmez.',
                       })}
                     </Text>
                     {bulkPurchaseItems.length > 0 && (
-                      <View style={{ 
-                        flexDirection: 'row', 
-                        gap: spacing.md, 
-                        marginTop: spacing.sm,
-                        flexWrap: 'wrap',
-                      }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          gap: spacing.md,
+                          marginTop: spacing.sm,
+                          flexWrap: 'wrap',
+                        }}
+                      >
                         {stockItemsCount > 0 && (
-                          <View style={{ 
-                            flexDirection: 'row', 
-                            alignItems: 'center', 
-                            gap: spacing.xs,
-                            backgroundColor: colors.success + '15',
-                            paddingHorizontal: spacing.sm,
-                            paddingVertical: spacing.xs,
-                            borderRadius: 8,
-                          }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: spacing.xs,
+                              backgroundColor: `${colors.success}15`,
+                              paddingHorizontal: spacing.sm,
+                              paddingVertical: spacing.xs,
+                              borderRadius: 8,
+                            }}
+                          >
                             <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                            <Text style={{ fontSize: 12, color: colors.success, fontWeight: '500' }}>
-                              {t('purchases:stock_items_count', { count: stockItemsCount, defaultValue: `${stockItemsCount} ürün stok envanterinize eklenecek` })}
+                            <Text
+                              style={{ fontSize: 12, color: colors.success, fontWeight: '500' }}
+                            >
+                              {t('purchases:stock_items_count', {
+                                count: stockItemsCount,
+                                defaultValue: `${stockItemsCount} ürün stok envanterinize eklenecek`,
+                              })}
                             </Text>
                           </View>
                         )}
                         {expenseItemsCount > 0 && (
-                          <View style={{ 
-                            flexDirection: 'row', 
-                            alignItems: 'center', 
-                            gap: spacing.xs,
-                            backgroundColor: colors.warning + '15',
-                            paddingHorizontal: spacing.sm,
-                            paddingVertical: spacing.xs,
-                            borderRadius: 8,
-                          }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: spacing.xs,
+                              backgroundColor: `${colors.warning}15`,
+                              paddingHorizontal: spacing.sm,
+                              paddingVertical: spacing.xs,
+                              borderRadius: 8,
+                            }}
+                          >
                             <Ionicons name="alert-circle" size={16} color={colors.warning} />
-                            <Text style={{ fontSize: 12, color: colors.warning, fontWeight: '500' }}>
-                              {t('purchases:non_stock_items_count', { count: expenseItemsCount, defaultValue: `${expenseItemsCount} ürün gider olarak kaydedilecek` })}
+                            <Text
+                              style={{ fontSize: 12, color: colors.warning, fontWeight: '500' }}
+                            >
+                              {t('purchases:non_stock_items_count', {
+                                count: expenseItemsCount,
+                                defaultValue: `${expenseItemsCount} ürün gider olarak kaydedilecek`,
+                              })}
                             </Text>
                           </View>
                         )}
@@ -573,10 +790,10 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                           gap: spacing.xs,
                           marginTop: spacing.sm,
                           padding: spacing.sm,
-                          backgroundColor: colors.warning + '20',
+                          backgroundColor: `${colors.warning}20`,
                           borderRadius: 8,
                           borderWidth: 1,
-                          borderColor: colors.warning + '40',
+                          borderColor: `${colors.warning}40`,
                         }}
                       >
                         <Ionicons name="arrow-forward-circle" size={18} color={colors.warning} />
@@ -591,13 +808,20 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
 
               {/* Bulk Purchase Form */}
               <Card>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: spacing.md }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: colors.text,
+                    marginBottom: spacing.md,
+                  }}
+                >
                   {t('purchases:supplier', { defaultValue: 'Tedarikçi' })}
                 </Text>
                 <DynamicForm
                   namespace="purchases"
                   columns={1}
-                  fields={fieldsWithOptions.filter(f => f.name === 'supplierId')}
+                  fields={fieldsWithOptions.filter((f) => f.name === 'supplierId')}
                   values={formData}
                   onChange={(v) => {
                     Object.keys(v).forEach((key) => {
@@ -605,10 +829,17 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                     });
                   }}
                 />
-                
+
                 {/* Currency Selection */}
                 <View style={{ marginTop: spacing.md }}>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '500',
+                      color: colors.text,
+                      marginBottom: spacing.xs,
+                    }}
+                  >
                     {t('purchases:currency', { defaultValue: 'Para Birimi' })}
                   </Text>
                   <CurrencySelect
@@ -617,7 +848,7 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                       updateField('currency' as keyof Purchase, currency);
                       // Update all items currency if they don't have one set
                       if (bulkPurchaseItems.length > 0) {
-                        const updatedItems = bulkPurchaseItems.map(item => ({
+                        const updatedItems = bulkPurchaseItems.map((item) => ({
                           ...item,
                           currency: item.currency || currency,
                         }));
@@ -631,7 +862,14 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
 
               {/* Product Search and Selection */}
               <Card>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: spacing.md,
+                  }}
+                >
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
                     {t('purchases:select_product', { defaultValue: 'Ürün Seç' })}
                   </Text>
@@ -656,15 +894,15 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                     </Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 <SearchBar
                   value={productSearchQuery}
                   onChangeText={setProductSearchQuery}
                   placeholder={t('purchases:search_product', { defaultValue: 'Ürün ara...' })}
                 />
 
-                <ScrollView 
-                  style={{ maxHeight: 200 }} 
+                <ScrollView
+                  style={{ maxHeight: 200 }}
                   contentContainerStyle={{ paddingVertical: spacing.xs }}
                   nestedScrollEnabled
                   showsVerticalScrollIndicator={true}
@@ -684,26 +922,49 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                             marginBottom: spacing.sm,
                             flexDirection: 'row',
                             alignItems: 'center',
-                            backgroundColor: isSelected ? colors.primary + '20' : colors.surface,
+                            backgroundColor: isSelected ? `${colors.primary}20` : colors.surface,
                             borderWidth: 1,
                             borderColor: isSelected ? colors.primary : colors.border,
                           }}
                         >
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                            <Text
+                              style={{
+                                fontSize: 16,
+                                fontWeight: '500',
+                                color: colors.text,
+                                marginBottom: spacing.xs,
+                              }}
+                            >
                               {item.name}
                             </Text>
                             {item.category && (
-                              <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.xs }}>
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: colors.muted,
+                                  marginBottom: spacing.xs,
+                                }}
+                              >
                                 {item.category}
                               </Text>
                             )}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
+                            >
                               <Text style={{ fontSize: 12, color: colors.muted }}>
                                 {t('purchases:stock', { defaultValue: 'Stok' })}: {item.stock || 0}
                               </Text>
-                              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                                {item.price ? formatCurrency(item.price, item.currency || 'TRY') : '0'}
+                              <Text
+                                style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}
+                              >
+                                {item.price
+                                  ? formatCurrency(item.price, item.currency || 'TRY')
+                                  : '0'}
                               </Text>
                             </View>
                           </View>
@@ -731,14 +992,16 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
               >
                 <View style={{ flex: 1, backgroundColor: colors.background }}>
                   {/* Modal Header */}
-                  <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: spacing.md,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                    backgroundColor: colors.surface,
-                  }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: spacing.md,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                      backgroundColor: colors.surface,
+                    }}
+                  >
                     <TouchableOpacity
                       onPress={() => setProductModalVisible(false)}
                       style={{ padding: spacing.sm, marginRight: spacing.md }}
@@ -751,7 +1014,14 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                   </View>
 
                   {/* Search Bar */}
-                  <View style={{ padding: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <View
+                    style={{
+                      padding: spacing.md,
+                      backgroundColor: colors.surface,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    }}
+                  >
                     <SearchBar
                       value={modalSearchQuery}
                       onChangeText={setModalSearchQuery}
@@ -763,10 +1033,11 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                   <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md }}>
                     {(() => {
                       const modalFilteredProducts = modalSearchQuery.trim()
-                        ? products.filter((p: Product) =>
-                            p.name?.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
-                            p.category?.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
-                            p.sku?.toLowerCase().includes(modalSearchQuery.toLowerCase())
+                        ? products.filter(
+                            (p: Product) =>
+                              p.name?.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                              p.category?.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                              p.sku?.toLowerCase().includes(modalSearchQuery.toLowerCase())
                           )
                         : products;
 
@@ -789,26 +1060,50 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                               marginBottom: spacing.sm,
                               flexDirection: 'row',
                               alignItems: 'center',
-                              backgroundColor: isSelected ? colors.primary + '20' : colors.surface,
+                              backgroundColor: isSelected ? `${colors.primary}20` : colors.surface,
                               borderWidth: 1,
                               borderColor: isSelected ? colors.primary : colors.border,
                             }}
                           >
                             <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                              <Text
+                                style={{
+                                  fontSize: 16,
+                                  fontWeight: '500',
+                                  color: colors.text,
+                                  marginBottom: spacing.xs,
+                                }}
+                              >
                                 {item.name}
                               </Text>
                               {item.category && (
-                                <Text style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.xs }}>
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    color: colors.muted,
+                                    marginBottom: spacing.xs,
+                                  }}
+                                >
                                   {item.category}
                                 </Text>
                               )}
-                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <View
+                                style={{
+                                  flexDirection: 'row',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}
+                              >
                                 <Text style={{ fontSize: 12, color: colors.muted }}>
-                                  {t('purchases:stock', { defaultValue: 'Stok' })}: {item.stock || 0}
+                                  {t('purchases:stock', { defaultValue: 'Stok' })}:{' '}
+                                  {item.stock || 0}
                                 </Text>
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                                  {item.price ? formatCurrency(item.price, item.currency || 'TRY') : '0'}
+                                <Text
+                                  style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}
+                                >
+                                  {item.price
+                                    ? formatCurrency(item.price, item.currency || 'TRY')
+                                    : '0'}
                                 </Text>
                               </View>
                             </View>
@@ -829,7 +1124,14 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                   <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-end' }}>
                     <View style={{ flex: 1, gap: spacing.sm }}>
                       <View>
-                        <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '500',
+                            color: colors.text,
+                            marginBottom: spacing.xs,
+                          }}
+                        >
                           {t('purchases:quantity', { defaultValue: 'Miktar' })}
                         </Text>
                         <Input
@@ -840,13 +1142,20 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                         />
                       </View>
                       <View>
-                        <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '500',
+                            color: colors.text,
+                            marginBottom: spacing.xs,
+                          }}
+                        >
                           {t('purchases:price', { defaultValue: 'Fiyat' })}
                         </Text>
                         <Input
                           value={price}
                           onChangeText={setPrice}
-                          placeholder={selectedProduct.price ? String(selectedProduct.price) : "0"}
+                          placeholder={selectedProduct.price ? String(selectedProduct.price) : '0'}
                           keyboardType="numeric"
                         />
                       </View>
@@ -863,12 +1172,19 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
               {/* Bulk Purchase Items List */}
               {bulkPurchaseItems.length > 0 && (
                 <Card>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: spacing.md }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '600',
+                      color: colors.text,
+                      marginBottom: spacing.md,
+                    }}
+                  >
                     {t('purchases:items', { defaultValue: 'Alış Kalemleri' })}
                   </Text>
-                  
-                  <ScrollView 
-                    style={{ maxHeight: 400 }} 
+
+                  <ScrollView
+                    style={{ maxHeight: 400 }}
                     contentContainerStyle={{ paddingVertical: spacing.xs }}
                     nestedScrollEnabled={true}
                     showsVerticalScrollIndicator={true}
@@ -876,10 +1192,12 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                     keyboardShouldPersistTaps="handled"
                   >
                     {bulkPurchaseItems.map((item, index) => {
-                      const product = products.find((p: Product) => String(p.id) === item.productId);
+                      const product = products.find(
+                        (p: Product) => String(p.id) === item.productId
+                      );
                       const isExpanded = expandedItemIndex === index;
                       const itemCustomFields = item.customFields || [];
-                      
+
                       const handleItemCustomFieldsChange = (fields: PurchaseCustomField[]) => {
                         const updatedItems = [...bulkPurchaseItems];
                         updatedItems[index] = {
@@ -888,107 +1206,203 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                         };
                         setBulkPurchaseItems(updatedItems);
                       };
-                      
+
                       return (
-                        <View key={index} style={{ 
-                          marginBottom: spacing.md,
-                          borderBottomWidth: 1,
-                          borderBottomColor: colors.border,
-                          paddingBottom: spacing.md,
-                        }}>
-                          <View style={{ 
-                            flexDirection: 'row', 
-                            alignItems: 'center', 
-                            paddingVertical: spacing.sm,
-                          }}>
+                        <View
+                          key={index}
+                          style={{
+                            marginBottom: spacing.md,
+                            borderBottomWidth: 1,
+                            borderBottomColor: colors.border,
+                            paddingBottom: spacing.md,
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              paddingVertical: spacing.sm,
+                            }}
+                          >
                             <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.xs }}>
-                                {product?.name || item.productName || t('purchases:product', { defaultValue: 'Ürün' })}
+                              <Text
+                                style={{
+                                  fontSize: 14,
+                                  fontWeight: '500',
+                                  color: colors.text,
+                                  marginBottom: spacing.xs,
+                                }}
+                              >
+                                {product?.name ||
+                                  item.productName ||
+                                  t('purchases:product', { defaultValue: 'Ürün' })}
                               </Text>
                               <Text style={{ fontSize: 12, color: colors.muted }}>
-                                {item.quantity} x {formatCurrency(item.price, product?.currency || 'TRY')} = {formatCurrency(item.subtotal, product?.currency || 'TRY')}
+                                {item.quantity} x{' '}
+                                {formatCurrency(item.price, product?.currency || 'TRY')} ={' '}
+                                {formatCurrency(item.subtotal, product?.currency || 'TRY')}
                               </Text>
                               {/* Stock Purchase Toggle for each item */}
                               <View style={{ marginTop: spacing.xs }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
-                                  <Text style={{ fontSize: 12, color: colors.text, marginRight: spacing.xs, fontWeight: '500' }}>
-                                    {item.isStockPurchase !== false 
-                                      ? t('purchases:stock_purchase', { defaultValue: 'Stok Artışı' })
-                                      : t('purchases:expense_purchase', { defaultValue: 'Gider Olarak Kaydet' })
-                                    }
+                                <View
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    marginBottom: spacing.xs,
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      fontSize: 12,
+                                      color: colors.text,
+                                      marginRight: spacing.xs,
+                                      fontWeight: '500',
+                                    }}
+                                  >
+                                    {item.isStockPurchase !== false
+                                      ? t('purchases:stock_purchase', {
+                                          defaultValue: 'Stok Artışı',
+                                        })
+                                      : t('purchases:expense_purchase', {
+                                          defaultValue: 'Gider Olarak Kaydet',
+                                        })}
                                   </Text>
                                   <Switch
                                     value={item.isStockPurchase !== false}
-                                    onValueChange={(value) => handleToggleBulkItemStockPurchase(index, value)}
-                                    trackColor={{ false: colors.warning + '60', true: colors.primary }}
-                                    thumbColor={item.isStockPurchase !== false ? '#fff' : colors.muted}
+                                    onValueChange={(value) =>
+                                      handleToggleBulkItemStockPurchase(index, value)
+                                    }
+                                    trackColor={{
+                                      false: `${colors.warning}60`,
+                                      true: colors.primary,
+                                    }}
+                                    thumbColor={
+                                      item.isStockPurchase !== false ? '#fff' : colors.muted
+                                    }
                                   />
                                 </View>
                                 {/* Info text based on toggle state */}
-                                <View style={{ 
-                                  flexDirection: 'row', 
-                                  alignItems: 'flex-start', 
-                                  gap: spacing.xs,
-                                  padding: spacing.xs,
-                                  borderRadius: 6,
-                                  backgroundColor: item.isStockPurchase !== false 
-                                    ? colors.success + '10' 
-                                    : colors.warning + '10',
-                                  borderWidth: 1,
-                                  borderColor: item.isStockPurchase !== false 
-                                    ? colors.success + '30' 
-                                    : colors.warning + '30',
-                                }}>
-                                  <Ionicons 
-                                    name={item.isStockPurchase !== false ? "checkmark-circle" : "alert-circle"} 
-                                    size={14} 
-                                    color={item.isStockPurchase !== false ? colors.success : colors.warning} 
-                                  />
-                                  <Text style={{ 
-                                    fontSize: 11, 
-                                    color: item.isStockPurchase !== false ? colors.success : colors.warning,
-                                    flex: 1,
-                                    lineHeight: 16,
-                                  }}>
-                                    {item.isStockPurchase !== false 
-                                      ? t('purchases:stock_purchase_info', { defaultValue: 'Bu ürün stok envanterinize eklenecek ve satış yapabileceksiniz.' })
-                                      : t('purchases:expense_purchase_info', { defaultValue: 'Bu ürün satılmayacak, sadece gider olarak kaydedilecek. Giderler modülünde görüntüleyebilirsiniz.' })
+                                <View
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'flex-start',
+                                    gap: spacing.xs,
+                                    padding: spacing.xs,
+                                    borderRadius: 6,
+                                    backgroundColor:
+                                      item.isStockPurchase !== false
+                                        ? `${colors.success}10`
+                                        : `${colors.warning}10`,
+                                    borderWidth: 1,
+                                    borderColor:
+                                      item.isStockPurchase !== false
+                                        ? `${colors.success}30`
+                                        : `${colors.warning}30`,
+                                  }}
+                                >
+                                  <Ionicons
+                                    name={
+                                      item.isStockPurchase !== false
+                                        ? 'checkmark-circle'
+                                        : 'alert-circle'
                                     }
+                                    size={14}
+                                    color={
+                                      item.isStockPurchase !== false
+                                        ? colors.success
+                                        : colors.warning
+                                    }
+                                  />
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color:
+                                        item.isStockPurchase !== false
+                                          ? colors.success
+                                          : colors.warning,
+                                      flex: 1,
+                                      lineHeight: 16,
+                                    }}
+                                  >
+                                    {item.isStockPurchase !== false
+                                      ? t('purchases:stock_purchase_info', {
+                                          defaultValue:
+                                            'Bu ürün stok envanterinize eklenecek ve satış yapabileceksiniz.',
+                                        })
+                                      : t('purchases:expense_purchase_info', {
+                                          defaultValue:
+                                            'Bu ürün satılmayacak, sadece gider olarak kaydedilecek. Giderler modülünde görüntüleyebilirsiniz.',
+                                        })}
                                   </Text>
                                 </View>
                               </View>
                             </View>
-                            <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                gap: spacing.sm,
+                                alignItems: 'center',
+                              }}
+                            >
                               <Input
                                 value={String(item.quantity)}
                                 onChangeText={(val) => handleUpdateBulkQuantity(index, val)}
                                 keyboardType="numeric"
-                                style={{ width: 60, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, textAlign: 'center' }}
+                                style={{
+                                  width: 60,
+                                  paddingVertical: spacing.sm,
+                                  paddingHorizontal: spacing.sm,
+                                  textAlign: 'center',
+                                }}
                               />
                               <Input
                                 value={String(item.price)}
                                 onChangeText={(val) => handleUpdateBulkPrice(index, val)}
                                 keyboardType="numeric"
-                                style={{ width: 80, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, textAlign: 'center' }}
+                                style={{
+                                  width: 80,
+                                  paddingVertical: spacing.sm,
+                                  paddingHorizontal: spacing.sm,
+                                  textAlign: 'center',
+                                }}
                               />
                               <TouchableOpacity
                                 onPress={() => setExpandedItemIndex(isExpanded ? null : index)}
-                                style={{ padding: spacing.sm, borderRadius: 8, backgroundColor: colors.primary }}
+                                style={{
+                                  padding: spacing.sm,
+                                  borderRadius: 8,
+                                  backgroundColor: colors.primary,
+                                }}
                               >
-                                <Ionicons name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"} size={20} color="#fff" />
+                                <Ionicons
+                                  name={isExpanded ? 'chevron-up-outline' : 'chevron-down-outline'}
+                                  size={20}
+                                  color="#fff"
+                                />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 onPress={() => handleRemoveBulkItem(index)}
-                                style={{ padding: spacing.sm, borderRadius: 8, backgroundColor: '#EF4444' }}
+                                style={{
+                                  padding: spacing.sm,
+                                  borderRadius: 8,
+                                  backgroundColor: '#EF4444',
+                                }}
                               >
                                 <Ionicons name="trash-outline" size={20} color="#fff" />
                               </TouchableOpacity>
                             </View>
                           </View>
-                          
+
                           {/* Custom Fields Section for Item */}
                           {isExpanded && (
-                            <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
+                            <View
+                              style={{
+                                marginTop: spacing.md,
+                                paddingTop: spacing.md,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                              }}
+                            >
                               <CustomFieldsManager<PurchaseCustomField>
                                 customFields={itemCustomFields}
                                 onChange={handleItemCustomFieldsChange}
@@ -1002,15 +1416,17 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                   </ScrollView>
 
                   {/* Total */}
-                  <View style={{ 
-                    flexDirection: 'row', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    marginTop: spacing.md,
-                    paddingTop: spacing.md,
-                    borderTopWidth: 1,
-                    borderTopColor: colors.border,
-                  }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: spacing.md,
+                      paddingTop: spacing.md,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.border,
+                    }}
+                  >
                     <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
                       {t('purchases:total_amount', { defaultValue: 'Toplam Tutar' })}:
                     </Text>
@@ -1029,7 +1445,7 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                       value={displayDateTime}
                       editable={false}
                       pointerEvents="none"
-                      placeholder={formMode === 'create' ? todayDate : "YYYY-MM-DD"}
+                      placeholder={formMode === 'create' ? todayDate : 'YYYY-MM-DD'}
                       style={{ backgroundColor: colors.surface, color: colors.text }}
                     />
                   </TouchableOpacity>
@@ -1057,13 +1473,13 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
                     onChangeText={(text) => updateField('title' as keyof Purchase, text)}
                     multiline
                     numberOfLines={6}
-                    style={{ 
+                    style={{
                       textAlignVertical: 'top',
                       minHeight: 120,
                       fontSize: 16,
                       fontWeight: '400',
                       borderWidth: 2,
-                      borderColor: colors.primary + '40',
+                      borderColor: `${colors.primary}40`,
                       paddingTop: 16,
                       paddingBottom: 16,
                       paddingHorizontal: 16,
@@ -1089,4 +1505,3 @@ export default function PurchaseFormScreen({ mode }: PurchaseFormScreenProps = {
     />
   );
 }
-
