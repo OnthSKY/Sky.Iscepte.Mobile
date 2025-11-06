@@ -6,3 +6,4 @@ build/
 babel.config.js
 coverage/
 .nyc_output/
+plugins/

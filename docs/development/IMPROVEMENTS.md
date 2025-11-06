@@ -33,9 +33,12 @@ Bu dokümantasyon, projede yapılabilecek iyileştirmeleri, eksiklikleri ve geli
 - ✅ **Secure storage service** - secureStorageService oluşturuldu, tüm token'lar Keychain'de saklanıyor
 - ✅ **Token migration** - Tüm servislerde AsyncStorage → Keychain migrasyonu yapıldı
 - ✅ **getToken utility** - Merkezi token okuma utility'si eklendi
+- ✅ **Certificate pinning** - HTTPS certificate pinning eklendi (certificatePinningService, Android network security config, iOS ATS config)
+- ✅ **Certificate pinning plugin** - Expo config plugin eklendi (withCertificatePinning.js)
+- ✅ **CERTIFICATE_PINNING.md** - Certificate pinning kullanım kılavuzu eklendi
 - ⚠️ **Sensitive data encryption** - Keychain zaten şifreliyor, ekstra encryption opsiyonel
-- ⚠️ **Certificate pinning** - HTTPS certificate pinning eklenmeli (kalan)
 - ⚠️ **Code obfuscation** - Production build'lerde kod obfuscation yapılmalı (kalan)
+- ⚠️ **iOS native certificate pinning** - iOS için native Swift/Objective-C kodu eklenebilir (opsiyonel, şu an ATS config var)
 
 ### 4. Environment Configuration ✅ TAMAMLANDI
 
@@ -263,7 +266,7 @@ Bu dokümantasyon, projede yapılabilecek iyileştirmeleri, eksiklikleri ve geli
 | --------- | -------------------- | ------------- | ------------ | ------ |
 | 🔴 Kritik | Test Altyapısı       | ❌ Kalan      | 2-3 hafta    | Yüksek |
 | 🔴 Kritik | Error Boundary       | ✅ Tamamlandı | -            | Yüksek |
-| 🔴 Kritik | Güvenlik             | ⚠️ Kalan      | 2 hafta      | Yüksek |
+| 🔴 Kritik | Güvenlik             | ⚠️ Kısmen     | 1 hafta      | Yüksek |
 | 🔴 Kritik | Environment Config   | ⚠️ Kısmen     | 3-5 gün      | Orta   |
 | 🔴 Kritik | Form Template        | ❌ Kalan      | 1 hafta      | Orta   |
 | 🟡 Yüksek | Performance          | ✅ Tamamlandı | -            | Yüksek |

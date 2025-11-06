@@ -23,8 +23,10 @@ module.exports = {
       supportsTablet: true,
       buildNumber: process.env.IOS_BUILD_NUMBER || '1',
       infoPlist: {
-        NSCameraUsageDescription: 'Bu uygulama fotoğraf çekmek için kamera erişimine ihtiyaç duyar.',
-        NSPhotoLibraryUsageDescription: 'Bu uygulama fotoğraf seçmek için galeri erişimine ihtiyaç duyar.',
+        NSCameraUsageDescription:
+          'Bu uygulama fotoğraf çekmek için kamera erişimine ihtiyaç duyar.',
+        NSPhotoLibraryUsageDescription:
+          'Bu uygulama fotoğraf seçmek için galeri erişimine ihtiyaç duyar.',
       },
     },
     android: {
@@ -52,6 +54,23 @@ module.exports = {
           sounds: [],
         },
       ],
+      // Certificate Pinning Plugin
+      // TODO: Gerçek domain ve certificate hash'lerinizi ekleyin
+      // [
+      //   './plugins/withCertificatePinning.js',
+      //   {
+      //     android: {
+      //       domains: ['api.example.com'], // Gerçek API domain'iniz
+      //       publicKeyHashes: [
+      //         'REPLACE_WITH_ACTUAL_SHA256_HASH', // Gerçek hash'iniz
+      //       ],
+      //     },
+      //     ios: {
+      //       domains: ['api.example.com'], // Gerçek API domain'iniz
+      //       allowArbitraryLoads: false, // Production'da false olmalı
+      //     },
+      //   },
+      // ],
     ],
     web: {
       favicon: './assets/favicon.png',
@@ -66,4 +85,3 @@ module.exports = {
     },
   },
 };
-

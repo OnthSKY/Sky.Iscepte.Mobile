@@ -145,6 +145,23 @@ async function request<T>(
     const apiUrl = url.startsWith('/api/')
       ? `${appConfig.apiBaseUrl}${url}`
       : `${appConfig.apiBaseUrl}${url}`;
+
+    // Certificate pinning validation
+    // NEDEN: Man-in-the-middle saldırılarına karşı koruma
+    if (appConfig.mode === 'api') {
+      const { certificatePinningService } = await import(
+        '../../core/services/certificatePinningService'
+      );
+      const isValid = await certificatePinningService.validateCertificate(apiUrl);
+      if (!isValid) {
+        const error = new Error(
+          'Certificate validation failed. Possible man-in-the-middle attack.'
+        );
+        error.name = 'CertificatePinningError';
+        throw error;
+      }
+    }
+
     const res = await fetch(apiUrl, {
       method,
       headers: { 'Content-Type': 'application/json', ...(config.headers || {}) },

@@ -67,5 +67,13 @@ module.exports = {
     es6: true,
     node: true,
   },
-  ignorePatterns: ['node_modules/', '.expo/', 'dist/', 'build/', '*.config.js', 'babel.config.js'],
+  ignorePatterns: [
+    'node_modules/',
+    '.expo/',
+    'dist/',
+    'build/',
+    '*.config.js',
+    'babel.config.js',
+    'plugins/',
+  ],
 };

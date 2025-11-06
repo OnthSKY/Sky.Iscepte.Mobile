@@ -85,6 +85,17 @@ function AppWrapper() {
     });
   }, []);
 
+  // Initialize certificate pinning
+  useEffect(() => {
+    import('./src/core/services/certificatePinningService')
+      .then(({ initializeCertificatePinning }) => {
+        return initializeCertificatePinning();
+      })
+      .catch((error) => {
+        console.warn('Failed to initialize certificate pinning:', error);
+      });
+  }, []);
+
   // Initialize cache manager
   useEffect(() => {
     initializeCacheManager();
