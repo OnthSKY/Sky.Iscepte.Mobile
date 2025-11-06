@@ -1,6 +1,6 @@
 /**
  * QueryClient Configuration
- * 
+ *
  * Single Responsibility: Configures TanStack Query client with caching, retry, and persistence
  * Dependency Inversion: Uses AsyncStorage interface, not concrete implementation
  */
@@ -10,7 +10,13 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { shouldPersistQuery, shouldNotPersistQuery } from './cacheConfig';
-import { createRetryFunction, createRetryDelayFunction, RetryConfigs, RetryStrategies } from '../utils/retryUtils';
+import {
+  createRetryFunction,
+  createRetryDelayFunction,
+  RetryConfigs,
+  RetryStrategies,
+} from '../utils/retryUtils';
+import { createCacheManager, CacheManager } from './cacheManager';
 
 /**
  * AsyncStorage persister for query cache
@@ -26,11 +32,12 @@ const asyncStoragePersister = createAsyncStoragePersister({
       ...data,
       clientState: {
         ...data.clientState,
-        queries: data.clientState?.queries?.filter((query: any) => {
-          const queryKey = query.queryKey;
-          // Only persist critical queries, exclude non-critical ones
-          return shouldPersistQuery(queryKey) && !shouldNotPersistQuery(queryKey);
-        }) || [],
+        queries:
+          data.clientState?.queries?.filter((query: any) => {
+            const { queryKey } = query;
+            // Only persist critical queries, exclude non-critical ones
+            return shouldPersistQuery(queryKey) && !shouldNotPersistQuery(queryKey);
+          }) || [],
       },
     };
     return JSON.stringify(filtered);
@@ -46,7 +53,7 @@ const asyncStoragePersister = createAsyncStoragePersister({
 
 /**
  * QueryClient with optimized defaults for mobile
- * 
+ *
  * Default Options:
  * - staleTime: 5 minutes - Data is fresh for 5 minutes
  * - cacheTime: 10 minutes - Unused data stays in cache for 10 minutes
@@ -65,13 +72,35 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       refetchOnMount: true,
+      // Offline-first: Use cached data when offline
+      networkMode: 'offlineFirst', // Try cache first, then network
     },
     mutations: {
       retry: createRetryFunction(RetryStrategies.mutation()), // Minimal retries for mutations
       retryDelay: createRetryDelayFunction(RetryConfigs.mutation), // Quick retry for mutations
+      // Offline-first: Queue mutations when offline
+      networkMode: 'offlineFirst', // Queue mutations when offline
     },
   },
 });
+
+/**
+ * Cache manager instance
+ * Provides cache size limit enforcement, cleanup, and smart invalidation
+ */
+export const cacheManager: CacheManager = createCacheManager(queryClient);
+
+/**
+ * Initialize cache manager
+ * Starts automatic cleanup and performs initial cleanup
+ */
+export function initializeCacheManager(): void {
+  // Perform initial cleanup
+  cacheManager.performCleanup();
+
+  // Start automatic cleanup (every 5 minutes)
+  cacheManager.startAutoCleanup(5 * 60 * 1000);
+}
 
 /**
  * PersistedQueryClientProvider wrapper component
@@ -89,20 +118,20 @@ export const queryKeys = {
     profile: () => [...queryKeys.auth.all, 'profile'] as const,
     permissions: () => [...queryKeys.auth.all, 'permissions'] as const,
   },
-  
+
   // User (CRITICAL - persisted)
   user: {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
   },
-  
+
   // Permissions (CRITICAL - persisted)
   permissions: {
     all: ['permissions'] as const,
     list: () => [...queryKeys.permissions.all, 'list'] as const,
   },
-  
+
   // Settings (CRITICAL - persisted)
   settings: {
     all: ['settings'] as const,
@@ -110,7 +139,7 @@ export const queryKeys = {
     theme: () => [...queryKeys.settings.all, 'theme'] as const,
     language: () => [...queryKeys.settings.all, 'language'] as const,
   },
-  
+
   // Stock (NON-CRITICAL - memory only, except stats)
   stock: {
     all: ['stock'] as const,
@@ -122,7 +151,7 @@ export const queryKeys = {
     histories: () => [...queryKeys.stock.all, 'history'] as const,
     history: (id: string | number) => [...queryKeys.stock.histories(), id] as const,
   },
-  
+
   // Sales (NON-CRITICAL - memory only, except stats)
   sales: {
     all: ['sales'] as const,
@@ -133,7 +162,7 @@ export const queryKeys = {
     stats: () => [...queryKeys.sales.all, 'stats'] as const, // Stats are persisted
     debt: (filters?: Record<string, any>) => [...queryKeys.sales.all, 'debt', { filters }] as const, // Debt sales list
   },
-  
+
   // Purchases (NON-CRITICAL - memory only, except stats)
   purchases: {
     all: ['purchases'] as const,
@@ -143,7 +172,7 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.purchases.details(), id] as const,
     stats: () => [...queryKeys.purchases.all, 'stats'] as const, // Stats are persisted
   },
-  
+
   // Customers (NON-CRITICAL - memory only, except stats)
   customers: {
     all: ['customers'] as const,
@@ -153,7 +182,7 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.customers.details(), id] as const,
     stats: () => [...queryKeys.customers.all, 'stats'] as const, // Stats are persisted
   },
-  
+
   // Expenses (NON-CRITICAL - memory only, except stats)
   expenses: {
     all: ['expenses'] as const,
@@ -163,7 +192,7 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.expenses.details(), id] as const,
     stats: () => [...queryKeys.expenses.all, 'stats'] as const, // Stats are persisted
   },
-  
+
   // Revenue (NON-CRITICAL - memory only, except stats)
   revenue: {
     all: ['revenue'] as const,
@@ -173,7 +202,7 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.revenue.details(), id] as const,
     stats: () => [...queryKeys.revenue.all, 'stats'] as const, // Stats are persisted
   },
-  
+
   // Employees (NON-CRITICAL - memory only, except stats)
   employees: {
     all: ['employees'] as const,
@@ -183,7 +212,7 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.employees.details(), id] as const,
     stats: () => [...queryKeys.employees.all, 'stats'] as const, // Stats are persisted
   },
-  
+
   // Reports (NON-CRITICAL - memory only, except stats)
   reports: {
     all: ['reports'] as const,
@@ -193,7 +222,7 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.reports.details(), id] as const,
     stats: () => [...queryKeys.reports.all, 'stats'] as const, // Stats are persisted
   },
-  
+
   // Suppliers (NON-CRITICAL - memory only, except stats)
   suppliers: {
     all: ['suppliers'] as const,
@@ -203,17 +232,19 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.suppliers.details(), id] as const,
     stats: () => [...queryKeys.suppliers.all, 'stats'] as const, // Stats are persisted
   },
-  
+
   // Accounting (NON-CRITICAL - memory only, except summary)
   accounting: {
     all: ['accounting'] as const,
-    summary: (period: 'day' | 'week' | 'month' | 'year' = 'month') => [...queryKeys.accounting.all, 'summary', period] as const,
-    detailedReport: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') => [...queryKeys.accounting.all, 'detailed-report', period] as const,
+    summary: (period: 'day' | 'week' | 'month' | 'year' = 'month') =>
+      [...queryKeys.accounting.all, 'summary', period] as const,
+    detailedReport: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') =>
+      [...queryKeys.accounting.all, 'detailed-report', period] as const,
     balanceSheet: (date?: string) => [...queryKeys.accounting.all, 'balance-sheet', date] as const,
-    profitLoss: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') => [...queryKeys.accounting.all, 'profit-loss', period] as const,
+    profitLoss: (period: 'day' | 'week' | 'month' | 'year' | 'all' = 'month') =>
+      [...queryKeys.accounting.all, 'profit-loss', period] as const,
   },
-  
+
   // Modules helper (for form templates and other module-specific queries)
   modules: (module: string) => [module] as const,
 };
-

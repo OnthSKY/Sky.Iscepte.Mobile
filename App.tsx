@@ -1,6 +1,10 @@
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Provider as PaperProvider, MD3LightTheme as PaperDefaultTheme, MD3DarkTheme as PaperDarkTheme } from 'react-native-paper';
+import {
+  Provider as PaperProvider,
+  MD3LightTheme as PaperDefaultTheme,
+  MD3DarkTheme as PaperDarkTheme,
+} from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-gesture-handler';
 import React from 'react';
@@ -18,7 +22,12 @@ import authService from './src/shared/services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from './src/core/contexts/ThemeContext';
 import ToastManager from './src/shared/components/ToastManager';
-import { PersistQueryClientProvider, queryClient, asyncStoragePersister } from './src/core/services/queryClient';
+import {
+  PersistQueryClientProvider,
+  queryClient,
+  asyncStoragePersister,
+  initializeCacheManager,
+} from './src/core/services/queryClient';
 import { useNavigationPrefetch } from './src/core/hooks/useNavigationPrefetch';
 import SplashScreen from './src/shared/components/SplashScreen';
 import { useLowStockAlert } from './src/core/hooks/useLowStockAlert';
@@ -50,7 +59,7 @@ function DebtCollectionAlertMonitor() {
 }
 
 function MainApp() {
-  const role = useAppStore(s => s.role) as Role;
+  const role = useAppStore((s) => s.role) as Role;
   return (
     <>
       <LowStockAlertMonitor />
@@ -62,20 +71,25 @@ function MainApp() {
 
 function AppWrapper() {
   const { colors, activeTheme } = useTheme();
-  const hydrate = useAppStore(s => s.hydrate);
-  const isAuthenticated = useAppStore(s => s.isAuthenticated);
-  const isLoading = useAppStore(s => s.isLoading);
+  const hydrate = useAppStore((s) => s.hydrate);
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const isLoading = useAppStore((s) => s.isLoading);
   const [showSplash, setShowSplash] = useState(true);
-  const hydrateLowStockAlert = useLowStockAlertStore(s => s.hydrate);
-  const user = useAppStore(s => s.user);
-  
+  const hydrateLowStockAlert = useLowStockAlertStore((s) => s.hydrate);
+  const user = useAppStore((s) => s.user);
+
   // Initialize monitoring (Sentry)
   useEffect(() => {
     monitoringService.initializeMonitoring().catch((error) => {
       console.warn('Failed to initialize monitoring:', error);
     });
   }, []);
-  
+
+  // Initialize cache manager
+  useEffect(() => {
+    initializeCacheManager();
+  }, []);
+
   // Set user context for monitoring when user logs in
   useEffect(() => {
     if (user?.id) {
@@ -84,22 +98,22 @@ function AppWrapper() {
       monitoringService.clearUserContext();
     }
   }, [user]);
-  
-  useEffect(() => { 
+
+  useEffect(() => {
     hydrate();
     hydrateLowStockAlert();
   }, [hydrate, hydrateLowStockAlert]);
-  
+
   // Bildirim handler'larını ayarla (uygulama başlangıcında)
   useEffect(() => {
     if (isAuthenticated) {
       setupNotificationHandlers();
     }
   }, [isAuthenticated]);
-  
+
   useEffect(() => {
     httpInterceptors.useRequest(({ config }: any) => {
-      const token = useAppStore.getState().token;
+      const { token } = useAppStore.getState();
       if (token) {
         config.headers = { ...(config.headers || {}), Authorization: `Bearer ${token}` };
       }
@@ -135,13 +149,13 @@ function AppWrapper() {
             url: response.url,
           });
         }
-        
+
         const msg = `İstek başarısız: ${response.status}`;
         notificationService.error(msg);
       }
     });
   }, []);
-  
+
   const isDark = activeTheme === 'dark';
   const navigationTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
@@ -152,7 +166,7 @@ function AppWrapper() {
       border: colors.border,
     },
   };
-  
+
   const paperTheme = isDark ? PaperDarkTheme : PaperDefaultTheme;
   const mergedPaperTheme = {
     ...paperTheme,
@@ -166,21 +180,19 @@ function AppWrapper() {
       error: colors.error,
     },
   };
-  
+
   // Show splash screen on app start
   if (showSplash) {
-    return (
-      <SplashScreen onFinish={() => setShowSplash(false)} />
-    );
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
-  
+
   if (isLoading) {
     return null; // Or return a loading screen component
   }
-  
+
   return (
     <PaperProvider theme={mergedPaperTheme}>
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <NavigationContainer theme={navigationTheme}>
         <NavigationPrefetchWrapper />
         <RootStack.Navigator screenOptions={{ headerShown: false }}>
