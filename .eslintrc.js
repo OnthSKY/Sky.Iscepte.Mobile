@@ -75,5 +75,30 @@ module.exports = {
     '*.config.js',
     'babel.config.js',
     'plugins/',
+    'e2e/',
+    '.detoxrc.js',
+    'src/__tests__/integration/',
+  ],
+  overrides: [
+    {
+      files: ['e2e/**/*.js'],
+      env: {
+        jest: true,
+        node: true,
+      },
+      globals: {
+        device: 'readonly',
+        element: 'readonly',
+        by: 'readonly',
+        waitFor: 'readonly',
+        expect: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        beforeAll: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
   ],
 };

@@ -16,6 +16,11 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:e2e": "detox test",
+    "test:e2e:build": "detox build",
+    "test:e2e:build:ios": "detox build --configuration ios.sim.debug",
+    "test:e2e:build:android": "detox build --configuration android.emu.debug",
     "type-coverage": "type-coverage --detail",
     "type-coverage:check": "type-coverage --threshold 80",
     "prepare": "husky"
@@ -93,7 +98,9 @@
     "prettier": "^3.2.5",
     "react-test-renderer": "19.1.0",
     "type-coverage": "^2.29.7",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "detox": "^20.15.0",
+    "@types/detox": "^20.15.0"
   },
   "private": true
 }
