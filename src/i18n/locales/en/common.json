@@ -294,6 +294,12 @@
   "max_images_reached_message": "You can add a maximum of {{max}} images.",
   "images_count": "{{count}} / {{max}} photos added",
   "add_photo": "Add Photo",
-  "image": "Image"
+  "image": "Image",
+  "offline": "Offline",
+  "pending_requests": "{{count}} pending request",
+  "syncing": "Syncing {{count}} items...",
+  "try_again": "Try Again",
+  "error_boundary_title": "Something went wrong",
+  "error_boundary_message": "An unexpected error occurred. Please try again or contact support if the problem persists."
 }
 

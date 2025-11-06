@@ -18,6 +18,7 @@ import {
   isApiError,
 } from '../types/apiErrors';
 import notificationService, { ErrorCategory, ErrorOptions } from '../../shared/services/notificationService';
+import monitoringService from '../services/monitoringService';
 
 /**
  * Get standard error message for common error scenarios
@@ -339,6 +340,24 @@ export function showErrorNotification(
     : isApiError(error) && error.code
     ? `${context || 'error'}:${error.code}`
     : `${context || 'error'}:${message}`;
+  
+  // Capture error in monitoring service
+  if (error instanceof Error) {
+    monitoringService.captureException(error, {
+      context: context || 'error',
+      category,
+      ...(isApiError(error) ? {
+        code: error.code,
+        status: error.status,
+        errorMeta: error.errorMeta,
+      } : {}),
+    });
+  } else {
+    monitoringService.captureMessage(message, 'error', {
+      context: context || 'error',
+      category,
+    });
+  }
   
   notificationService.error(message, {
     ...options,

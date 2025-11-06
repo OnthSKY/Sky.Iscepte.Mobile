@@ -9,6 +9,7 @@ import {
   isApiError,
 } from '../../core/types/apiErrors';
 import { BaseControllerResponse } from '../types/apiResponse';
+import networkService from '../../core/services/networkService';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -191,7 +192,21 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
       e?.message?.includes('network error') ||
       e?.code === 'NETWORK_ERROR'
     ) {
-      throw createNetworkError(e);
+      // If offline and it's a mutation (POST, PUT, DELETE), add to queue
+      if (!networkService.isOnline() && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
+        try {
+          await networkService.addToQueue(method, url, body, config.headers);
+          // Return a promise that will resolve when queue is processed
+          // For now, throw error but user knows it's queued
+          const networkError = createNetworkError(new Error('Request queued for offline processing'));
+          throw networkError;
+        } catch (queueError) {
+          // If queue fails, throw original error
+          throw createNetworkError(e);
+        }
+      } else {
+        throw createNetworkError(e);
+      }
     }
     
     // Unknown error - wrap in ApiError

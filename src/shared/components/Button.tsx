@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { TouchableOpacity, Text, StyleSheet, GestureResponderEvent, ViewStyle, Platform, StyleProp, View } from 'react-native';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
@@ -14,7 +14,7 @@ type Props = {
   showLockIcon?: boolean;
 };
 
-export default function Button({ title, onPress, disabled, style, icon, showLockIcon }: Props) {
+const Button = memo<Props>(function Button({ title, onPress, disabled, style, icon, showLockIcon }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const displayIcon = showLockIcon && disabled ? 'lock-closed-outline' : icon;
@@ -34,7 +34,9 @@ export default function Button({ title, onPress, disabled, style, icon, showLock
       </View>
     </TouchableOpacity>
   );
-}
+});
+
+export default Button;
 
 const getStyles = (colors: any) => StyleSheet.create({
   button: {

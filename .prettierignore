@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+.expo/
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Config files
+package-lock.json
+yarn.lock
+
+# Generated files
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db

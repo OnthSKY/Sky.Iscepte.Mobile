@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, memo, useCallback } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Input from './Input';
@@ -42,7 +42,7 @@ type DynamicFormProps<T extends Record<string, any>> = {
   namespace?: string; // i18n namespace for labels
 };
 
-export default function DynamicForm<T extends Record<string, any>>({
+function DynamicForm<T extends Record<string, any>>({
   fields,
   values,
   onChange,
@@ -63,9 +63,9 @@ export default function DynamicForm<T extends Record<string, any>>({
     return result;
   }, [fields, columns]);
 
-  const setValue = (name: string, value: any) => {
+  const setValue = useCallback((name: string, value: any) => {
     onChange({ ...(values as any), [name]: value });
-  };
+  }, [onChange, values]);
 
   return (
     <Form>
@@ -106,6 +106,8 @@ export default function DynamicForm<T extends Record<string, any>>({
     </Form>
   );
 }
+
+export default memo(DynamicForm) as typeof DynamicForm;
 
 function renderField(
   field: DynamicField,

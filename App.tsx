@@ -25,6 +25,9 @@ import { useLowStockAlert } from './src/core/hooks/useLowStockAlert';
 import { useLowStockAlertStore } from './src/core/store/lowStockAlertStore';
 import { useDebtCollectionAlert } from './src/core/hooks/useDebtCollectionAlert';
 import { setupNotificationHandlers } from './src/core/services/pushNotificationService';
+import monitoringService from './src/core/services/monitoringService';
+import NetworkStatusIndicator from './src/shared/components/NetworkStatusIndicator';
+import ErrorBoundary from './src/shared/components/ErrorBoundary';
 
 const RootStack = createNativeStackNavigator();
 
@@ -64,6 +67,23 @@ function AppWrapper() {
   const isLoading = useAppStore(s => s.isLoading);
   const [showSplash, setShowSplash] = useState(true);
   const hydrateLowStockAlert = useLowStockAlertStore(s => s.hydrate);
+  const user = useAppStore(s => s.user);
+  
+  // Initialize monitoring (Sentry)
+  useEffect(() => {
+    monitoringService.initializeMonitoring().catch((error) => {
+      console.warn('Failed to initialize monitoring:', error);
+    });
+  }, []);
+  
+  // Set user context for monitoring when user logs in
+  useEffect(() => {
+    if (user?.id) {
+      monitoringService.setUserContext(user.id, useAppStore.getState().role, (user as any).email);
+    } else {
+      monitoringService.clearUserContext();
+    }
+  }, [user]);
   
   useEffect(() => { 
     hydrate();
@@ -96,9 +116,24 @@ function AppWrapper() {
               return;
             }
           } catch (error) {
+            // Capture authentication errors
+            if (error instanceof Error) {
+              monitoringService.captureException(error, {
+                context: 'auth',
+                action: 'refresh_token',
+              });
+            }
             await useAppStore.getState().logout();
             notificationService.info('Oturum süresi doldu, lütfen tekrar giriş yapın');
           }
+        } else {
+          // Capture API errors
+          const error = new Error(`API Error: ${response.status}`);
+          monitoringService.captureException(error, {
+            context: 'api',
+            status: response.status,
+            url: response.url,
+          });
         }
         
         const msg = `İstek başarısız: ${response.status}`;
@@ -160,22 +195,25 @@ function AppWrapper() {
         </RootStack.Navigator>
       </NavigationContainer>
       <ToastManager />
+      <NetworkStatusIndicator />
     </PaperProvider>
   );
 }
 
 export default function App() {
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister: asyncStoragePersister,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      }}
-    >
-      <ThemeProvider>
-        <AppWrapper />
-      </ThemeProvider>
-    </PersistQueryClientProvider>
+    <ErrorBoundary>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister: asyncStoragePersister,
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        }}
+      >
+        <ThemeProvider>
+          <AppWrapper />
+        </ThemeProvider>
+      </PersistQueryClientProvider>
+    </ErrorBoundary>
   );
 }

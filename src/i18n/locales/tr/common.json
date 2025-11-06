@@ -294,6 +294,12 @@
   "max_images_reached_message": "Maksimum {{max}} resim ekleyebilirsiniz.",
   "images_count": "{{count}} / {{max}} fotoğraf eklendi",
   "add_photo": "Fotoğraf Ekle",
-  "image": "Fotoğraf"
+  "image": "Fotoğraf",
+  "offline": "Çevrimdışı",
+  "pending_requests": "{{count}} bekleyen istek",
+  "syncing": "{{count}} öğe senkronize ediliyor...",
+  "try_again": "Tekrar Dene",
+  "error_boundary_title": "Bir şeyler ters gitti",
+  "error_boundary_message": "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin veya sorun devam ederse destek ile iletişime geçin."
 }
 

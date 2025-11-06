@@ -1,13 +1,26 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { TextInput, StyleSheet, TextInputProps, Platform } from 'react-native';
 import { useTheme } from '../../core/contexts/ThemeContext';
 import spacing from '../../core/constants/spacing';
 
-export default function Input(props: TextInputProps) {
+const Input = memo<TextInputProps>(function Input(props) {
   const [focused, setFocused] = React.useState(false);
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const isEditable = props.editable !== false;
+  
+  const handleFocus = useCallback((e: any) => {
+    if (isEditable) {
+      setFocused(true);
+    }
+    props.onFocus?.(e);
+  }, [isEditable, props.onFocus]);
+  
+  const handleBlur = useCallback((e: any) => {
+    setFocused(false);
+    props.onBlur?.(e);
+  }, [props.onBlur]);
+  
   return (
     <TextInput
       placeholderTextColor={colors.muted}
@@ -18,20 +31,14 @@ export default function Input(props: TextInputProps) {
         props.multiline ? styles.multiline : null, 
         props.style
       ]}
-      onFocus={(e) => {
-        if (isEditable) {
-          setFocused(true);
-        }
-        props.onFocus?.(e);
-      }}
-      onBlur={(e) => {
-        setFocused(false);
-        props.onBlur?.(e);
-      }}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       {...props}
     />
   );
-}
+});
+
+export default Input;
 
 const getStyles = (colors: any) => StyleSheet.create({
   input: {
