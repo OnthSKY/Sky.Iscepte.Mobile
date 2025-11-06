@@ -14,7 +14,7 @@ module.exports = {
     },
     ecmaVersion: 2020,
     sourceType: 'module',
-    project: './tsconfig.json',
+    // project: './tsconfig.json', // Disabled for config files
   },
   plugins: ['@typescript-eslint', 'react', 'react-hooks', 'react-native'],
   rules: {
@@ -30,7 +30,7 @@ module.exports = {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-non-null-assertion': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
+    // '@typescript-eslint/prefer-const': 'error', // Using 'prefer-const' instead
     '@typescript-eslint/no-var-requires': 'error',
 
     // React specific rules
@@ -52,8 +52,8 @@ module.exports = {
     'prefer-destructuring': ['warn', { object: true, array: false }],
 
     // Code quality
-    'eqeqeq': ['error', 'always', { null: 'ignore' }],
-    'curly': ['error', 'all'],
+    eqeqeq: ['error', 'always', { null: 'ignore' }],
+    curly: ['error', 'all'],
     'no-throw-literal': 'error',
     'prefer-promise-reject-errors': 'error',
   },
@@ -67,13 +67,5 @@ module.exports = {
     es6: true,
     node: true,
   },
-  ignorePatterns: [
-    'node_modules/',
-    '.expo/',
-    'dist/',
-    'build/',
-    '*.config.js',
-    'babel.config.js',
-  ],
+  ignorePatterns: ['node_modules/', '.expo/', 'dist/', 'build/', '*.config.js', 'babel.config.js'],
 };
-

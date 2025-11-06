@@ -1,0 +1,93 @@
+# Build Pipeline
+#
+# NEDEN: Main branch'e merge olduğunda otomatik build
+# - Android APK/AAB build
+# - iOS build (opsiyonel)
+# - Build artifact'ları saklama
+# - EAS Build entegrasyonu
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+
+jobs:
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            eas build --platform android --profile production --non-interactive
+          else
+            eas build --platform android --profile preview --non-interactive
+          fi
+
+      - name: Download build artifacts
+        if: success()
+        run: |
+          eas build:list --platform android --limit 1 --json > build-info.json
+          # Build artifact'ları indirme işlemi burada yapılabilir
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS
+        run: eas build --platform ios --profile production --non-interactive
