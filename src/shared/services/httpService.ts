@@ -1,8 +1,5 @@
 import appConfig from '../../core/config/appConfig';
 import {
-  ApiError,
-  NetworkError,
-  TimeoutError,
   createApiErrorFromStatus,
   createNetworkError,
   createTimeoutError,
@@ -10,6 +7,7 @@ import {
 } from '../../core/types/apiErrors';
 import { BaseControllerResponse } from '../types/apiResponse';
 import networkService from '../../core/services/networkService';
+import { requestManager } from '../../core/services/requestManager';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -23,10 +21,21 @@ export interface HttpError extends Error {
 type RequestConfig = {
   headers?: Record<string, string>;
   timeoutMs?: number;
+  signal?: AbortSignal; // NEDEN: External AbortSignal support (for request cancellation)
+  skipDeduplication?: boolean; // NEDEN: Deduplication'ı atlamak için
 };
 
-type RequestInterceptor = (input: { method: HttpMethod; url: string; body?: any; config: RequestConfig }) => Promise<void> | void;
-type ResponseInterceptor = (input: { method: HttpMethod; url: string; response: Response }) => Promise<void> | void;
+type RequestInterceptor = (input: {
+  method: HttpMethod;
+  url: string;
+  body?: any;
+  config: RequestConfig;
+}) => Promise<void> | void;
+type ResponseInterceptor = (input: {
+  method: HttpMethod;
+  url: string;
+  response: Response;
+}) => Promise<void> | void;
 
 const requestInterceptors: RequestInterceptor[] = [];
 const responseInterceptors: ResponseInterceptor[] = [];
@@ -43,8 +52,27 @@ export interface HttpClient {
   delete<T>(url: string, config?: RequestConfig): Promise<T>;
 }
 
-async function request<T>(method: HttpMethod, url: string, body?: any, config: RequestConfig = {}): Promise<T> {
-  for (const i of requestInterceptors) await i({ method, url, body, config });
+async function request<T>(
+  method: HttpMethod,
+  url: string,
+  body?: any,
+  config: RequestConfig = {}
+): Promise<T> {
+  for (const i of requestInterceptors) {
+    await i({ method, url, body, config });
+  }
+
+  // Request cancellation and deduplication
+  const requestId = requestManager.generateId(method, url, body);
+  let abortController: AbortController | null = null;
+
+  // Create or get existing controller (for deduplication)
+  if (!config.signal && !config.skipDeduplication) {
+    abortController = requestManager.createController(requestId, url, method);
+  }
+
+  // Use provided signal or create new one
+  const signal = config.signal || abortController?.signal;
 
   // Handle mock mode - extract token from headers and pass to mock service
   if (appConfig.mode === 'mock') {
@@ -54,15 +82,20 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
     const token = authHeader?.replace('Bearer ', '') || null;
     try {
       // Mock service returns BaseControllerResponse<T>, need to parse it
-      const mockResponse = await mod.mockRequest<BaseControllerResponse<T>>(method, url, body, token ?? "");
-      
+      const mockResponse = await mod.mockRequest<BaseControllerResponse<T>>(
+        method,
+        url,
+        body,
+        token ?? ''
+      );
+
       // Check if response is BaseControllerResponse format
       if (mockResponse && typeof mockResponse === 'object' && 'message' in mockResponse) {
         const apiResponse = mockResponse as BaseControllerResponse<T>;
-        
+
         // For mock mode, assume success (status 200) if message is OperationSuccessful
         const isSuccess = apiResponse.message === 'OperationSuccessful' || !apiResponse.errorMeta;
-        
+
         if (isSuccess) {
           // Success: return data (can be undefined for NoContent responses like 204)
           if (apiResponse.data === undefined || apiResponse.data === null) {
@@ -70,11 +103,11 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
           }
           return apiResponse.data;
         }
-        
+
         // Error response: extract error information
         const errorMessage = apiResponse.message || 'Request failed';
-        const errorMeta = apiResponse.errorMeta;
-        
+        const { errorMeta } = apiResponse;
+
         // For mock mode, use 400 as default error status
         const apiError = createApiErrorFromStatus(
           400,
@@ -82,10 +115,10 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
           mockResponse, // Full response as details
           errorMeta
         );
-        
+
         throw apiError;
       }
-      
+
       // If not BaseControllerResponse format, return as-is (backward compatibility)
       return mockResponse as T;
     } catch (error: any) {
@@ -93,17 +126,35 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
     }
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? 15000);
+  // Create timeout controller if no signal provided
+  const timeoutController = signal ? null : new AbortController();
+  const timeout = timeoutController
+    ? setTimeout(() => timeoutController.abort(), config.timeoutMs ?? 15000)
+    : null;
+
+  // Combine signals: external signal + timeout signal
+  const combinedSignal = signal
+    ? timeoutController
+      ? combineSignals([signal, timeoutController.signal])
+      : signal
+    : timeoutController?.signal;
+
   try {
-    const res = await fetch(`${appConfig.apiBaseUrl}${url}`, {
+    // NEDEN: API versioning için base URL'i kullan
+    // URL zaten version içeriyorsa olduğu gibi kullan
+    const apiUrl = url.startsWith('/api/')
+      ? `${appConfig.apiBaseUrl}${url}`
+      : `${appConfig.apiBaseUrl}${url}`;
+    const res = await fetch(apiUrl, {
       method,
       headers: { 'Content-Type': 'application/json', ...(config.headers || {}) },
       body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal,
+      signal: combinedSignal,
     });
 
-    for (const i of responseInterceptors) await i({ method, url, response: res });
+    for (const i of responseInterceptors) {
+      await i({ method, url, response: res });
+    }
 
     // Handle empty body first to avoid consuming the stream twice
     const text = await res.text();
@@ -126,7 +177,7 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
 
       // Error response: extract error information
       const errorMessage = apiResponse.message || `HTTP ${httpStatus}`;
-      const errorMeta = apiResponse.errorMeta; // Dynamic error metadata from API
+      const { errorMeta } = apiResponse; // Dynamic error metadata from API
 
       // Create appropriate error based on HTTP status code
       const apiError = createApiErrorFromStatus(
@@ -142,16 +193,17 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
     // Handle non-BaseControllerResponse format
     if (!res.ok) {
       // Try to parse error details from response
-      let errorDetails: any = parsedResponse || undefined;
+      const errorDetails: any = parsedResponse || undefined;
       let errorMessage: string | undefined = undefined;
       let errorMeta: any = undefined;
 
       if (errorDetails) {
         // Extract message from common error response formats
-        errorMessage = errorDetails?.message ||
-                      errorDetails?.error?.message ||
-                      errorDetails?.errors?.[0]?.message ||
-                      undefined;
+        errorMessage =
+          errorDetails?.message ||
+          errorDetails?.error?.message ||
+          errorDetails?.errors?.[0]?.message ||
+          undefined;
 
         // Extract errorMeta if present
         errorMeta = errorDetails?.errorMeta;
@@ -178,12 +230,12 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
     if (e?.name === 'AbortError') {
       throw createTimeoutError('Request timeout. Please try again.');
     }
-    
+
     // If it's already an ApiError, re-throw as-is
     if (isApiError(e)) {
       throw e;
     }
-    
+
     // Handle network errors (no connection, DNS failure, etc.)
     if (
       e?.message?.includes('Network request failed') ||
@@ -193,12 +245,17 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
       e?.code === 'NETWORK_ERROR'
     ) {
       // If offline and it's a mutation (POST, PUT, DELETE), add to queue
-      if (!networkService.isOnline() && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
+      if (
+        !networkService.isOnline() &&
+        (method === 'POST' || method === 'PUT' || method === 'DELETE')
+      ) {
         try {
           await networkService.addToQueue(method, url, body, config.headers);
           // Return a promise that will resolve when queue is processed
           // For now, throw error but user knows it's queued
-          const networkError = createNetworkError(new Error('Request queued for offline processing'));
+          const networkError = createNetworkError(
+            new Error('Request queued for offline processing')
+          );
           throw networkError;
         } catch (queueError) {
           // If queue fails, throw original error
@@ -208,13 +265,38 @@ async function request<T>(method: HttpMethod, url: string, body?: any, config: R
         throw createNetworkError(e);
       }
     }
-    
+
     // Unknown error - wrap in ApiError
     const networkError = createNetworkError(e);
     throw networkError;
   } finally {
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    // Remove request from tracking when completed
+    if (!config.skipDeduplication) {
+      requestManager.removeRequest(requestId);
+    }
   }
+}
+
+/**
+ * Combine multiple AbortSignals
+ *
+ * NEDEN: Hem external signal hem timeout signal'i birleştirmek için
+ */
+function combineSignals(signals: AbortSignal[]): AbortSignal {
+  const controller = new AbortController();
+
+  signals.forEach((signal) => {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener('abort', () => controller.abort());
+    }
+  });
+
+  return controller.signal;
 }
 
 export const httpService: HttpClient = {
@@ -225,5 +307,3 @@ export const httpService: HttpClient = {
 };
 
 export default httpService;
-
-
