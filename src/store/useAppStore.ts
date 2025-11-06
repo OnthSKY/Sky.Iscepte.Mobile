@@ -5,6 +5,12 @@ import authService from '../shared/services/authService';
 import { getRoleByUsername, getUserIdByRole, getUserIdByUsername } from '../core/utils/roleManager';
 import { Role, Language, ThemePreference, MenuTextCase } from '../core/config/appConstants';
 import { UserProfile } from '../shared/services/userService';
+import { tokenStorage, userDataStorage } from '../core/services/secureStorageService';
+/**
+ * NEDEN: Token'ları Keychain'den okumak için secureStorageService kullanıyoruz
+ * - AsyncStorage yerine güvenli storage
+ * - Token'lar donanım seviyesinde şifrelenmiş
+ */
 
 type AppState = {
   isAuthenticated: boolean;
@@ -198,9 +204,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: false });
   },
   async silentLogin() {
-    const accessToken = await AsyncStorage.getItem('access_token');
-    const refreshToken = await AsyncStorage.getItem('refresh_token');
-    const storedRole = (await AsyncStorage.getItem('user_role')) as Role | null;
+    // NEDEN: Token'ları Keychain'den okuyoruz (güvenli storage)
+    const accessToken = await tokenStorage.getAccessToken();
+    const refreshToken = await tokenStorage.getRefreshToken();
+    const storedRole = (await userDataStorage.getUserRole()) as Role | null;
     
     // If we have both tokens, load them directly
     if (accessToken && refreshToken) {

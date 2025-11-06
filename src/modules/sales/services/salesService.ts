@@ -1,7 +1,7 @@
 import httpService from '../../../shared/services/httpService';
 import appConfig from '../../../core/config/appConfig';
 import { apiEndpoints } from '../../../core/config/apiEndpoints';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// NEDEN: Token'lar artık Keychain'de saklanıyor, AsyncStorage yerine getToken utility kullanıyoruz
 import { Paginated } from '../../../shared/types/module';
 import { GridRequest } from '../../../shared/types/grid';
 import { toQueryParams } from '../../../shared/utils/query';
@@ -60,7 +60,9 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string
   const mockService = await getMockService();
   if (mockService) {
     // Get token from AsyncStorage for mock service
-    const token = await AsyncStorage.getItem('access_token');
+    // NEDEN: Token'ı Keychain'den okuyoruz (güvenli storage)
+    const { getAccessToken } = await import('../../../core/utils/getToken');
+    const token = await getAccessToken();
     return mockService<T>(method, url, body, token || undefined);
   }
   

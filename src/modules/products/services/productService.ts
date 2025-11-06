@@ -1,7 +1,7 @@
 import httpService from '../../../shared/services/httpService';
 import appConfig from '../../../core/config/appConfig';
 import { apiEndpoints } from '../../../core/config/apiEndpoints';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// NEDEN: Token'lar artık Keychain'de saklanıyor, AsyncStorage yerine getToken utility kullanıyoruz
 import { GridRequest } from '../../../shared/types/grid';
 import { Paginated } from '../../../shared/types/module';
 import { PaginatedData } from '../../../shared/types/apiResponse';
@@ -39,8 +39,10 @@ export interface ProductStats {
 // Use httpService directly (it handles both mock and real API)
 // httpService already parses BaseControllerResponse format correctly
 async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, body?: any): Promise<T> {
-  // Get token from AsyncStorage for mock service (if in mock mode)
-  const token = appConfig.mode === 'mock' ? await AsyncStorage.getItem('access_token') : null;
+  // Get token from secure storage (Keychain)
+  // NEDEN: Token'lar Keychain'de güvenli saklanır
+  const { getAccessToken } = await import('../../../core/utils/getToken');
+  const token = appConfig.mode === 'mock' ? await getAccessToken() : null;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
   
   switch (method) {

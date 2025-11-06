@@ -1,7 +1,14 @@
 import httpService from './httpService';
 import appConfig from '../../core/config/appConfig';
 import { apiEndpoints } from '../../core/config/apiEndpoints';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tokenStorage, userDataStorage } from '../../core/services/secureStorageService';
+/**
+ * NEDEN: AsyncStorage yerine secureStorageService kullanıyoruz
+ * - Token'lar Keychain'de güvenli saklanır (donanım seviyesinde şifreleme)
+ * - Root/jailbreak cihazlarda bile daha güvenli
+ * - OWASP Mobile Top 10 önerisi
+ * - GDPR/KVKK uyumluluğu için gerekli
+ */
 
 export interface LoginResponse {
   accessToken: string;
@@ -31,11 +38,12 @@ export const authService = {
       password,
     });
     
-    // Store tokens and user info
-    await AsyncStorage.setItem('access_token', response.accessToken);
-    await AsyncStorage.setItem('refresh_token', response.refreshToken);
-    await AsyncStorage.setItem('user_role', response.user.role);
-    await AsyncStorage.setItem('user_id', response.user.id.toString());
+    // Store tokens and user info securely in Keychain
+    // NEDEN: Token'lar en kritik sensitive data, Keychain'de saklanmalı
+    await tokenStorage.setAccessToken(response.accessToken);
+    await tokenStorage.setRefreshToken(response.refreshToken);
+    await userDataStorage.setUserRole(response.user.role);
+    await userDataStorage.setUserId(response.user.id.toString());
     
     // Owner ID will be extracted from token when needed
     // No need to store separately
@@ -61,18 +69,20 @@ export const authService = {
       refreshToken,
     }, config);
     
-    // Update stored tokens
-    await AsyncStorage.setItem('access_token', response.accessToken);
-    await AsyncStorage.setItem('refresh_token', response.refreshToken);
+    // Update stored tokens securely in Keychain
+    // NEDEN: Yeni token'lar da güvenli saklanmalı
+    await tokenStorage.setAccessToken(response.accessToken);
+    await tokenStorage.setRefreshToken(response.refreshToken);
     
     return response;
   },
 
   /**
    * Logout - clear tokens and user data
+   * NEDEN: Logout'ta tüm token'ları temizlemek güvenlik için kritik
    */
   async logout(): Promise<void> {
-    const refreshToken = await AsyncStorage.getItem('refresh_token');
+    const refreshToken = await tokenStorage.getRefreshToken();
     
     if (refreshToken) {
       try {
@@ -84,11 +94,10 @@ export const authService = {
       }
     }
     
-    // Clear local storage
-    await AsyncStorage.removeItem('access_token');
-    await AsyncStorage.removeItem('refresh_token');
-    await AsyncStorage.removeItem('user_role');
-    await AsyncStorage.removeItem('user_id');
+    // Clear all secure storage (Keychain)
+    // NEDEN: Token'lar Keychain'de saklandığı için oradan temizlenmeli
+    await tokenStorage.clearTokens();
+    await userDataStorage.clearUserData();
   },
 };
 

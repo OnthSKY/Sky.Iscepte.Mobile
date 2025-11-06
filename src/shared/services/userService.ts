@@ -24,7 +24,9 @@ export interface UserProfile {
 async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, body?: any): Promise<T> {
   // Get token from AsyncStorage for mock service (if in mock mode)
   // For real API, interceptor in App.tsx will add Authorization header
-  const token = appConfig.mode === 'mock' ? await AsyncStorage.getItem('access_token') : null;
+  // NEDEN: Token'ı Keychain'den okuyoruz (güvenli storage)
+  const { getAccessToken } = await import('../../core/utils/getToken');
+  const token = appConfig.mode === 'mock' ? await getAccessToken() : null;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
   
   switch (method) {

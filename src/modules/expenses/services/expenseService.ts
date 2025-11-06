@@ -56,8 +56,9 @@ async function getMockService() {
 async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, body?: any): Promise<T> {
   const mockService = await getMockService();
   if (mockService) {
-    // Get token from AsyncStorage for mock service
-    const token = await AsyncStorage.getItem('access_token');
+    // NEDEN: Token'ı Keychain'den okuyoruz (güvenli storage)
+    const { getAccessToken } = await import('../../../core/utils/getToken');
+    const token = await getAccessToken();
     return mockService<T>(method, url, body, token || undefined);
   }
   

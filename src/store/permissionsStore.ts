@@ -4,7 +4,10 @@ import users from '../mocks/users.json';
 import { extractPermissionsFromToken } from '../core/utils/jwtUtils';
 import { rolePermissions } from '../core/config/permissions';
 import { Role } from '../core/config/appConstants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tokenStorage } from '../core/services/secureStorageService';
+/**
+ * NEDEN: Token'ları Keychain'den okuyoruz (güvenli storage)
+ */
 
 export interface PermissionDetail {
   actions: string[];
@@ -84,19 +87,20 @@ export const usePermissionStore = create<PermissionStore>((set, get) => ({
    * - Gold package: [all permissions including custom_fields, custom_form, custom_value]
    * - Result: [all permissions] (package allows everything)
    */
-  loadPermissions: (userId: number) => {
+  loadPermissions: async (userId: number) => {
     // First try to load from JWT token if available
-    AsyncStorage.getItem('access_token').then((token) => {
-      if (token) {
-        const permissions = extractPermissionsFromToken(token);
-        if (permissions.length > 0) {
-          get().loadPermissionsFromToken(token);
-          return;
-        }
+    // NEDEN: Token'ı Keychain'den okuyoruz (güvenli storage)
+    const token = await tokenStorage.getAccessToken();
+    if (token) {
+      const permissions = extractPermissionsFromToken(token);
+      if (permissions.length > 0) {
+        get().loadPermissionsFromToken(token);
+        return;
       }
-      
-      // Fallback to user data
-      const user: any = (users as any).find((u: any) => u.id === userId);
+    }
+    
+    // Fallback to user data
+    const user: any = (users as any).find((u: any) => u.id === userId);
       if (!user) return;
 
       // Get user's role and convert to Role enum
